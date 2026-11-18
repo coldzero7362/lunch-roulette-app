@@ -1,4 +1,7 @@
-# 개발 환경: http://<서버IP>:8001
+# 개발 환경
+#   https://lunch.158-247-240-171.sslip.io  (Caddy 프록시: ~/infra/proxy, 위치 권한은 여기서만 동작)
+#   http://<서버IP>:8001                    (직접 접속)
+#
 #   docker compose up -d --build
 #   docker compose exec -u www-data app php artisan ...
 #   docker compose exec -u www-data app npm run build   # CSS/JS 변경 후
@@ -12,3 +15,8 @@ services:
       - "8001:80"
     volumes:
       - ./:/var/www/html   # 코드 수정 즉시 반영
+    networks: [default, proxy]
+
+networks:
+  proxy:
+    external: true   # ~/infra/proxy 의 Caddy 와 공유
