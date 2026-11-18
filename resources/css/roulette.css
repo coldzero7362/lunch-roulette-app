@@ -347,10 +347,15 @@
 }
 
 .rl-map {
+    /* 바깥 곡률(테두리 포함)과 테두리 두께. 안쪽 층은 여기서 두께를 뺀 곡률을 쓴다 */
+    --map-rx: 4px;
+    --map-ry: 4px;
+    --map-border: 2px;
+    --map-inner: calc(var(--map-rx) - var(--map-border)) / calc(var(--map-ry) - var(--map-border));
     position: relative;
     isolation: isolate;
-    border: 2px solid var(--c-carbon);
-    border-radius: 4px;
+    border: var(--map-border) solid var(--c-carbon);
+    border-radius: var(--map-rx) / var(--map-ry);
     overflow: hidden;
     background: var(--c-screen);
     transition: border-radius .25s;
@@ -359,8 +364,11 @@
 /* ---------- CRT 모니터 효과 (지도) ---------- */
 
 /* 볼록한 브라운관: 모서리를 크게 둥글리고 형광체처럼 약간 진하게 */
-.rl-map.is-crt { border-radius: 22px / 18px; }
+.rl-map.is-crt { --map-rx: 22px; --map-ry: 18px; }
 .rl-map.is-crt #map { filter: contrast(1.1) saturate(1.2) brightness(1.03); }
+
+/* 지도 타일은 GPU 레이어라 부모의 둥근 모서리로 잘 안 잘린다. 같은 곡선으로 직접 자른다 */
+.rl-map #map { clip-path: inset(0 round var(--map-inner)); }
 
 .rl-crt-fx {
     position: absolute;
@@ -368,7 +376,7 @@
     z-index: 5;
     display: none;
     pointer-events: none;
-    border-radius: inherit;
+    border-radius: var(--map-inner);
     background:
         /* 가장자리 비네팅 */
         radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgb(0 0 0 / .5) 100%),
@@ -385,7 +393,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    border-radius: inherit;
+    border-radius: var(--map-inner);
     background:
         radial-gradient(ellipse 60% 35% at 30% 12%, rgb(255 255 255 / .16), transparent 70%),
         linear-gradient(170deg, rgb(255 255 255 / .06), transparent 35%);
