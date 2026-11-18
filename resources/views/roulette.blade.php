@@ -14,13 +14,6 @@
                 <h1 class="rl-title">점심 룰렛</h1>
                 <span class="rl-model">MODEL LR-01 · LUNCH ROULETTE</span>
             </div>
-            <nav aria-label="계정">
-                @auth
-                    <a href="{{ route('dashboard') }}">대시보드</a>
-                @else
-                    <a href="{{ route('login') }}">로그인</a>
-                @endauth
-            </nav>
         </header>
         <div class="rl-stripes" aria-hidden="true"></div>
 
