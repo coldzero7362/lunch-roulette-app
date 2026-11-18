@@ -1,96 +1,119 @@
 <!DOCTYPE html>
-<html lang="ko" class="h-full">
+<html lang="ko">
 <head>
     @include('partials.head', ['title' => '점심 룰렛'])
-    @vite('resources/js/roulette.js')
+    @vite(['resources/css/roulette.css', 'resources/js/roulette.js'])
     <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ config('services.kakao.js_key') }}&autoload=false"></script>
 </head>
-<body class="min-h-full bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
-    <div
-        id="roulette-app"
-        data-restaurants-url="{{ route('restaurants.index') }}"
-        class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 lg:py-10"
-    >
-        <header class="flex items-center justify-between">
-            <h1 class="text-xl font-semibold tracking-tight">🍽️ 점심 룰렛</h1>
-            <nav class="flex items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400">
+<body class="rl-body">
+    <div id="roulette-app" data-restaurants-url="{{ route('restaurants.index') }}" class="rl-device">
+
+        {{-- 머리 패널 --}}
+        <header class="rl-head rl-ribs">
+            <div>
+                <h1 class="rl-title">점심 룰렛</h1>
+                <span class="rl-model">MODEL LR-01 · LUNCH ROULETTE</span>
+            </div>
+            <nav aria-label="계정">
                 @auth
-                    <a href="{{ route('dashboard') }}" class="hover:text-zinc-900 dark:hover:text-white">대시보드</a>
+                    <a href="{{ route('dashboard') }}">대시보드</a>
                 @else
-                    <a href="{{ route('login') }}" class="hover:text-zinc-900 dark:hover:text-white">로그인</a>
+                    <a href="{{ route('login') }}">로그인</a>
                 @endauth
             </nav>
         </header>
+        <div class="rl-stripes" aria-hidden="true"></div>
 
-        <main class="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+        <main class="grid gap-8 p-4 sm:p-6 lg:grid-cols-[1.15fr_1fr] lg:p-8">
+
             {{-- 지도 --}}
-            <section class="flex flex-col gap-3" aria-label="지도">
-                <div class="relative overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900">
-                    <div id="map" class="h-[42vh] min-h-72 w-full lg:h-[560px]"></div>
-                    <button
-                        id="locate"
-                        type="button"
-                        class="absolute right-3 bottom-3 z-10 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700"
-                    >📍 내 위치</button>
+            <section class="flex flex-col gap-4" aria-label="지도">
+                <div class="rl-bezel rl-ribs">
+                    <span class="rl-screw tl" aria-hidden="true"></span>
+                    <span class="rl-screw tr" aria-hidden="true"></span>
+                    <span class="rl-screw bl" aria-hidden="true"></span>
+                    <span class="rl-screw br" aria-hidden="true"></span>
+                    <div class="rl-map">
+                        <div id="map" class="h-[40vh] min-h-72 w-full lg:h-[500px]"></div>
+                    </div>
+                    <button id="locate" type="button" class="rl-key rl-key--beige rl-key--small">⌖ 내 위치</button>
                 </div>
 
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div class="inline-flex rounded-lg border border-zinc-200 bg-white p-1 dark:border-zinc-800 dark:bg-zinc-900" role="group" aria-label="검색 반경">
-                        @foreach (\App\Http\Controllers\RestaurantController::RADII as $radius)
-                            <button
-                                type="button"
-                                data-radius="{{ $radius }}"
-                                aria-pressed="{{ $radius === 500 ? 'true' : 'false' }}"
-                                class="rounded-md px-3 py-1.5 text-sm font-medium text-zinc-500 aria-pressed:bg-zinc-900 aria-pressed:text-white dark:text-zinc-400 dark:aria-pressed:bg-white dark:aria-pressed:text-zinc-900"
-                            >{{ $radius >= 1000 ? ($radius / 1000).'km' : $radius.'m' }}</button>
-                        @endforeach
+                <div class="flex flex-wrap items-end gap-4">
+                    <div class="rl-bank" role="group" aria-label="검색 반경">
+                        <div class="rl-bank__slot">
+                            @foreach (\App\Http\Controllers\RestaurantController::RADII as $radius)
+                                <button
+                                    type="button"
+                                    class="rl-bank__key"
+                                    data-radius="{{ $radius }}"
+                                    aria-pressed="{{ $radius === 500 ? 'true' : 'false' }}"
+                                >{{ $radius >= 1000 ? ($radius / 1000).'km' : $radius.'m' }}</button>
+                            @endforeach
+                        </div>
+                        <span class="rl-label">RANGE · 반경</span>
                     </div>
-                    <p id="status" class="text-sm text-zinc-500 dark:text-zinc-400" role="status" aria-live="polite">지도를 불러오는 중…</p>
+                    <div class="min-w-0 flex-1 basis-56">
+                        <p id="status" class="rl-crt rl-crt--readout" role="status" aria-live="polite">지도를 불러오는 중이에요</p>
+                    </div>
                 </div>
             </section>
 
             {{-- 룰렛 --}}
-            <section class="flex flex-col items-center gap-5" aria-label="룰렛">
-                <div class="relative w-full max-w-[360px]">
-                    {{-- 바늘 --}}
-                    <div class="absolute top-[-6px] left-1/2 z-10 -translate-x-1/2 drop-shadow" aria-hidden="true">
-                        <svg width="28" height="34" viewBox="0 0 28 34"><path d="M14 34 L2 6 Q14 -4 26 6 Z" class="fill-zinc-900 dark:fill-white"/></svg>
-                    </div>
-                    <svg id="wheel" viewBox="-100 -100 200 200" class="aspect-square w-full" role="img" aria-label="룰렛 돌림판">
-                        <g id="wheel-rotor"></g>
-                        <circle r="13" class="fill-white stroke-zinc-900 dark:fill-zinc-900 dark:stroke-white" stroke-width="3"/>
-                    </svg>
-                </div>
+            <section class="flex flex-col items-center gap-6" aria-label="룰렛">
+                <div class="rl-deck rl-ribs">
+                    <span class="rl-screw tl" aria-hidden="true"></span>
+                    <span class="rl-screw tr" aria-hidden="true"></span>
+                    <span class="rl-screw bl" aria-hidden="true"></span>
+                    <span class="rl-screw br" aria-hidden="true"></span>
 
-                <button
-                    id="spin"
-                    type="button"
-                    disabled
-                    class="w-full max-w-[360px] rounded-xl bg-zinc-900 px-6 py-3.5 text-base font-semibold text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-                >돌리기</button>
+                    <div class="rl-window">
+                        <svg class="rl-pointer" width="30" height="36" viewBox="0 0 30 36" aria-hidden="true">
+                            <path d="M15 34 L3 8 L3 3 L27 3 L27 8 Z" fill="#d25a22" stroke="#2b2620" stroke-width="2.5" stroke-linejoin="round"/>
+                        </svg>
+                        <svg id="wheel" viewBox="-100 -100 200 200" class="block aspect-square w-full" role="img" aria-label="룰렛 돌림판">
+                            <g id="wheel-rotor"></g>
+                            <circle r="98.5" fill="none" stroke="#2b2620" stroke-width="3"/>
+                        </svg>
+                    </div>
+
+                    <div class="mt-6">
+                        <button id="spin" type="button" disabled class="rl-key rl-key--wide">▶ 돌리기</button>
+                    </div>
+                </div>
 
                 {{-- 결과 --}}
-                <div id="result" hidden class="w-full max-w-[360px] rounded-2xl border-2 border-zinc-900 bg-white p-5 dark:border-white dark:bg-zinc-900">
-                    <p class="text-xs font-medium tracking-wide text-zinc-500 uppercase dark:text-zinc-400">오늘 점심은</p>
-                    <p id="result-name" class="mt-1 text-2xl font-bold tracking-tight"></p>
-                    <p id="result-meta" class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"></p>
-                    <p id="result-address" class="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400"></p>
-                    <div class="mt-4 flex flex-wrap gap-2">
-                        <a id="result-link" href="#" target="_blank" rel="noopener" class="rounded-lg bg-yellow-300 px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-yellow-400">카카오맵에서 보기 ↗</a>
-                        <button id="result-exclude" type="button" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">여기 빼고 다시</button>
+                <div id="result" hidden class="rl-result">
+                    <div class="rl-crt rl-result__screen" aria-live="polite">
+                        <p class="rl-result__kicker dim">오늘 점심은</p>
+                        <p id="result-name" class="rl-result__name amber"></p>
+                        <p id="result-meta" class="rl-result__meta"></p>
+                        <p id="result-address" class="rl-result__meta dim"></p>
+                    </div>
+                    <div class="rl-result__actions">
+                        <a id="result-link" href="#" target="_blank" rel="noopener" class="rl-key rl-key--amber rl-key--small">카카오맵에서 보기 ↗</a>
+                        <button id="result-exclude" type="button" class="rl-key rl-key--beige rl-key--small">여기 빼고 다시</button>
                     </div>
                 </div>
 
-                {{-- 후보 --}}
-                <div class="w-full max-w-[360px]">
-                    <div class="mb-2 flex items-center justify-between">
-                        <h2 class="text-sm font-semibold">후보 <span id="candidate-count" class="font-normal text-zinc-500 dark:text-zinc-400"></span></h2>
-                        <button id="shuffle" type="button" class="text-sm text-zinc-500 hover:text-zinc-900 disabled:opacity-40 dark:text-zinc-400 dark:hover:text-white" disabled>🔀 후보 섞기</button>
+                {{-- 후보 (카세트 라벨) --}}
+                <div class="rl-jcard">
+                    <div class="rl-stripes" style="height:8px;border-top:0" aria-hidden="true"></div>
+                    <div class="rl-jcard__head">
+                        <h2 class="rl-jcard__title">SIDE A · 후보 <span id="candidate-count" class="rl-jcard__count"></span></h2>
+                        <button id="shuffle" type="button" class="rl-key rl-key--beige rl-key--small" disabled>섞기</button>
                     </div>
-                    <ul id="candidates" class="divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900"></ul>
+                    <ul id="candidates" class="m-0 list-none p-0"></ul>
                 </div>
             </section>
         </main>
+
+        {{-- 명판 --}}
+        <footer class="rl-plate rl-ribs" aria-hidden="true">
+            <div class="rl-grille"></div>
+            <div class="rl-ticks"></div>
+            <span class="rl-label">LR-01 · 점심 룰렛</span>
+        </footer>
     </div>
 </body>
 </html>

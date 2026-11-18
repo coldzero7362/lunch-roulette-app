@@ -6,7 +6,19 @@
 const WHEEL_SLOTS = 8; // 돌림판에 올리는 후보 수
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }; // 위치를 못 받을 때: 서울시청
 const SPIN_MS = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 600 : 4500;
-const SLICE_COLORS = ['#fde68a', '#fecaca', '#bbf7d0', '#bfdbfe', '#fed7aa', '#e9d5ff', '#a5f3fc', '#fbcfe8'];
+// 카세트 스킨: 70년대 색 띠와 철판·라벨 색을 번갈아. ink = 그 위 글자색 (대비 확보)
+const SLICES = [
+    { fill: '#f2b632', ink: '#2b2620' },
+    { fill: '#ddd6c4', ink: '#2b2620' },
+    { fill: '#e0662a', ink: '#2b2620' },
+    { fill: '#aba38f', ink: '#2b2620' },
+    { fill: '#c8442a', ink: '#f5efe0' },
+    { fill: '#e9e3d4', ink: '#2b2620' },
+    { fill: '#6b3a1e', ink: '#f2b632' },
+    { fill: '#c4bca8', ink: '#2b2620' },
+];
+const INK = '#2b2620';
+const SIGNAL = '#d25a22';
 
 const root = document.getElementById('roulette-app');
 const $ = (id) => document.getElementById(id);
@@ -85,7 +97,7 @@ function setCenter(lat, lng) {
     centerOverlay?.setMap(null);
     centerOverlay = new kakao.maps.CustomOverlay({
         position: pos,
-        content: '<div style="width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 2px #2563eb55"></div>',
+        content: '<div style="width:16px;height:16px;border-radius:50%;background:#d25a22;border:3px solid #e9e3d4;box-shadow:0 0 0 2px #2b2620"></div>',
         zIndex: 3,
     });
     centerOverlay.setMap(map);
@@ -103,10 +115,11 @@ function drawRadius() {
         center: new kakao.maps.LatLng(state.center.lat, state.center.lng),
         radius: state.radius,
         strokeWeight: 2,
-        strokeColor: '#2563eb',
-        strokeOpacity: 0.6,
-        fillColor: '#2563eb',
-        fillOpacity: 0.06,
+        strokeColor: SIGNAL,
+        strokeOpacity: 0.9,
+        strokeStyle: 'shortdash',
+        fillColor: SIGNAL,
+        fillOpacity: 0.07,
     });
     radiusCircle.setMap(map);
     map.setLevel(state.radius >= 1000 ? 6 : state.radius >= 500 ? 5 : 4);
@@ -119,15 +132,32 @@ function drawMarkers() {
         .map((p) => new kakao.maps.Marker({
             position: new kakao.maps.LatLng(p.lat, p.lng),
             title: p.name,
+            image: markerImage(),
             map,
         }));
+}
+
+let pin;
+/** 카세트 스킨 핀: 번트 오렌지 몸통, 카본 테두리, 베이지 점 */
+function markerImage() {
+    if (!pin) {
+        const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="34" viewBox="0 0 26 34">'
+            + '<path d="M13 32 C13 32 2 19 2 12 A11 11 0 0 1 24 12 C24 19 13 32 13 32 Z" fill="#d25a22" stroke="#2b2620" stroke-width="2.5"/>'
+            + '<rect x="9" y="8" width="8" height="8" fill="#e9e3d4" stroke="#2b2620" stroke-width="1.5"/></svg>';
+        pin = new kakao.maps.MarkerImage(
+            `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+            new kakao.maps.Size(26, 34),
+            { offset: new kakao.maps.Point(13, 33) },
+        );
+    }
+    return pin;
 }
 
 function highlightWinner(place) {
     winnerOverlay?.setMap(null);
     const label = document.createElement('div');
-    label.textContent = `🍽️ ${place.name}`;
-    label.style.cssText = 'padding:6px 10px;border-radius:999px;background:#18181b;color:#fff;font:600 13px/1 sans-serif;white-space:nowrap;transform:translateY(-52px)';
+    label.textContent = `▶ ${place.name}`;
+    label.style.cssText = "padding:7px 10px;border:2px solid #3f382f;border-radius:4px;background:#0e120f;color:#ffb23f;text-shadow:0 0 6px rgb(255 178 63 / .6);font:14px/1 'Mulmaru',monospace;letter-spacing:.04em;white-space:nowrap;transform:translateY(-54px);box-shadow:0 0 0 1.5px #2b2620";
 
     const pos = new kakao.maps.LatLng(place.lat, place.lng);
     winnerOverlay = new kakao.maps.CustomOverlay({ position: pos, content: label, zIndex: 5 });
@@ -224,9 +254,9 @@ function renderWheel() {
 
     if (n === 0) {
         const c = document.createElementNS(SVG_NS, 'circle');
-        c.setAttribute('r', '96');
-        c.setAttribute('class', 'fill-zinc-100 stroke-zinc-300 dark:fill-zinc-900 dark:stroke-zinc-700');
-        el.rotor.append(c);
+        c.setAttribute('r', '98');
+        c.setAttribute('fill', '#3f382f');
+        el.rotor.append(c, reelHub());
         return;
     }
 
@@ -236,33 +266,62 @@ function renderWheel() {
         const shape = document.createElementNS(SVG_NS, n === 1 ? 'circle' : 'path');
 
         if (n === 1) {
-            shape.setAttribute('r', '96');
+            shape.setAttribute('r', '98');
         } else {
-            const [x1, y1] = point(i * slice, 96);
-            const [x2, y2] = point((i + 1) * slice, 96);
-            shape.setAttribute('d', `M0 0 L${x1} ${y1} A96 96 0 ${slice > 180 ? 1 : 0} 1 ${x2} ${y2} Z`);
+            const [x1, y1] = point(i * slice, 98);
+            const [x2, y2] = point((i + 1) * slice, 98);
+            shape.setAttribute('d', `M0 0 L${x1} ${y1} A98 98 0 ${slice > 180 ? 1 : 0} 1 ${x2} ${y2} Z`);
         }
-        shape.setAttribute('fill', SLICE_COLORS[i % SLICE_COLORS.length]);
-        shape.setAttribute('stroke', '#fff');
-        shape.setAttribute('stroke-width', '1.5');
+        const tone = SLICES[i % SLICES.length];
+        shape.setAttribute('fill', tone.fill);
+        shape.setAttribute('stroke', INK);
+        shape.setAttribute('stroke-width', '1.2');
 
         // 이름은 조각 가운데 방향으로. 왼쪽 절반은 뒤집어서 거꾸로 보이지 않게
         const mid = (i + 0.5) * slice;
         const flip = mid > 180;
         const text = document.createElementNS(SVG_NS, 'text');
-        text.textContent = place.name.length > 8 ? `${place.name.slice(0, 7)}…` : place.name;
+        // 가운데 릴 허브에 닿지 않게 7자까지
+        text.textContent = place.name.length > 7 ? `${place.name.slice(0, 6)}…` : place.name;
         text.setAttribute('x', flip ? '-88' : '88');
         text.setAttribute('y', '0');
         text.setAttribute('text-anchor', flip ? 'start' : 'end');
         text.setAttribute('dominant-baseline', 'middle');
-        text.setAttribute('font-size', n > 6 ? '9' : '11');
-        text.setAttribute('font-weight', '600');
-        text.setAttribute('fill', '#1c1917');
+        text.setAttribute('font-size', n > 6 ? '10' : '12');
+        text.setAttribute('font-family', "'Mulmaru', monospace");
+        text.setAttribute('fill', tone.ink);
         text.setAttribute('transform', `rotate(${flip ? mid + 90 : mid - 90})`);
 
         g.append(shape, text);
         el.rotor.append(g);
     });
+
+    el.rotor.append(reelHub());
+}
+
+/** 가운데 카세트 릴 허브: 톱니 6개. 돌림판과 같이 돈다 */
+function reelHub() {
+    const g = document.createElementNS(SVG_NS, 'g');
+    const ring = document.createElementNS(SVG_NS, 'circle');
+    ring.setAttribute('r', '19');
+    ring.setAttribute('fill', '#ddd6c4');
+    ring.setAttribute('stroke', INK);
+    ring.setAttribute('stroke-width', '3');
+    const hole = document.createElementNS(SVG_NS, 'circle');
+    hole.setAttribute('r', '11');
+    hole.setAttribute('fill', '#1d1a16');
+    g.append(ring, hole);
+    for (let k = 0; k < 6; k++) {
+        const tooth = document.createElementNS(SVG_NS, 'rect');
+        tooth.setAttribute('x', '-2.2');
+        tooth.setAttribute('y', '-12');
+        tooth.setAttribute('width', '4.4');
+        tooth.setAttribute('height', '5');
+        tooth.setAttribute('fill', '#ddd6c4');
+        tooth.setAttribute('transform', `rotate(${k * 60})`);
+        g.append(tooth);
+    }
+    return g;
 }
 
 function spin() {
@@ -297,7 +356,7 @@ function spin() {
 function showResult(place) {
     state.winner = place;
     el.resultName.textContent = place.name;
-    el.resultMeta.textContent = [place.category, `${place.distance}m`, place.phone].filter(Boolean).join(' · ');
+    el.resultMeta.textContent = [place.category, `${place.distance}m`, place.phone].filter(Boolean).join('  ·  ');
     el.resultAddress.textContent = place.address;
     el.resultLink.href = place.url || `https://map.kakao.com/link/map/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
     el.result.hidden = false;
@@ -313,43 +372,47 @@ function clearResult() {
 
 function renderCandidates() {
     const rest = available().length;
-    el.count.textContent = state.pool.length ? `${state.candidates.length} / ${rest}곳` : '';
+    el.count.textContent = state.pool.length ? `${state.candidates.length}/${rest}` : '';
 
     if (!state.candidates.length) {
         const li = document.createElement('li');
-        li.className = 'px-4 py-6 text-center text-sm text-zinc-500 dark:text-zinc-400';
-        li.textContent = state.pool.length ? '남은 후보가 없어요. 반경을 넓혀 보세요.' : '위치를 정하면 근처 식당이 여기 올라와요.';
+        li.className = 'rl-track__empty';
+        li.textContent = state.pool.length ? '남은 후보가 없어요. 반경을 넓혀 보세요' : '위치를 정하면 근처 식당이 여기 올라와요';
         el.candidates.replaceChildren(li);
         return;
     }
 
     el.candidates.replaceChildren(...state.candidates.map((place, i) => {
+        const tone = SLICES[i % SLICES.length];
         const li = document.createElement('li');
-        li.className = 'flex items-center gap-3 px-4 py-2.5';
+        li.className = 'rl-track';
 
-        const dot = document.createElement('span');
-        dot.className = 'size-3 shrink-0 rounded-full';
-        dot.style.background = SLICE_COLORS[i % SLICE_COLORS.length];
+        // 트랙 번호: 돌림판 조각과 같은 색
+        const no = document.createElement('span');
+        no.className = 'rl-track__no';
+        no.textContent = `A${i + 1}`;
+        no.style.background = tone.fill;
+        no.style.color = tone.ink;
 
         const info = document.createElement('div');
         info.className = 'min-w-0 flex-1';
         const name = document.createElement('p');
-        name.className = 'truncate text-sm font-medium';
+        name.className = 'rl-track__name truncate';
         name.textContent = place.name;
         const meta = document.createElement('p');
-        meta.className = 'truncate text-xs text-zinc-500 dark:text-zinc-400';
+        meta.className = 'rl-track__meta truncate';
         meta.textContent = `${place.category} · ${place.distance}m`;
         info.append(name, meta);
 
         const remove = document.createElement('button');
         remove.type = 'button';
-        remove.className = 'shrink-0 rounded-md px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white';
+        remove.className = 'rl-key rl-key--beige rl-key--small';
         remove.textContent = '빼기';
         remove.disabled = state.spinning;
         remove.setAttribute('aria-label', `${place.name} 후보에서 빼기`);
         remove.addEventListener('click', () => exclude(place.id));
 
-        li.append(dot, info, remove);
+        li.append(no, info, remove);
         return li;
     }));
 }

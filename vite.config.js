@@ -9,6 +9,7 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app.js',
+                'resources/css/roulette.css',
                 'resources/js/roulette.js',
             ],
             refresh: true,
