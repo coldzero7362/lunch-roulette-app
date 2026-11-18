@@ -37,6 +37,11 @@ const el = {
     resultLink: $('result-link'),
     resultExclude: $('result-exclude'),
     radiusButtons: [...document.querySelectorAll('[data-radius]')],
+    typeButtons: [...document.querySelectorAll('[data-type]')],
+    searchForm: $('search-form'),
+    searchInput: $('search-input'),
+    searchStatus: $('search-status'),
+    searchResults: $('search-results'),
 };
 
 const state = {
@@ -45,6 +50,9 @@ const state = {
     pool: [],            // 반경 안 전체 식당
     excluded: new Set(), // 사용자가 뺀 식당 id
     candidates: [],      // 돌림판에 올라간 식당
+    types: new Set(),    // 고른 종류 (비면 전체)
+    pinned: new Map(),   // 메뉴 찾기로 직접 넣은 식당 (id → place). 섞어도 빠지지 않음
+    searchResults: [],
     rotation: 0,
     spinning: false,
     winner: null,
@@ -174,7 +182,9 @@ function drawRadius() {
 
 function drawMarkers() {
     placeMarkers.forEach((m) => m.setMap(null));
-    placeMarkers = state.pool
+    const shown = new Map(state.pool.map((p) => [p.id, p]));
+    state.pinned.forEach((p, id) => shown.set(id, p));
+    placeMarkers = [...shown.values()]
         .filter((p) => !state.excluded.has(p.id))
         .map((p) => new kakao.maps.Marker({
             position: new kakao.maps.LatLng(p.lat, p.lng),
@@ -222,7 +232,8 @@ async function fetchPlaces() {
     setBusy(true);
 
     const url = new URL(root.dataset.restaurantsUrl);
-    url.search = new URLSearchParams({ lat: state.center.lat.toFixed(6), lng: state.center.lng.toFixed(6), radius: state.radius });
+    url.search = areaParams();
+    state.types.forEach((t) => url.searchParams.append('types[]', t));
 
     try {
         const res = await fetch(url, { headers: { Accept: 'application/json' } });
@@ -241,8 +252,9 @@ async function fetchPlaces() {
         drawMarkers();
         pickCandidates();
 
-        const label = state.radius >= 1000 ? `${state.radius / 1000}km` : `${state.radius}m`;
-        setStatus(state.pool.length ? `반경 ${label} 안 식당 ${state.pool.length}곳` : `반경 ${label} 안에 식당이 없어요. 반경을 넓혀 보세요.`);
+        const label = radiusLabel();
+        const kinds = state.types.size ? [...state.types].map(typeLabel).join('·') : '식당';
+        setStatus(state.pool.length ? `반경 ${label} 안 ${kinds} ${state.pool.length}곳` : `반경 ${label} 안에 ${kinds}이 없어요. 반경을 넓혀 보세요`);
     } catch (e) {
         if (requestId !== state.requestId) return;
         state.pool = [];
@@ -253,8 +265,21 @@ async function fetchPlaces() {
     }
 }
 
+function areaParams() {
+    return new URLSearchParams({ lat: state.center.lat.toFixed(6), lng: state.center.lng.toFixed(6), radius: state.radius });
+}
+
+function radiusLabel() {
+    return state.radius >= 1000 ? `${state.radius / 1000}km` : `${state.radius}m`;
+}
+
+/** 카카오 분류 이름 → 화면 이름 */
+function typeLabel(type) {
+    return type === '술집' ? '주점' : type;
+}
+
 function available() {
-    return state.pool.filter((p) => !state.excluded.has(p.id));
+    return state.pool.filter((p) => !state.excluded.has(p.id) && !state.pinned.has(p.id));
 }
 
 function shuffle(list) {
@@ -266,13 +291,17 @@ function shuffle(list) {
     return a;
 }
 
+/** 직접 넣은 식당은 그대로 두고, 남은 칸을 반경 안 식당으로 무작위 채움 */
 function pickCandidates() {
-    state.candidates = shuffle(available()).slice(0, WHEEL_SLOTS);
+    const pins = [...state.pinned.values()];
+    const rest = shuffle(available()).slice(0, Math.max(0, WHEEL_SLOTS - pins.length));
+    state.candidates = shuffle([...pins, ...rest]);
     render();
 }
 
 function exclude(id) {
     state.excluded.add(id);
+    state.pinned.delete(id);
     const index = state.candidates.findIndex((p) => p.id === id);
     if (index !== -1) {
         // 빈자리는 아직 안 올라간 식당으로 채움
@@ -283,6 +312,119 @@ function exclude(id) {
     }
     drawMarkers();
     render();
+}
+
+/** 메뉴 찾기 결과를 후보(돌림판)에 넣는다. 자리가 없으면 무작위로 올라간 후보 하나와 바꾼다 */
+function addCandidate(place) {
+    if (state.spinning) return;
+    if (state.candidates.some((p) => p.id === place.id)) return;
+
+    state.excluded.delete(place.id);
+
+    if (state.candidates.length < WHEEL_SLOTS) {
+        state.candidates.push(place);
+    } else {
+        const swappable = state.candidates
+            .map((p, i) => [p, i])
+            .filter(([p]) => !state.pinned.has(p.id));
+        if (!swappable.length) {
+            setSearchStatus('후보가 가득 찼어요. 빼기로 자리를 비워 주세요');
+            return;
+        }
+        const [, index] = swappable[Math.floor(Math.random() * swappable.length)];
+        state.candidates.splice(index, 1, place);
+    }
+
+    state.pinned.set(place.id, place);
+    clearResult();
+    drawMarkers();
+    render();
+    setSearchStatus(`${place.name}을(를) 후보에 넣었어요`);
+}
+
+/* ---------- 메뉴 찾기 ---------- */
+
+async function searchMenu(query) {
+    if (!query) return;
+    if (!state.center) {
+        setSearchStatus('먼저 위치를 정해 주세요');
+        return;
+    }
+
+    setSearchStatus(`'${query}' 찾는 중이에요`);
+    el.searchResults.replaceChildren();
+
+    const url = new URL(root.dataset.searchUrl);
+    url.search = areaParams();
+    url.searchParams.set('q', query);
+
+    try {
+        const res = await fetch(url, { headers: { Accept: 'application/json' } });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(res.status === 429 ? '요청이 너무 많아요. 잠시 후 다시 시도해 주세요' : body.message ?? '찾지 못했어요. 다시 시도해 주세요');
+        }
+        state.searchResults = body.places ?? [];
+        setSearchStatus(state.searchResults.length
+            ? `반경 ${radiusLabel()} 안 '${query}' ${state.searchResults.length}곳`
+            : `반경 ${radiusLabel()} 안에 '${query}' 파는 곳이 없어요. 반경을 넓혀 보세요`);
+        renderSearchResults();
+    } catch (e) {
+        state.searchResults = [];
+        setSearchStatus(e.message);
+    }
+}
+
+function renderSearchResults() {
+    const onWheel = new Set(state.candidates.map((p) => p.id));
+    el.searchResults.replaceChildren(...state.searchResults.map((place) => {
+        const li = document.createElement('li');
+        li.className = 'rl-track';
+
+        const info = document.createElement('div');
+        info.className = 'min-w-0 flex-1';
+        const name = document.createElement('p');
+        name.className = 'rl-track__name truncate';
+        name.textContent = place.name;
+        info.append(name, metaLine(place, false));
+
+        const add = document.createElement('button');
+        add.type = 'button';
+        const added = onWheel.has(place.id);
+        add.className = added ? 'rl-key rl-key--beige rl-key--small' : 'rl-key rl-key--small';
+        add.textContent = added ? '들어감' : '넣기';
+        add.disabled = added || state.spinning;
+        add.setAttribute('aria-label', added ? `${place.name} 이미 후보에 있음` : `${place.name} 후보에 넣기`);
+        add.addEventListener('click', () => addCandidate(place));
+
+        li.append(info, add);
+        return li;
+    }));
+}
+
+function setSearchStatus(message) {
+    el.searchStatus.textContent = message;
+}
+
+/** "[직접] [한식] 국밥 · 120m" */
+function metaLine(place, pinned) {
+    const meta = document.createElement('p');
+    meta.className = 'rl-track__meta truncate';
+    if (pinned) {
+        const pin = document.createElement('span');
+        pin.className = 'rl-tag rl-tag--pin';
+        pin.textContent = '직접';
+        meta.append(pin);
+    }
+    if (place.type) {
+        const tag = document.createElement('span');
+        tag.className = 'rl-tag';
+        tag.textContent = typeLabel(place.type);
+        meta.append(tag);
+    }
+    const detail = place.category && place.category !== place.type ? `${place.category} · ` : '';
+    meta.append(`${detail}${place.distance}m`);
+    return meta;
 }
 
 /* ---------- 돌림판 ---------- */
@@ -403,7 +545,7 @@ function spin() {
 function showResult(place) {
     state.winner = place;
     el.resultName.textContent = place.name;
-    el.resultMeta.textContent = [place.category, `${place.distance}m`, place.phone].filter(Boolean).join('  ·  ');
+    el.resultMeta.textContent = [typeLabel(place.type), place.category !== place.type ? place.category : '', `${place.distance}m`, place.phone].filter(Boolean).join('  ·  ');
     el.resultAddress.textContent = place.address;
     el.resultLink.href = place.url || `https://map.kakao.com/link/map/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
     el.result.hidden = false;
@@ -418,8 +560,8 @@ function clearResult() {
 }
 
 function renderCandidates() {
-    const rest = available().length;
-    el.count.textContent = state.pool.length ? `${state.candidates.length}/${rest}` : '';
+    const total = available().length + state.pinned.size;
+    el.count.textContent = total ? `${state.candidates.length}/${total}` : '';
 
     if (!state.candidates.length) {
         const li = document.createElement('li');
@@ -446,10 +588,7 @@ function renderCandidates() {
         const name = document.createElement('p');
         name.className = 'rl-track__name truncate';
         name.textContent = place.name;
-        const meta = document.createElement('p');
-        meta.className = 'rl-track__meta truncate';
-        meta.textContent = `${place.category} · ${place.distance}m`;
-        info.append(name, meta);
+        info.append(name, metaLine(place, state.pinned.has(place.id)));
 
         const remove = document.createElement('button');
         remove.type = 'button';
@@ -467,6 +606,7 @@ function renderCandidates() {
 function render() {
     renderWheel();
     renderCandidates();
+    if (state.searchResults.length) renderSearchResults();
     setBusy(state.spinning);
 }
 
@@ -513,6 +653,24 @@ el.resultExclude.addEventListener('click', () => {
     clearResult();
     exclude(id);
     spin();
+});
+el.typeButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+        const type = button.dataset.type;
+        if (!type) state.types.clear();               // 전체
+        else if (state.types.has(type)) state.types.delete(type);
+        else state.types.add(type);
+
+        el.typeButtons.forEach((b) => {
+            const on = b.dataset.type ? state.types.has(b.dataset.type) : state.types.size === 0;
+            b.setAttribute('aria-pressed', String(on));
+        });
+        if (state.center) fetchPlaces();
+    });
+});
+el.searchForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    searchMenu(el.searchInput.value.trim());
 });
 el.radiusButtons.forEach((button) => {
     button.addEventListener('click', () => {

@@ -287,6 +287,59 @@
 
 .rl-bank__key:focus-visible { outline: 3px solid var(--c-stripe-1); outline-offset: 2px; z-index: 1; }
 
+/* 키가 많은 묶음: 폭에 맞춰 줄어들고, 그래도 넘치면 옆으로 밀어 본다 */
+.rl-bank--wide { display: flex; align-items: flex-start; max-width: 100%; }
+.rl-bank--wide .rl-bank__slot { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.rl-bank--wide .rl-bank__key { min-width: 52px; padding-inline: 10px; flex: none; }
+
+/* ---------- 메뉴 찾기 ---------- */
+
+.rl-jcard--full { max-width: none; }
+
+.rl-search {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 12px 4px;
+    border-bottom: 1px dashed var(--c-periwinkle);
+}
+
+.rl-search__input {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    padding: 0 12px;
+    border: 3px solid var(--c-panel);
+    border-radius: 4px;
+    background: var(--c-screen);
+    color: var(--c-phosphor);
+    caret-color: var(--c-phosphor);
+    font-family: var(--font-pixel);
+    font-size: 15px;
+    text-shadow: 0 0 6px rgb(125 255 158 / .5);
+    box-shadow: inset 0 0 10px rgb(0 0 0 / .8), 0 0 0 1.5px var(--c-carbon);
+}
+
+.rl-search__input::placeholder { color: var(--c-phosphor-dim); opacity: .55; text-shadow: none; }
+.rl-search__input:focus { outline: 3px solid var(--c-stripe-1); outline-offset: 2px; }
+
+.rl-search__results { max-height: 340px; overflow-y: auto; }
+
+/* 후보 목록의 종류 배지·직접 넣은 표시 */
+.rl-tag {
+    display: inline-block;
+    margin-right: 4px;
+    padding: 0 4px;
+    border: 1px solid var(--c-panel-2);
+    border-radius: 2px;
+    font-family: var(--font-pixel);
+    font-size: 11px;
+    line-height: 16px;
+    color: var(--c-panel);
+}
+
+.rl-tag--pin { border-color: var(--c-signal); background: var(--c-signal); color: var(--c-paper); }
+
 /* ---------- CRT 화면 ---------- */
 
 .rl-crt {

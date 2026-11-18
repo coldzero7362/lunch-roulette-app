@@ -6,7 +6,7 @@
     <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ config('services.kakao.js_key') }}&autoload=false"></script>
 </head>
 <body class="rl-body">
-    <div id="roulette-app" data-restaurants-url="{{ route('restaurants.index') }}" class="rl-device">
+    <div id="roulette-app" data-restaurants-url="{{ route('restaurants.index') }}" data-search-url="{{ route('restaurants.search') }}" class="rl-device">
 
         {{-- 머리 패널 --}}
         <header class="rl-head rl-ribs">
@@ -17,13 +17,13 @@
         </header>
         <div class="rl-stripes" aria-hidden="true"></div>
 
-        <main class="grid gap-8 p-4 sm:p-6 lg:grid-cols-[1.15fr_1fr] lg:p-8">
+        <main class="grid gap-8 p-4 sm:p-6 lg:grid-cols-[1.15fr_1fr] lg:grid-rows-[auto_auto_1fr] lg:p-8">
 
             {{-- 상태 표시 CRT: 맨 위 가로 전체 --}}
             <p class="rl-crt rl-crt--readout lg:col-span-2"><span id="status" role="status" aria-live="polite">지도를 불러오는 중이에요</span><span class="rl-caret" aria-hidden="true">_</span></p>
 
             {{-- 지도 --}}
-            <section class="flex flex-col gap-4" aria-label="지도">
+            <section class="flex flex-col gap-4 lg:col-start-1 lg:row-start-2" aria-label="지도">
                 <div class="rl-bezel rl-ribs">
                     <span class="rl-screw tl" aria-hidden="true"></span>
                     <span class="rl-screw tr" aria-hidden="true"></span>
@@ -64,10 +64,22 @@
                         <span class="rl-label">SCREEN · 효과</span>
                     </div>
                 </div>
+
+                {{-- 종류: 여러 개 고를 수 있음. 아무것도 안 고르면 전체 --}}
+                <div class="rl-bank rl-bank--wide" role="group" aria-label="음식 종류">
+                    <div class="rl-bank__slot">
+                        <button type="button" class="rl-bank__key" data-type="" aria-pressed="true">전체</button>
+                        @foreach (\App\Services\KakaoLocal::TYPES as $type)
+                            <button type="button" class="rl-bank__key" data-type="{{ $type }}" aria-pressed="false">{{ $type === '술집' ? '주점' : $type }}</button>
+                        @endforeach
+                    </div>
+                    <span class="rl-label">MENU TYPE · 종류</span>
+                </div>
+
             </section>
 
             {{-- 룰렛 --}}
-            <section class="flex flex-col items-center gap-6" aria-label="룰렛">
+            <section class="flex flex-col items-center gap-6 lg:col-start-2 lg:row-span-2 lg:row-start-2" aria-label="룰렛">
                 <div class="rl-deck rl-ribs">
                     <span class="rl-screw tl" aria-hidden="true"></span>
                     <span class="rl-screw tr" aria-hidden="true"></span>
@@ -112,6 +124,23 @@
                     </div>
                     <ul id="candidates" class="m-0 list-none p-0"></ul>
                 </div>
+            </section>
+
+            {{-- 메뉴 찾기 → 후보에 넣기 (모바일: 룰렛 아래, 데스크톱: 지도 아래) --}}
+            <section class="lg:col-start-1 lg:row-start-3" aria-label="메뉴 찾기">
+                    <div class="rl-jcard rl-jcard--full">
+                        <div class="rl-stripes" style="height:8px;border-top:0" aria-hidden="true"></div>
+                        <div class="rl-jcard__head">
+                            <h2 class="rl-jcard__title">SIDE B · 메뉴 찾기</h2>
+                        </div>
+                        <form id="search-form" class="rl-search" role="search">
+                            <label for="search-input" class="sr-only">메뉴나 가게 이름</label>
+                            <input id="search-input" type="search" class="rl-search__input" placeholder="짬뽕, 제육, 쌀국수…" maxlength="30" autocomplete="off" enterkeyhint="search">
+                            <button type="submit" class="rl-key rl-key--small">찾기</button>
+                        </form>
+                        <p id="search-status" class="rl-track__empty" aria-live="polite">메뉴를 찾아서 후보에 넣어 보세요</p>
+                        <ul id="search-results" class="rl-search__results m-0 list-none p-0"></ul>
+                    </div>
             </section>
         </main>
 
