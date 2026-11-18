@@ -19,6 +19,9 @@
 
         <main class="grid gap-8 p-4 sm:p-6 lg:grid-cols-[1.15fr_1fr] lg:p-8">
 
+            {{-- 상태 표시 CRT: 맨 위 가로 전체 --}}
+            <p class="rl-crt rl-crt--readout lg:col-span-2"><span id="status" role="status" aria-live="polite">지도를 불러오는 중이에요</span><span class="rl-caret" aria-hidden="true">_</span></p>
+
             {{-- 지도 --}}
             <section class="flex flex-col gap-4" aria-label="지도">
                 <div class="rl-bezel rl-ribs">
@@ -59,9 +62,6 @@
                             <button id="crt-toggle" type="button" class="rl-bank__key" aria-pressed="true">CRT</button>
                         </div>
                         <span class="rl-label">SCREEN · 효과</span>
-                    </div>
-                    <div class="min-w-0 flex-1 basis-56">
-                        <p id="status" class="rl-crt rl-crt--readout" role="status" aria-live="polite">지도를 불러오는 중이에요</p>
                     </div>
                 </div>
             </section>

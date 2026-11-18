@@ -311,13 +311,20 @@
 }
 
 .rl-crt--readout {
-    padding: 8px 12px;
+    margin: 0;
+    padding: 10px 16px;
     font-family: var(--font-pixel-mono);
-    font-size: 13px;
+    font-size: 15px;
     line-height: 1.5;
-    min-height: 44px;
+    min-height: 50px;
     display: flex;
     align-items: center;
+}
+
+/* 깜빡이는 입력 커서 (::after 는 주사선이 쓰므로 따로 둔다) */
+.rl-caret {
+    margin-left: 4px;
+    animation: rl-blink 1s steps(1) infinite;
 }
 
 .rl-crt--readout::before {
@@ -579,6 +586,7 @@
 
 @media (prefers-reduced-motion: reduce) {
     .rl-cursor,
+    .rl-caret,
     .rl-crt-fx,
     .rl-crt-fx::after { animation: none; }
 }
