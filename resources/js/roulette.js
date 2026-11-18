@@ -7,8 +7,12 @@ const SLOTS_MIN = 2;  // 돌림판 칸 수 범위
 const SLOTS_MAX = 12;
 const SLOTS_DEFAULT = 8;
 const SLOTS_KEY = 'lunch-roulette:slots';
+const PLACE_KEY = 'lunch-roulette:place'; // 직접 고른 위치 (검색·지도 클릭)
+const ACCURACY_WARN_M = 1000;             // 기기 위치 오차가 이보다 크면 안내
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }; // 위치를 못 받을 때: 서울시청
-const SPIN_MS = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 600 : 4500;
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SPIN_MS = REDUCED_MOTION ? 600 : 4500;
+const CLOSEUP_LEVEL = 2; // 당첨 가게 클로즈업 (약 30m 축척, 묶음이 풀려 골목까지 보임)
 // 카세트 스킨: 70년대 색 띠와 철판·라벨 색을 번갈아. ink = 그 위 글자색 (대비 확보)
 const SLICES = [
     { fill: '#f2b632', ink: '#2b2620' },
@@ -50,10 +54,14 @@ const el = {
     searchInput: $('search-input'),
     searchStatus: $('search-status'),
     searchResults: $('search-results'),
+    locForm: $('loc-form'),
+    locInput: $('loc-input'),
+    locResults: $('loc-results'),
 };
 
 const state = {
     center: null,
+    place: null,         // 지금 중심이 어디서 왔는지 { label, accuracy }
     radius: 500,
     pool: [],            // 반경 안 전체 식당
     excluded: new Set(), // 사용자가 뺀 식당 id
@@ -68,7 +76,7 @@ const state = {
     requestId: 0,
 };
 
-let map, centerOverlay, radiusCircle, winnerOverlay;
+let map, centerOverlay, radiusCircle, winnerOverlay, winnerMarker, clusterer;
 let placeMarkers = [];
 
 /* ---------- 지도 ---------- */
@@ -84,13 +92,14 @@ function initMap() {
             center: new kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng),
             level: 4,
         });
+        clusterer = createClusterer();
 
         kakao.maps.event.addListener(map, 'click', (e) => {
-            setCenter(e.latLng.getLat(), e.latLng.getLng());
+            choosePlace(e.latLng.getLat(), e.latLng.getLng(), '지도에서 고른 곳');
         });
 
         if (pendingCenter) {
-            setCenter(pendingCenter.lat, pendingCenter.lng);
+            setCenter(pendingCenter.lat, pendingCenter.lng, pendingCenter.place);
             pendingCenter = null;
         }
     });
@@ -128,7 +137,7 @@ async function locate() {
             setStatus('정확한 위치를 못 찾아서 대략적인 위치로 다시 찾는 중이에요');
             pos = await getPosition({ enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
         }
-        applyCenter(pos.coords.latitude, pos.coords.longitude);
+        applyCenter(pos.coords.latitude, pos.coords.longitude, { label: '현재 위치', accuracy: pos.coords.accuracy });
     } catch (e) {
         setStatus(locateErrorMessage(e));
     } finally {
@@ -146,16 +155,18 @@ function locateErrorMessage(e) {
     }
 }
 
-function applyCenter(lat, lng) {
+function applyCenter(lat, lng, place = null) {
     if (!map) {
-        pendingCenter = { lat, lng };
+        pendingCenter = { lat, lng, place };
         return;
     }
-    setCenter(lat, lng);
+    setCenter(lat, lng, place);
 }
 
-function setCenter(lat, lng) {
+/** @param place {label, accuracy} 상태 표시에 쓰는 출처 정보 */
+function setCenter(lat, lng, place = null) {
     state.center = { lat, lng };
+    state.place = place;
     const pos = new kakao.maps.LatLng(lat, lng);
 
     centerOverlay?.setMap(null);
@@ -186,11 +197,63 @@ function drawRadius() {
         fillOpacity: 0.07,
     });
     radiusCircle.setMap(map);
-    map.setLevel(state.radius >= 1000 ? 6 : state.radius >= 500 ? 5 : 4);
+    map.setLevel(radiusLevel());
+}
+
+/** 반경 원이 다 보이는 지도 레벨 */
+function radiusLevel() {
+    return state.radius >= 1000 ? 6 : state.radius >= 500 ? 5 : 4;
+}
+
+/** 당첨 가게로 이동한 뒤 가까이 확대 */
+function closeUp(pos) {
+    if (REDUCED_MOTION) {
+        map.setLevel(CLOSEUP_LEVEL);
+        map.setCenter(pos);
+        return;
+    }
+    map.panTo(pos);
+    // 이동이 끝난 뒤 지도 가운데(=가게)를 기준으로 부드럽게 확대
+    setTimeout(() => map.setLevel(CLOSEUP_LEVEL, { animate: { duration: 600 } }), 450);
+}
+
+/** 클로즈업했던 지도를 반경 전체가 보이게 되돌림 */
+function restoreView() {
+    if (!map || !state.center) return;
+    const center = new kakao.maps.LatLng(state.center.lat, state.center.lng);
+    if (REDUCED_MOTION) {
+        map.setLevel(radiusLevel());
+        map.setCenter(center);
+        return;
+    }
+    // 확대·이동 애니메이션을 동시에 걸면 이동이 묻히므로 축소가 끝난 뒤 이동
+    map.setLevel(radiusLevel(), { animate: { duration: 400 } });
+    setTimeout(() => map.panTo(center), 420);
+}
+
+/**
+ * 가까운 마커는 개수가 적힌 원 하나로 묶는다 (번화가는 반경 안 식당이 수백 곳이라 핀이 겹침).
+ * 지도를 확대하면(레벨 3 이하) 낱개 핀으로 풀린다.
+ */
+function createClusterer() {
+    const style = (size, bg, font) => ({
+        width: `${size}px`, height: `${size}px`, lineHeight: `${size - 4}px`,
+        background: bg, color: '#2b2620', border: '2px solid #2b2620', borderRadius: '50%',
+        textAlign: 'center', font: `${font}px/${size - 4}px 'Mulmaru Mono', monospace`,
+        boxShadow: '0 3px 0 rgb(43 38 32 / .45)',
+    });
+    return new kakao.maps.MarkerClusterer({
+        map,
+        averageCenter: true,
+        minLevel: 4,
+        gridSize: 56,
+        calculator: [10, 40],
+        styles: [style(34, '#f2b632', 13), style(42, '#e0662a', 14), style(50, '#c8442a', 15)],
+    });
 }
 
 function drawMarkers() {
-    placeMarkers.forEach((m) => m.setMap(null));
+    if (!map) return;
     const shown = new Map(state.pool.map((p) => [p.id, p]));
     state.pinned.forEach((p, id) => shown.set(id, p));
     placeMarkers = [...shown.values()]
@@ -199,8 +262,9 @@ function drawMarkers() {
             position: new kakao.maps.LatLng(p.lat, p.lng),
             title: p.name,
             image: markerImage(),
-            map,
         }));
+    clusterer.clear();
+    clusterer.addMarkers(placeMarkers);
 }
 
 let pin;
@@ -221,14 +285,17 @@ function markerImage() {
 
 function highlightWinner(place) {
     winnerOverlay?.setMap(null);
+    winnerMarker?.setMap(null);
     const label = document.createElement('div');
     label.textContent = `▶ ${place.name}`;
     label.style.cssText = "padding:7px 10px;border:2px solid #3f382f;border-radius:4px;background:#0e120f;color:#ffb23f;text-shadow:0 0 6px rgb(255 178 63 / .6);font:14px/1 'Mulmaru',monospace;letter-spacing:.04em;white-space:nowrap;transform:translateY(-54px);box-shadow:0 0 0 1.5px #2b2620";
 
     const pos = new kakao.maps.LatLng(place.lat, place.lng);
+    // 당첨 핀은 묶음(클러스터)에 넣지 않고 따로 띄워 항상 보이게
+    winnerMarker = new kakao.maps.Marker({ position: pos, title: place.name, image: markerImage(), zIndex: 4, map });
     winnerOverlay = new kakao.maps.CustomOverlay({ position: pos, content: label, zIndex: 5 });
     winnerOverlay.setMap(map);
-    map.panTo(pos);
+    closeUp(pos);
 }
 
 /* ---------- 데이터 ---------- */
@@ -263,7 +330,13 @@ async function fetchPlaces() {
 
         const label = radiusLabel();
         const kinds = state.types.size ? [...state.types].map(typeLabel).join('·') : '식당';
-        setStatus(state.pool.length ? `반경 ${label} 안 ${kinds} ${state.pool.length}곳` : `반경 ${label} 안에 ${kinds}이 없어요. 반경을 넓혀 보세요`);
+        const where = state.place?.label ? `${state.place.label} ` : '';
+        let message = state.pool.length ? `${where}반경 ${label} 안 ${kinds} ${state.pool.length}곳` : `${where}반경 ${label} 안에 ${kinds}이 없어요. 반경을 넓혀 보세요`;
+        const accuracy = state.place?.accuracy;
+        if (accuracy > ACCURACY_WARN_M) {
+            message += ` · 위치 오차가 약 ${(accuracy / 1000).toFixed(1)}km예요. 위치 찾기로 정해 보세요`;
+        }
+        setStatus(message);
     } catch (e) {
         if (requestId !== state.requestId) return;
         state.pool = [];
@@ -403,6 +476,90 @@ function addCandidate(place) {
     drawMarkers();
     render();
     setSearchStatus(`${place.name}을(를) 후보에 넣었어요`);
+}
+
+/* ---------- 위치 찾기 · 기억 ---------- */
+
+/** 직접 고른 위치: 중심으로 쓰고 다음 방문 때도 여기서 시작 */
+function choosePlace(lat, lng, label) {
+    try { localStorage.setItem(PLACE_KEY, JSON.stringify({ lat, lng, label })); } catch { /* 저장 못 해도 동작 */ }
+    applyCenter(lat, lng, { label });
+}
+
+function savedPlace() {
+    try {
+        const p = JSON.parse(localStorage.getItem(PLACE_KEY) ?? 'null');
+        return p && Number.isFinite(p.lat) && Number.isFinite(p.lng) ? p : null;
+    } catch {
+        return null;
+    }
+}
+
+function forgetPlace() {
+    try { localStorage.removeItem(PLACE_KEY); } catch { /* 무시 */ }
+}
+
+function hideLocResults() {
+    el.locResults.hidden = true;
+    el.locResults.replaceChildren();
+}
+
+async function searchLocation(query) {
+    if (!query) return;
+
+    const note = (text) => {
+        const li = document.createElement('li');
+        li.className = 'rl-locate__note';
+        li.textContent = text;
+        el.locResults.replaceChildren(li);
+        el.locResults.hidden = false;
+    };
+    note(`'${query}' 찾는 중이에요`);
+
+    const url = new URL(root.dataset.locationsUrl);
+    url.searchParams.set('q', query);
+
+    try {
+        const res = await fetch(url, { headers: { Accept: 'application/json' } });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(res.status === 429 ? '요청이 너무 많아요. 잠시 후 다시 시도해 주세요' : body.message ?? '위치를 찾지 못했어요');
+
+        const locations = body.locations ?? [];
+        if (!locations.length) {
+            note(`'${query}'에 맞는 곳이 없어요. 역이나 건물 이름, 도로명 주소로 찾아 보세요`);
+            return;
+        }
+
+        el.locResults.replaceChildren(...locations.map((loc) => {
+            const li = document.createElement('li');
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'rl-locate__item';
+
+            const name = document.createElement('p');
+            name.className = 'rl-track__name truncate';
+            name.textContent = loc.name;
+
+            const meta = document.createElement('p');
+            meta.className = 'rl-track__meta truncate';
+            const tag = document.createElement('span');
+            tag.className = 'rl-tag';
+            tag.textContent = loc.kind === 'address' ? '주소' : loc.kind || '장소';
+            meta.append(tag, loc.kind === 'address' ? '' : loc.address);
+
+            button.append(name, meta);
+            button.addEventListener('click', () => {
+                el.locInput.value = loc.name;
+                hideLocResults();
+                choosePlace(loc.lat, loc.lng, loc.name);
+            });
+            li.append(button);
+            return li;
+        }));
+        el.locResults.hidden = false;
+    } catch (e) {
+        note(e.message);
+    }
 }
 
 /* ---------- 메뉴 찾기 ---------- */
@@ -618,9 +775,11 @@ function showResult(place) {
 }
 
 function clearResult() {
+    if (state.winner) restoreView(); // 클로즈업 상태였으면 반경 전체로
     state.winner = null;
     el.result.hidden = true;
     winnerOverlay?.setMap(null);
+    winnerMarker?.setMap(null);
 }
 
 function renderCandidates() {
@@ -719,7 +878,20 @@ el.auto.addEventListener('click', autoFill);
 el.clear.addEventListener('click', clearCandidates);
 el.slotsDown.addEventListener('click', () => setSlots(state.slots - 1));
 el.slotsUp.addEventListener('click', () => setSlots(state.slots + 1));
-el.locate.addEventListener('click', locate);
+el.locate.addEventListener('click', () => {
+    forgetPlace(); // 기기 위치로 돌아감
+    locate();
+});
+el.locForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    searchLocation(el.locInput.value.trim());
+});
+el.locInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hideLocResults();
+});
+document.addEventListener('click', (e) => {
+    if (!el.locResults.hidden && !e.target.closest('.rl-locate')) hideLocResults();
+});
 el.resultExclude.addEventListener('click', () => {
     if (!state.winner) return;
     const id = state.winner.id;
@@ -759,4 +931,7 @@ el.radiusButtons.forEach((button) => {
 initSlots();
 initCrt();
 initMap();
-locate(); // 페이지를 열자마자 위치 권한을 묻고 현재 위치로
+// 직접 고른 위치가 있으면 거기서 시작 (PC는 기기 위치가 부정확한 경우가 많음). 없으면 바로 현재 위치를 물음
+const saved = savedPlace();
+if (saved) applyCenter(saved.lat, saved.lng, { label: saved.label });
+else locate();

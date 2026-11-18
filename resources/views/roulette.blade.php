@@ -3,10 +3,10 @@
 <head>
     @include('partials.head', ['title' => '점심 룰렛'])
     @vite(['resources/css/roulette.css', 'resources/js/roulette.js'])
-    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ config('services.kakao.js_key') }}&autoload=false"></script>
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ config('services.kakao.js_key') }}&autoload=false&libraries=clusterer"></script>
 </head>
 <body class="rl-body">
-    <div id="roulette-app" data-restaurants-url="{{ route('restaurants.index') }}" data-search-url="{{ route('restaurants.search') }}" class="rl-device">
+    <div id="roulette-app" data-restaurants-url="{{ route('restaurants.index') }}" data-search-url="{{ route('restaurants.search') }}" data-locations-url="{{ route('locations.search') }}" class="rl-device">
 
         {{-- 머리 패널 --}}
         <header class="rl-head rl-ribs">
@@ -24,6 +24,16 @@
 
             {{-- 지도 --}}
             <section class="flex flex-col gap-4 lg:col-start-1 lg:row-start-2" aria-label="지도">
+                {{-- 위치 찾기: PC처럼 현재 위치가 부정확할 때 주소·역·건물로 정함 --}}
+                <div class="rl-locate">
+                    <form id="loc-form" class="rl-locate__bar" role="search">
+                        <label for="loc-input" class="rl-label rl-locate__label">LOCATE · 위치</label>
+                        <input id="loc-input" type="search" class="rl-search__input" placeholder="역, 건물, 주소로 위치 찾기" maxlength="50" autocomplete="off" enterkeyhint="search">
+                        <button type="submit" class="rl-key rl-key--small">찾기</button>
+                    </form>
+                    <ul id="loc-results" class="rl-locate__results" hidden></ul>
+                </div>
+
                 <div class="rl-bezel rl-ribs">
                     <span class="rl-screw tl" aria-hidden="true"></span>
                     <span class="rl-screw tr" aria-hidden="true"></span>
