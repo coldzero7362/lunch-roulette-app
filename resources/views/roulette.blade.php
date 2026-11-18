@@ -120,7 +120,17 @@
                     <div class="rl-stripes" style="height:8px;border-top:0" aria-hidden="true"></div>
                     <div class="rl-jcard__head">
                         <h2 class="rl-jcard__title">SIDE A · 후보 <span id="candidate-count" class="rl-jcard__count"></span></h2>
+                        {{-- 돌림판 칸 수 --}}
+                        <div class="rl-stepper" role="group" aria-label="후보 수">
+                            <button id="slots-down" type="button" class="rl-key rl-key--beige rl-key--tiny" aria-label="후보 수 줄이기">−</button>
+                            <output id="slots" class="rl-counter" aria-live="polite">08</output>
+                            <button id="slots-up" type="button" class="rl-key rl-key--beige rl-key--tiny" aria-label="후보 수 늘리기">+</button>
+                        </div>
+                    </div>
+                    <div class="rl-jcard__tools">
+                        <button id="auto" type="button" class="rl-key rl-key--small" disabled>자동</button>
                         <button id="shuffle" type="button" class="rl-key rl-key--beige rl-key--small" disabled>섞기</button>
+                        <button id="clear" type="button" class="rl-key rl-key--beige rl-key--small" disabled>비우기</button>
                     </div>
                     <ul id="candidates" class="m-0 list-none p-0"></ul>
                 </div>

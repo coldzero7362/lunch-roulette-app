@@ -3,7 +3,10 @@
  * 식당 데이터는 서버(/restaurants)가 카카오 로컬 API로 조회한다. REST 키는 브라우저에 노출하지 않는다.
  */
 
-const WHEEL_SLOTS = 8; // 돌림판에 올리는 후보 수
+const SLOTS_MIN = 2;  // 돌림판 칸 수 범위
+const SLOTS_MAX = 12;
+const SLOTS_DEFAULT = 8;
+const SLOTS_KEY = 'lunch-roulette:slots';
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }; // 위치를 못 받을 때: 서울시청
 const SPIN_MS = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 600 : 4500;
 // 카세트 스킨: 70년대 색 띠와 철판·라벨 색을 번갈아. ink = 그 위 글자색 (대비 확보)
@@ -27,6 +30,11 @@ const el = {
     locate: $('locate'),
     spin: $('spin'),
     shuffle: $('shuffle'),
+    auto: $('auto'),
+    clear: $('clear'),
+    slots: $('slots'),
+    slotsDown: $('slots-down'),
+    slotsUp: $('slots-up'),
     rotor: $('wheel-rotor'),
     candidates: $('candidates'),
     count: $('candidate-count'),
@@ -50,6 +58,7 @@ const state = {
     pool: [],            // 반경 안 전체 식당
     excluded: new Set(), // 사용자가 뺀 식당 id
     candidates: [],      // 돌림판에 올라간 식당
+    slots: SLOTS_DEFAULT, // 돌림판 칸 수
     types: new Set(),    // 고른 종류 (비면 전체)
     pinned: new Map(),   // 메뉴 찾기로 직접 넣은 식당 (id → place). 섞어도 빠지지 않음
     searchResults: [],
@@ -249,8 +258,8 @@ async function fetchPlaces() {
 
         state.pool = body.places ?? [];
         clearResult();
+        dropAutoCandidates();
         drawMarkers();
-        pickCandidates();
 
         const label = radiusLabel();
         const kinds = state.types.size ? [...state.types].map(typeLabel).join('·') : '식당';
@@ -258,7 +267,7 @@ async function fetchPlaces() {
     } catch (e) {
         if (requestId !== state.requestId) return;
         state.pool = [];
-        pickCandidates();
+        dropAutoCandidates();
         setStatus(e.message);
     } finally {
         if (requestId === state.requestId) setBusy(false);
@@ -291,27 +300,81 @@ function shuffle(list) {
     return a;
 }
 
-/** 직접 넣은 식당은 그대로 두고, 남은 칸을 반경 안 식당으로 무작위 채움 */
-function pickCandidates() {
-    const pins = [...state.pinned.values()];
-    const rest = shuffle(available()).slice(0, Math.max(0, WHEEL_SLOTS - pins.length));
+function onWheel() {
+    return new Set(state.candidates.map((p) => p.id));
+}
+
+/** 반경 안 식당 중 아직 안 올라간 곳 (뺀 곳 제외) */
+function spare() {
+    const ids = onWheel();
+    return available().filter((p) => !ids.has(p.id));
+}
+
+/** 자동: 빈 칸을 반경 안 식당으로 무작위 채움 */
+function autoFill() {
+    const need = state.slots - state.candidates.length;
+    if (need <= 0) return;
+    const picks = shuffle(spare()).slice(0, need);
+    state.candidates.push(...picks);
+    clearResult();
+    render();
+    if (picks.length < need) setStatus(picks.length ? `남은 식당이 ${picks.length}곳뿐이라 다 채우지 못했어요` : '채울 식당이 없어요. 반경이나 종류를 바꿔 보세요');
+}
+
+/** 섞기: 직접 넣은 곳은 두고, 자동으로 들어간 곳만 새로 뽑아 순서도 섞음 */
+function reshuffle() {
+    const pins = state.candidates.filter((p) => state.pinned.has(p.id));
+    const autoCount = state.candidates.length - pins.length;
+    const rest = shuffle(available()).slice(0, autoCount);
     state.candidates = shuffle([...pins, ...rest]);
+    clearResult();
+    render();
+}
+
+function clearCandidates() {
+    state.candidates = [];
+    state.pinned.clear();
+    clearResult();
+    drawMarkers();
+    render();
+}
+
+/** 다시 검색하면 자동으로 들어간 곳은 내리고 직접 넣은 곳만 남김 */
+function dropAutoCandidates() {
+    state.candidates = state.candidates.filter((p) => state.pinned.has(p.id));
     render();
 }
 
 function exclude(id) {
     state.excluded.add(id);
     state.pinned.delete(id);
-    const index = state.candidates.findIndex((p) => p.id === id);
-    if (index !== -1) {
-        // 빈자리는 아직 안 올라간 식당으로 채움
-        const onWheel = new Set(state.candidates.map((p) => p.id));
-        const replacement = shuffle(available().filter((p) => !onWheel.has(p.id)))[0];
-        if (replacement) state.candidates.splice(index, 1, replacement);
-        else state.candidates.splice(index, 1);
-    }
+    state.candidates = state.candidates.filter((p) => p.id !== id);
     drawMarkers();
     render();
+}
+
+function setSlots(n, save = true) {
+    state.slots = Math.min(SLOTS_MAX, Math.max(SLOTS_MIN, n));
+    // 줄이면 자동으로 들어간 곳부터, 그다음 나중에 넣은 곳부터 내림
+    while (state.candidates.length > state.slots) {
+        const autoIndex = state.candidates.findLastIndex((p) => !state.pinned.has(p.id));
+        const index = autoIndex !== -1 ? autoIndex : state.candidates.length - 1;
+        const [removed] = state.candidates.splice(index, 1);
+        state.pinned.delete(removed.id);
+    }
+    el.slots.textContent = String(state.slots).padStart(2, '0');
+    if (save) {
+        try { localStorage.setItem(SLOTS_KEY, String(state.slots)); } catch { /* 저장 못 해도 동작 */ }
+    }
+    clearResult();
+    drawMarkers();
+    render();
+}
+
+function initSlots() {
+    let saved = NaN;
+    try { saved = Number(localStorage.getItem(SLOTS_KEY)); } catch { /* 비공개 모드 등 */ }
+    setSlots(Number.isFinite(saved) && saved > 0 ? saved : SLOTS_DEFAULT, false);
 }
 
 /** 메뉴 찾기 결과를 후보(돌림판)에 넣는다. 자리가 없으면 무작위로 올라간 후보 하나와 바꾼다 */
@@ -321,14 +384,14 @@ function addCandidate(place) {
 
     state.excluded.delete(place.id);
 
-    if (state.candidates.length < WHEEL_SLOTS) {
+    if (state.candidates.length < state.slots) {
         state.candidates.push(place);
     } else {
         const swappable = state.candidates
             .map((p, i) => [p, i])
             .filter(([p]) => !state.pinned.has(p.id));
         if (!swappable.length) {
-            setSearchStatus('후보가 가득 찼어요. 빼기로 자리를 비워 주세요');
+            setSearchStatus('후보가 가득 찼어요. 후보 수를 늘리거나 빼기로 자리를 비워 주세요');
             return;
         }
         const [, index] = swappable[Math.floor(Math.random() * swappable.length)];
@@ -471,12 +534,13 @@ function renderWheel() {
         const flip = mid > 180;
         const text = document.createElementNS(SVG_NS, 'text');
         // 가운데 릴 허브에 닿지 않게 7자까지
-        text.textContent = place.name.length > 7 ? `${place.name.slice(0, 6)}…` : place.name;
+        const maxChars = n > 8 ? 5 : 7;
+        text.textContent = place.name.length > maxChars ? `${place.name.slice(0, maxChars - 1)}…` : place.name;
         text.setAttribute('x', flip ? '-88' : '88');
         text.setAttribute('y', '0');
         text.setAttribute('text-anchor', flip ? 'start' : 'end');
         text.setAttribute('dominant-baseline', 'middle');
-        text.setAttribute('font-size', n > 6 ? '10' : '12');
+        text.setAttribute('font-size', n > 8 ? '8.5' : n > 6 ? '10' : '12');
         text.setAttribute('font-family', "'Mulmaru', monospace");
         text.setAttribute('fill', tone.ink);
         text.setAttribute('transform', `rotate(${flip ? mid + 90 : mid - 90})`);
@@ -560,13 +624,12 @@ function clearResult() {
 }
 
 function renderCandidates() {
-    const total = available().length + state.pinned.size;
-    el.count.textContent = total ? `${state.candidates.length}/${total}` : '';
+    el.count.textContent = `${state.candidates.length}/${state.slots}`;
 
     if (!state.candidates.length) {
         const li = document.createElement('li');
         li.className = 'rl-track__empty';
-        li.textContent = state.pool.length ? '남은 후보가 없어요. 반경을 넓혀 보세요' : '위치를 정하면 근처 식당이 여기 올라와요';
+        li.textContent = state.pool.length ? '자동으로 채우거나 메뉴를 찾아 넣어 보세요' : '위치를 정하면 자동으로 채우거나 메뉴를 찾아 넣을 수 있어요';
         el.candidates.replaceChildren(li);
         return;
     }
@@ -612,8 +675,14 @@ function render() {
 
 function setBusy(busy) {
     const empty = state.candidates.length === 0;
+    const autoOnWheel = state.candidates.some((p) => !state.pinned.has(p.id));
+    const hasSpare = spare().length > 0;
     el.spin.disabled = busy || empty;
-    el.shuffle.disabled = busy || available().length <= state.candidates.length;
+    el.auto.disabled = busy || state.candidates.length >= state.slots || !hasSpare;
+    el.shuffle.disabled = busy || state.candidates.length < 2 && !(autoOnWheel && hasSpare);
+    el.clear.disabled = busy || empty;
+    el.slotsDown.disabled = busy || state.slots <= SLOTS_MIN;
+    el.slotsUp.disabled = busy || state.slots >= SLOTS_MAX;
     el.candidates.querySelectorAll('button').forEach((b) => { b.disabled = busy; });
 }
 
@@ -645,7 +714,11 @@ function initCrt() {
 /* ---------- 이벤트 ---------- */
 
 el.spin.addEventListener('click', spin);
-el.shuffle.addEventListener('click', () => { clearResult(); pickCandidates(); });
+el.shuffle.addEventListener('click', reshuffle);
+el.auto.addEventListener('click', autoFill);
+el.clear.addEventListener('click', clearCandidates);
+el.slotsDown.addEventListener('click', () => setSlots(state.slots - 1));
+el.slotsUp.addEventListener('click', () => setSlots(state.slots + 1));
 el.locate.addEventListener('click', locate);
 el.resultExclude.addEventListener('click', () => {
     if (!state.winner) return;
@@ -683,7 +756,7 @@ el.radiusButtons.forEach((button) => {
     });
 });
 
-render();
+initSlots();
 initCrt();
 initMap();
 locate(); // 페이지를 열자마자 위치 권한을 묻고 현재 위치로
