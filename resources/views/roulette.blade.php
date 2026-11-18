@@ -3,7 +3,7 @@
 <head>
     @include('partials.head', ['title' => '점심 룰렛'])
     @vite(['resources/css/roulette.css', 'resources/js/roulette.js'])
-    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ config('services.kakao.js_key') }}&autoload=false"></script>
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ config('services.kakao.js_key') }}&autoload=false&libraries=clusterer"></script>
 </head>
 <body class="rl-body">
     <div id="roulette-app" data-restaurants-url="{{ route('restaurants.index') }}" data-search-url="{{ route('restaurants.search') }}" data-locations-url="{{ route('locations.search') }}" class="rl-device">

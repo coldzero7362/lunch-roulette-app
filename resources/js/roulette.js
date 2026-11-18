@@ -74,7 +74,7 @@ const state = {
     requestId: 0,
 };
 
-let map, centerOverlay, radiusCircle, winnerOverlay;
+let map, centerOverlay, radiusCircle, winnerOverlay, winnerMarker, clusterer;
 let placeMarkers = [];
 
 /* ---------- 지도 ---------- */
@@ -90,6 +90,7 @@ function initMap() {
             center: new kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng),
             level: 4,
         });
+        clusterer = createClusterer();
 
         kakao.maps.event.addListener(map, 'click', (e) => {
             choosePlace(e.latLng.getLat(), e.latLng.getLng(), '지도에서 고른 곳');
@@ -197,8 +198,29 @@ function drawRadius() {
     map.setLevel(state.radius >= 1000 ? 6 : state.radius >= 500 ? 5 : 4);
 }
 
+/**
+ * 가까운 마커는 개수가 적힌 원 하나로 묶는다 (번화가는 반경 안 식당이 수백 곳이라 핀이 겹침).
+ * 지도를 확대하면(레벨 3 이하) 낱개 핀으로 풀린다.
+ */
+function createClusterer() {
+    const style = (size, bg, font) => ({
+        width: `${size}px`, height: `${size}px`, lineHeight: `${size - 4}px`,
+        background: bg, color: '#2b2620', border: '2px solid #2b2620', borderRadius: '50%',
+        textAlign: 'center', font: `${font}px/${size - 4}px 'Mulmaru Mono', monospace`,
+        boxShadow: '0 3px 0 rgb(43 38 32 / .45)',
+    });
+    return new kakao.maps.MarkerClusterer({
+        map,
+        averageCenter: true,
+        minLevel: 4,
+        gridSize: 56,
+        calculator: [10, 40],
+        styles: [style(34, '#f2b632', 13), style(42, '#e0662a', 14), style(50, '#c8442a', 15)],
+    });
+}
+
 function drawMarkers() {
-    placeMarkers.forEach((m) => m.setMap(null));
+    if (!map) return;
     const shown = new Map(state.pool.map((p) => [p.id, p]));
     state.pinned.forEach((p, id) => shown.set(id, p));
     placeMarkers = [...shown.values()]
@@ -207,8 +229,9 @@ function drawMarkers() {
             position: new kakao.maps.LatLng(p.lat, p.lng),
             title: p.name,
             image: markerImage(),
-            map,
         }));
+    clusterer.clear();
+    clusterer.addMarkers(placeMarkers);
 }
 
 let pin;
@@ -229,11 +252,14 @@ function markerImage() {
 
 function highlightWinner(place) {
     winnerOverlay?.setMap(null);
+    winnerMarker?.setMap(null);
     const label = document.createElement('div');
     label.textContent = `▶ ${place.name}`;
     label.style.cssText = "padding:7px 10px;border:2px solid #3f382f;border-radius:4px;background:#0e120f;color:#ffb23f;text-shadow:0 0 6px rgb(255 178 63 / .6);font:14px/1 'Mulmaru',monospace;letter-spacing:.04em;white-space:nowrap;transform:translateY(-54px);box-shadow:0 0 0 1.5px #2b2620";
 
     const pos = new kakao.maps.LatLng(place.lat, place.lng);
+    // 당첨 핀은 묶음(클러스터)에 넣지 않고 따로 띄워 항상 보이게
+    winnerMarker = new kakao.maps.Marker({ position: pos, title: place.name, image: markerImage(), zIndex: 4, map });
     winnerOverlay = new kakao.maps.CustomOverlay({ position: pos, content: label, zIndex: 5 });
     winnerOverlay.setMap(map);
     map.panTo(pos);
@@ -719,6 +745,7 @@ function clearResult() {
     state.winner = null;
     el.result.hidden = true;
     winnerOverlay?.setMap(null);
+    winnerMarker?.setMap(null);
 }
 
 function renderCandidates() {

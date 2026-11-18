@@ -65,21 +65,48 @@ class RestaurantSearchTest extends TestCase
 
         Http::assertSent(fn (Request $request) => $request->hasHeader('Authorization', 'KakaoAK test-rest-key')
             && $request['category_group_code'] === 'FD6'
-            && (int) $request['radius'] === 500
-            && $request['sort'] === 'distance');
+            && isset($request['rect']));
     }
 
     public function test_follows_pages_until_kakao_reports_end(): void
     {
-        Http::fakeSequence('dapi.kakao.com/*')
-            ->push(['meta' => ['is_end' => false], 'documents' => [$this->kakaoDocument('1', 'A', 10)]])
-            ->push(['meta' => ['is_end' => true], 'documents' => [$this->kakaoDocument('2', 'B', 20)]]);
+        // 칸마다 1쪽은 '더 있음', 2쪽은 '끝'
+        Http::fake(fn (Request $r) => Http::response([
+            'meta' => ['is_end' => (int) $r['page'] === 2],
+            'documents' => [$this->kakaoDocument(md5($r['rect'].$r['page']), 'A', 10)],
+        ]));
 
+        // 300m → 2×2 칸, 칸마다 2쪽
         $this->getJson(route('restaurants.index', ['lat' => 37.5, 'lng' => 127.0, 'radius' => 300]))
             ->assertOk()
-            ->assertJsonCount(2, 'places');
+            ->assertJsonCount(8, 'places');
 
-        Http::assertSentCount(2);
+        Http::assertSentCount(8);
+    }
+
+    public function test_searches_the_whole_radius_in_tiles_and_drops_corners_outside_it(): void
+    {
+        // 식당이 빽빽해도 반경 전체가 채워지도록 3×3 칸으로 나눠 검색 (500m)
+        Http::fake(fn (Request $r) => Http::response([
+            'meta' => ['is_end' => true],
+            'documents' => [
+                $this->kakaoDocument('in-'.md5($r['rect']), '안쪽', 480),
+                $this->kakaoDocument('corner-'.md5($r['rect']), '모서리', 650), // 사각형 모서리 = 반경 밖
+            ],
+        ]));
+
+        $this->getJson(route('restaurants.index', ['lat' => 37.56, 'lng' => 126.99, 'radius' => 500]))
+            ->assertOk()
+            ->assertJsonCount(9, 'places')
+            ->assertJsonMissing(['name' => '모서리']);
+
+        $rects = [];
+        Http::assertSent(function (Request $r) use (&$rects) {
+            $rects[] = $r['rect'];
+
+            return true;
+        });
+        $this->assertCount(9, array_unique($rects));
     }
 
     public function test_caches_results_for_the_same_spot(): void
@@ -90,7 +117,7 @@ class RestaurantSearchTest extends TestCase
         $this->getJson(route('restaurants.index', $params))->assertOk();
         $this->getJson(route('restaurants.index', $params))->assertOk();
 
-        Http::assertSentCount(1);
+        Http::assertSentCount(16); // 1km → 4×4 칸, 두 번째는 캐시
     }
 
     public function test_rejects_invalid_coordinates_and_radius(): void
