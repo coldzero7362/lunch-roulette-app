@@ -72,22 +72,69 @@ function initMap() {
             setCenter(e.latLng.getLat(), e.latLng.getLng());
         });
 
-        locate();
+        if (pendingCenter) {
+            setCenter(pendingCenter.lat, pendingCenter.lng);
+            pendingCenter = null;
+        }
     });
 }
 
-function locate() {
+// 지도가 준비되기 전에 받은 위치는 여기 두었다가 지도가 뜨면 적용
+let pendingCenter = null;
+let locating = false;
+
+function getPosition(options) {
+    return new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, options));
+}
+
+/**
+ * 현재 위치를 받아 지도 가운데로. 정밀 위치가 실패하면(시간 초과·찾지 못함) 대략적인 위치로 한 번 더 시도한다.
+ * 페이지를 열 때 한 번, 내 위치 키를 누를 때마다 부른다.
+ */
+async function locate() {
     if (!window.isSecureContext || !navigator.geolocation) {
-        setStatus('이 주소에서는 위치를 받을 수 없어요. 지도를 눌러 위치를 정해 주세요.');
+        setStatus('이 주소에서는 위치를 받을 수 없어요. 지도를 눌러 위치를 정해 주세요');
         return;
     }
+    if (locating) return;
 
-    setStatus('현재 위치를 확인하는 중…');
-    navigator.geolocation.getCurrentPosition(
-        (pos) => setCenter(pos.coords.latitude, pos.coords.longitude),
-        () => setStatus('위치 권한이 없어요. 지도를 눌러 위치를 정해 주세요.'),
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
-    );
+    locating = true;
+    el.locate.disabled = true;
+    setStatus('현재 위치를 확인하는 중이에요');
+
+    try {
+        let pos;
+        try {
+            pos = await getPosition({ enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 });
+        } catch (e) {
+            if (e.code === 1) throw e; // 권한 거부는 다시 물어도 같다
+            setStatus('정확한 위치를 못 찾아서 대략적인 위치로 다시 찾는 중이에요');
+            pos = await getPosition({ enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
+        }
+        applyCenter(pos.coords.latitude, pos.coords.longitude);
+    } catch (e) {
+        setStatus(locateErrorMessage(e));
+    } finally {
+        locating = false;
+        el.locate.disabled = false;
+    }
+}
+
+function locateErrorMessage(e) {
+    switch (e?.code) {
+        case 1: return '위치 권한이 꺼져 있어요. 주소창의 자물쇠 아이콘에서 위치를 허용하거나 지도를 눌러 주세요';
+        case 2: return '기기에서 위치를 찾지 못했어요. 위치 서비스를 켜거나 지도를 눌러 위치를 정해 주세요';
+        case 3: return '위치를 확인하는 데 시간이 너무 걸려요. 다시 누르거나 지도를 눌러 주세요';
+        default: return '현재 위치를 받지 못했어요. 지도를 눌러 위치를 정해 주세요';
+    }
+}
+
+function applyCenter(lat, lng) {
+    if (!map) {
+        pendingCenter = { lat, lng };
+        return;
+    }
+    setCenter(lat, lng);
 }
 
 function setCenter(lat, lng) {
@@ -481,3 +528,4 @@ el.radiusButtons.forEach((button) => {
 render();
 initCrt();
 initMap();
+locate(); // 페이지를 열자마자 위치 권한을 묻고 현재 위치로

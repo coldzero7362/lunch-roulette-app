@@ -21,6 +21,7 @@
         <env name="APP_ENV" value="testing"/>
         <!-- 스타터 킷의 계정 기능 테스트가 계속 돌도록 켜 둔다 -->
         <env name="AUTH_PAGES_ENABLED" value="true"/>
+        <env name="FORCE_HTTPS" value="false"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
