@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'kakao' => [
+        'js_key' => env('KAKAO_JS_KEY'),          // 브라우저용 (지도 SDK)
+        'rest_api_key' => env('KAKAO_REST_API_KEY'), // 서버 전용 (로컬 검색 API)
+    ],
+
 ];
