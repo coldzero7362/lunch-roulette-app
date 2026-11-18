@@ -321,6 +321,58 @@
     border-bottom: 2px solid var(--c-carbon);
 }
 
+/* ---------- 위치 찾기 ---------- */
+
+.rl-locate { position: relative; }
+
+.rl-locate__bar {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.rl-locate__label { flex: none; align-self: center; margin-top: -6px; }
+
+/* 결과: 입력칸 아래로 지도를 덮으며 펼쳐지는 라벨 종이 */
+.rl-locate__results {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    right: 0;
+    z-index: 30;
+    max-height: 320px;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    border: 2px solid var(--c-carbon);
+    border-radius: 6px;
+    background: var(--c-paper);
+    box-shadow: 0 8px 0 -2px rgb(0 0 0 / .25);
+}
+
+.rl-locate__item {
+    display: block;
+    width: 100%;
+    padding: 9px 12px;
+    border: 0;
+    border-bottom: 1px dashed var(--c-periwinkle);
+    background: none;
+    color: var(--c-carbon);
+    text-align: left;
+    cursor: pointer;
+}
+
+.rl-locate__results li:last-child .rl-locate__item { border-bottom: 0; }
+.rl-locate__item:hover,
+.rl-locate__item:focus-visible { background: var(--c-platinum); outline: none; }
+
+.rl-locate__note { padding: 12px; font-size: 13px; color: var(--c-panel-2); }
+
+@media (max-width: 640px) {
+    .rl-locate__label { display: none; }
+}
+
 /* ---------- 메뉴 찾기 ---------- */
 
 .rl-jcard--full { max-width: none; }
@@ -351,6 +403,7 @@
 
 .rl-search__input::placeholder { color: var(--c-phosphor-dim); opacity: .55; text-shadow: none; }
 .rl-search__input:focus { outline: 3px solid var(--c-stripe-1); outline-offset: 2px; }
+.rl-search__input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 
 .rl-search__results { max-height: 340px; overflow-y: auto; }
 

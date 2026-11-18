@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Http;
  * https://developers.kakao.com/docs/latest/ko/local/dev-guide
  *
  * @phpstan-type Place array{id: string, name: string, type: string, category: string, distance: int, address: string, phone: string, url: string, lat: float, lng: float}
+ * @phpstan-type Location array{name: string, address: string, kind: string, lat: float, lng: float}
  */
 class KakaoLocal
 {
@@ -23,6 +25,8 @@ class KakaoLocal
     private const CATEGORY_ENDPOINT = 'https://dapi.kakao.com/v2/local/search/category.json';
 
     private const KEYWORD_ENDPOINT = 'https://dapi.kakao.com/v2/local/search/keyword.json';
+
+    private const ADDRESS_ENDPOINT = 'https://dapi.kakao.com/v2/local/search/address.json';
 
     private const CATEGORY_RESTAURANT = 'FD6';
 
@@ -75,6 +79,56 @@ class KakaoLocal
         return $this->fetchAll(self::KEYWORD_ENDPOINT, $this->area($lat, $lng, $radius) + ['query' => $query]);
     }
 
+    /**
+     * 위치 정하기용 검색: 주소가 정확히 맞으면 맨 위, 그 아래 장소 이름 검색 결과 (역·건물·회사 등).
+     *
+     * @return list<Location>
+     *
+     * @throws RequestException
+     */
+    public function searchLocations(string $query): array
+    {
+        return Cache::remember('kakao:loc:'.md5($query), now()->addDay(), function () use ($query) {
+            $addresses = $this->get(self::ADDRESS_ENDPOINT, ['query' => $query, 'size' => 3])->json('documents', []);
+            $places = $this->get(self::KEYWORD_ENDPOINT, ['query' => $query, 'size' => 10])->json('documents', []);
+
+            $results = [];
+            foreach ($addresses as $doc) {
+                $results[] = [
+                    'name' => (string) $doc['address_name'],
+                    'address' => (string) ($doc['road_address']['address_name'] ?? $doc['address']['address_name'] ?? ''),
+                    'kind' => 'address',
+                    'lat' => (float) $doc['y'],
+                    'lng' => (float) $doc['x'],
+                ];
+            }
+            foreach ($places as $doc) {
+                $results[] = [
+                    'name' => (string) $doc['place_name'],
+                    'address' => (string) (($doc['road_address_name'] ?? '') ?: ($doc['address_name'] ?? '')),
+                    'kind' => (string) ($doc['category_group_name'] ?? ''),
+                    'lat' => (float) $doc['y'],
+                    'lng' => (float) $doc['x'],
+                ];
+            }
+
+            return $results;
+        });
+    }
+
+    /**
+     * @param  array<string, string|int|float>  $params
+     *
+     * @throws RequestException
+     */
+    private function get(string $endpoint, array $params): Response
+    {
+        return Http::withHeaders(['Authorization' => 'KakaoAK '.$this->restApiKey])
+            ->timeout(5)
+            ->get($endpoint, $params)
+            ->throw();
+    }
+
     /** @return array<string, string|int|float> */
     private function area(float $lat, float $lng, int $radius): array
     {
@@ -103,10 +157,7 @@ class KakaoLocal
             $places = [];
 
             for ($page = 1; $page <= self::MAX_PAGES; $page++) {
-                $response = Http::withHeaders(['Authorization' => 'KakaoAK '.$this->restApiKey])
-                    ->timeout(5)
-                    ->get($endpoint, $params + ['page' => $page])
-                    ->throw();
+                $response = $this->get($endpoint, $params + ['page' => $page]);
 
                 foreach ($response->json('documents', []) as $doc) {
                     $places[] = $this->toPlace($doc);
