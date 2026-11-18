@@ -29,7 +29,13 @@
                     <div class="rl-map">
                         <div id="map" class="h-[40vh] min-h-72 w-full lg:h-[500px]"></div>
                     </div>
-                    <button id="locate" type="button" class="rl-key rl-key--beige rl-key--small">⌖ 내 위치</button>
+                    <button id="locate" type="button" class="rl-key rl-key--icon" aria-label="내 위치로 이동" title="내 위치">
+                        <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true">
+                            <circle cx="13" cy="13" r="7.5"/>
+                            <circle cx="13" cy="13" r="2.4" fill="currentColor" stroke="none"/>
+                            <path d="M13 1.5v5M13 19.5v5M1.5 13h5M19.5 13h5" stroke-linecap="square"/>
+                        </svg>
+                    </button>
                 </div>
 
                 <div class="flex flex-wrap items-end gap-4">

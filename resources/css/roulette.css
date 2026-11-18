@@ -218,6 +218,9 @@
 .rl-key--small { --depth: 4px; padding: 6px 12px; font-size: 13px; }
 .rl-key--wide { width: 100%; padding: 14px 18px; font-size: 20px; }
 
+/* 아이콘만 있는 정사각 키 (내 위치) */
+.rl-key--icon { --depth: 7px; width: 52px; height: 52px; padding: 0; }
+
 /* ---------- 키 묶음 (KeyBank) ---------- */
 
 .rl-bank {
