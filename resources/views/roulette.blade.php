@@ -26,8 +26,10 @@
                     <span class="rl-screw tr" aria-hidden="true"></span>
                     <span class="rl-screw bl" aria-hidden="true"></span>
                     <span class="rl-screw br" aria-hidden="true"></span>
-                    <div class="rl-map">
+                    <div id="map-screen" class="rl-map is-crt">
                         <div id="map" class="h-[40vh] min-h-72 w-full lg:h-[500px]"></div>
+                        {{-- CRT 효과 층: 클릭은 지도로 통과 --}}
+                        <div class="rl-crt-fx" aria-hidden="true"></div>
                     </div>
                     <button id="locate" type="button" class="rl-key rl-key--icon" aria-label="내 위치로 이동" title="내 위치">
                         <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true">
@@ -51,6 +53,12 @@
                             @endforeach
                         </div>
                         <span class="rl-label">RANGE · 반경</span>
+                    </div>
+                    <div class="rl-bank">
+                        <div class="rl-bank__slot">
+                            <button id="crt-toggle" type="button" class="rl-bank__key" aria-pressed="true">CRT</button>
+                        </div>
+                        <span class="rl-label">SCREEN · 효과</span>
                     </div>
                     <div class="min-w-0 flex-1 basis-56">
                         <p id="status" class="rl-crt rl-crt--readout" role="status" aria-live="polite">지도를 불러오는 중이에요</p>

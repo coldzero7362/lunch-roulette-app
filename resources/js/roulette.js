@@ -434,6 +434,27 @@ function setStatus(message) {
     el.status.textContent = message;
 }
 
+/* ---------- CRT 효과 ---------- */
+
+const CRT_KEY = 'lunch-roulette:crt';
+
+function setCrt(on, save = true) {
+    $('map-screen').classList.toggle('is-crt', on);
+    $('crt-toggle').setAttribute('aria-pressed', String(on));
+    if (save) {
+        try { localStorage.setItem(CRT_KEY, on ? 'on' : 'off'); } catch { /* 저장 못 해도 화면은 바뀜 */ }
+    }
+}
+
+function initCrt() {
+    let saved = null;
+    try { saved = localStorage.getItem(CRT_KEY); } catch { /* 비공개 모드 등 */ }
+    setCrt(saved !== 'off', false);
+    $('crt-toggle').addEventListener('click', () => {
+        setCrt($('crt-toggle').getAttribute('aria-pressed') !== 'true');
+    });
+}
+
 /* ---------- 이벤트 ---------- */
 
 el.spin.addEventListener('click', spin);
@@ -458,4 +479,5 @@ el.radiusButtons.forEach((button) => {
 });
 
 render();
+initCrt();
 initMap();
