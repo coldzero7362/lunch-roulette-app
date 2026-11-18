@@ -44,6 +44,26 @@ class RestaurantController extends Controller
         ));
     }
 
+    /**
+     * 위치 정하기: 주소·역·건물 이름으로 좌표 찾기 (PC처럼 현재 위치가 부정확할 때).
+     */
+    public function locations(Request $request, KakaoLocal $kakao): JsonResponse
+    {
+        $data = $request->validate([
+            'q' => ['required', 'string', 'min:1', 'max:50'],
+        ]);
+
+        try {
+            $locations = $kakao->searchLocations(trim($data['q']));
+        } catch (RequestException|ConnectionException $e) {
+            Log::warning('Kakao location search failed', ['message' => $e->getMessage()]);
+
+            return response()->json(['message' => '위치를 찾지 못했어요. 잠시 후 다시 시도해 주세요.'], 502);
+        }
+
+        return response()->json(['locations' => $locations]);
+    }
+
     /** @return array<string, list<mixed>> */
     private function areaRules(): array
     {
