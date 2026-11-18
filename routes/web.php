@@ -8,6 +8,7 @@ Route::view('/', 'roulette')->name('home');
 Route::middleware('throttle:60,1')->group(function () {
     Route::get('restaurants', [RestaurantController::class, 'index'])->name('restaurants.index');
     Route::get('restaurants/search', [RestaurantController::class, 'search'])->name('restaurants.search');
+    Route::get('locations/search', [RestaurantController::class, 'locations'])->name('locations.search');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
