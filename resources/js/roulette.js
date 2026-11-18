@@ -10,7 +10,9 @@ const SLOTS_KEY = 'lunch-roulette:slots';
 const PLACE_KEY = 'lunch-roulette:place'; // 직접 고른 위치 (검색·지도 클릭)
 const ACCURACY_WARN_M = 1000;             // 기기 위치 오차가 이보다 크면 안내
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }; // 위치를 못 받을 때: 서울시청
-const SPIN_MS = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 600 : 4500;
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SPIN_MS = REDUCED_MOTION ? 600 : 4500;
+const CLOSEUP_LEVEL = 2; // 당첨 가게 클로즈업 (약 30m 축척, 묶음이 풀려 골목까지 보임)
 // 카세트 스킨: 70년대 색 띠와 철판·라벨 색을 번갈아. ink = 그 위 글자색 (대비 확보)
 const SLICES = [
     { fill: '#f2b632', ink: '#2b2620' },
@@ -195,7 +197,38 @@ function drawRadius() {
         fillOpacity: 0.07,
     });
     radiusCircle.setMap(map);
-    map.setLevel(state.radius >= 1000 ? 6 : state.radius >= 500 ? 5 : 4);
+    map.setLevel(radiusLevel());
+}
+
+/** 반경 원이 다 보이는 지도 레벨 */
+function radiusLevel() {
+    return state.radius >= 1000 ? 6 : state.radius >= 500 ? 5 : 4;
+}
+
+/** 당첨 가게로 이동한 뒤 가까이 확대 */
+function closeUp(pos) {
+    if (REDUCED_MOTION) {
+        map.setLevel(CLOSEUP_LEVEL);
+        map.setCenter(pos);
+        return;
+    }
+    map.panTo(pos);
+    // 이동이 끝난 뒤 지도 가운데(=가게)를 기준으로 부드럽게 확대
+    setTimeout(() => map.setLevel(CLOSEUP_LEVEL, { animate: { duration: 600 } }), 450);
+}
+
+/** 클로즈업했던 지도를 반경 전체가 보이게 되돌림 */
+function restoreView() {
+    if (!map || !state.center) return;
+    const center = new kakao.maps.LatLng(state.center.lat, state.center.lng);
+    if (REDUCED_MOTION) {
+        map.setLevel(radiusLevel());
+        map.setCenter(center);
+        return;
+    }
+    // 확대·이동 애니메이션을 동시에 걸면 이동이 묻히므로 축소가 끝난 뒤 이동
+    map.setLevel(radiusLevel(), { animate: { duration: 400 } });
+    setTimeout(() => map.panTo(center), 420);
 }
 
 /**
@@ -262,7 +295,7 @@ function highlightWinner(place) {
     winnerMarker = new kakao.maps.Marker({ position: pos, title: place.name, image: markerImage(), zIndex: 4, map });
     winnerOverlay = new kakao.maps.CustomOverlay({ position: pos, content: label, zIndex: 5 });
     winnerOverlay.setMap(map);
-    map.panTo(pos);
+    closeUp(pos);
 }
 
 /* ---------- 데이터 ---------- */
@@ -742,6 +775,7 @@ function showResult(place) {
 }
 
 function clearResult() {
+    if (state.winner) restoreView(); // 클로즈업 상태였으면 반경 전체로
     state.winner = null;
     el.result.hidden = true;
     winnerOverlay?.setMap(null);
