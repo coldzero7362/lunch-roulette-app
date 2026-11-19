@@ -108,17 +108,32 @@
     width: 11px;
     height: 11px;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #d8d0bc, #8c846f 60%, #5b5444);
-    box-shadow: 0 1px 0 rgb(255 255 255 / .25), inset 0 0 0 1px rgb(0 0 0 / .45);
+    /* 둥근 머리: 왼쪽 위에서 빛, 깎은 금속 결(원뿔 반사) */
+    background:
+        conic-gradient(from 20deg, rgb(255 255 255 / .22), transparent 18%, rgb(255 255 255 / .12) 42%, transparent 60%, rgb(0 0 0 / .12) 80%, rgb(255 255 255 / .22)),
+        radial-gradient(circle at 36% 30%, #f3eedf 0 6%, #cfc8b3 24%, #958d78 58%, #5c5547 92%);
+    box-shadow:
+        /* 판에 판 자리(카운터싱크): 어두운 홈 + 바깥 모서리 빛 */
+        0 0 0 1.5px #1c1915,
+        0 0 0 2.5px rgb(255 255 255 / .1),
+        0 1.5px 2px 1.5px rgb(0 0 0 / .45),
+        inset 0 1px 0 rgb(255 255 255 / .45),
+        inset 0 -1px 1px rgb(0 0 0 / .45);
 }
 
+/* 십자 홈(+): 나사마다 돌아간 각도가 다름. 홈 안쪽 어둡게 + 아래 가장자리에 빛 */
+.rl-screw::before,
 .rl-screw::after {
     content: '';
     position: absolute;
-    inset: 4.5px 2px;
-    background: rgb(0 0 0 / .55);
+    inset: 42% 18%;
+    border-radius: .5px;
+    background: linear-gradient(#0d0b09, #3b352c);
+    box-shadow: 0 .6px 0 rgb(255 255 255 / .35);
     transform: rotate(var(--slot, 35deg));
 }
+
+.rl-screw::after { transform: rotate(calc(var(--slot, 35deg) + 90deg)); }
 
 .rl-screw.tl { top: 8px; left: 8px; }
 .rl-screw.tr { top: 8px; right: 8px; --slot: -20deg; }
@@ -739,7 +754,6 @@
 }
 
 .rl-lcd > .rl-screw { width: 9px; height: 9px; }
-.rl-lcd > .rl-screw::after { inset: 3.8px 1.6px; }
 .rl-lcd > .rl-screw.tl, .rl-lcd > .rl-screw.bl { left: 8px; }
 .rl-lcd > .rl-screw.tr, .rl-lcd > .rl-screw.br { right: 8px; }
 .rl-lcd > .rl-screw.tl, .rl-lcd > .rl-screw.tr { top: 8px; }
@@ -1121,7 +1135,6 @@
 }
 
 .rl-speaker__grille .rl-screw { width: 8px; height: 8px; z-index: 1; }
-.rl-speaker__grille .rl-screw::after { inset: 3.4px 1.5px; }
 .rl-speaker__grille .rl-screw.tl { top: 2px; left: 2px; }
 .rl-speaker__grille .rl-screw.tr { top: 2px; right: 2px; }
 .rl-speaker__grille .rl-screw.bl { bottom: 2px; left: 2px; }
