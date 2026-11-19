@@ -640,6 +640,23 @@ async function searchMenu(query) {
     }
 }
 
+/** 카카오맵 가게 페이지 (없으면 좌표로 지도 열기) */
+function placeUrl(place) {
+    return place.url || `https://map.kakao.com/link/map/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
+}
+
+/** 목록 줄 오른쪽 [상세] 키: 카카오맵 가게 페이지를 새 탭으로 */
+function detailLink(place) {
+    const a = document.createElement('a');
+    a.className = 'rl-key rl-key--beige rl-key--small rl-key--row';
+    a.href = placeUrl(place);
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = '상세';
+    a.setAttribute('aria-label', `${place.name} 카카오맵에서 보기 (새 탭)`);
+    return a;
+}
+
 /** 메뉴 일부로만 걸린 곳 (서버 등급: menu / pub) */
 const isPartial = (place) => place.match === 'menu' || place.match === 'pub';
 
@@ -684,7 +701,7 @@ function searchRow(place) {
             on.className = 'rl-track__on';
             on.textContent = `#${slot + 1}`;
             on.setAttribute('aria-label', `후보 ${slot + 1}번에 있음`);
-            li.append(info, on);
+            li.append(info, detailLink(place), on);
             return li;
         }
 
@@ -696,7 +713,7 @@ function searchRow(place) {
         add.setAttribute('aria-label', `${place.name} 후보 추가`);
         add.addEventListener('click', () => addCandidate(place));
 
-        li.append(info, add);
+        li.append(info, detailLink(place), add);
         return li;
 }
 
@@ -865,7 +882,7 @@ function showResult(place) {
     el.resultMeta.textContent = [typeLabel(place.type), place.category !== place.type ? place.category : '', `${place.distance}m`, `도보 약 ${walk}분`].filter(Boolean).join(' · ');
     el.resultAddress.textContent = [place.address, place.phone].filter(Boolean).join(' · ');
     el.resultRoute.href = `https://map.kakao.com/link/to/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
-    el.resultLink.href = place.url || `https://map.kakao.com/link/map/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
+    el.resultLink.href = placeUrl(place);
     setTicketActions(true);
     setStatus(`RESULT — #${state.candidates.findIndex((p) => p.id === place.id) + 1} ${place.name}`);
     renderLog();
@@ -1003,7 +1020,7 @@ function renderCandidates() {
         remove.setAttribute('aria-label', `${place.name} 후보에서 제외`);
         remove.addEventListener('click', () => exclude(place.id));
 
-        li.append(no, info, remove);
+        li.append(no, info, detailLink(place), remove);
         return li;
     }));
 }
