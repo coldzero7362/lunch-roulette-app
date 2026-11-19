@@ -86,6 +86,7 @@ const state = {
     candidates: [],      // 돌림판에 올라간 식당
     slots: SLOTS_DEFAULT, // 돌림판 칸 수
     types: new Set(),    // 고른 종류 (비면 전체)
+    price: { min: 0, max: 30000 }, // 1인 가격대 (max 30000 = 상한 없음). 걸러내기는 가격 데이터가 생기면 연결
     pinned: new Map(),   // 메뉴 찾기로 직접 넣은 식당 (id → place). 섞어도 빠지지 않음
     searchResults: [],
     rotation: 0,
@@ -1165,6 +1166,59 @@ function setStatus(message) {
     el.status.textContent = message;
 }
 
+/* ---------- 가격대 페이더 ---------- */
+
+const PRICE_KEY = 'lunch-roulette:price';
+const PRICE_MAX = 30000;
+const PRICE_STEP = 1000;
+
+function won(v) {
+    return `₩${v.toLocaleString('ko-KR')}`;
+}
+
+function renderPrice() {
+    const { min, max } = state.price;
+    const lo = $('price-min');
+    const hi = $('price-max');
+    lo.value = min;
+    hi.value = max;
+    // 레일 위 켜진 구간
+    const fill = $('price-fill');
+    fill.style.left = `${(min / PRICE_MAX) * 100}%`;
+    fill.style.width = `${((max - min) / PRICE_MAX) * 100}%`;
+    const open = max >= PRICE_MAX;
+    $('price-out').textContent = min === 0 && open ? '전체'
+        : open ? `${won(min)} 이상`
+        : `${won(min)} – ${won(max)}`;
+    lo.setAttribute('aria-valuetext', won(min));
+    hi.setAttribute('aria-valuetext', open ? '상한 없음' : won(max));
+    // 두 캡이 끝에서 겹치면 움직일 수 있는 쪽을 위로
+    lo.style.zIndex = min >= PRICE_MAX - PRICE_STEP ? '3' : '2';
+}
+
+function initPrice() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(PRICE_KEY) ?? 'null');
+        if (saved && Number.isFinite(saved.min) && Number.isFinite(saved.max)) state.price = saved;
+    } catch { /* 비공개 모드 등 */ }
+
+    const lo = $('price-min');
+    const hi = $('price-max');
+    const onInput = (which) => {
+        let min = Number(lo.value);
+        let max = Number(hi.value);
+        // 캡끼리 넘어가지 않게: 최소 한 칸 간격
+        if (which === 'min' && min > max - PRICE_STEP) min = max - PRICE_STEP;
+        if (which === 'max' && max < min + PRICE_STEP) max = min + PRICE_STEP;
+        state.price = { min: Math.max(0, min), max: Math.min(PRICE_MAX, max) };
+        renderPrice();
+        try { localStorage.setItem(PRICE_KEY, JSON.stringify(state.price)); } catch { /* 무시 */ }
+    };
+    lo.addEventListener('input', () => onInput('min'));
+    hi.addEventListener('input', () => onInput('max'));
+    renderPrice();
+}
+
 /* ---------- CRT 효과 ---------- */
 
 const CRT_KEY = 'lunch-roulette:crt';
@@ -1294,6 +1348,7 @@ hydrateIcons();
 terminalInput(el.locInput);
 terminalInput(el.searchInput);
 initSlots();
+initPrice();
 initCrt();
 setTicketIdle();
 renderLog();

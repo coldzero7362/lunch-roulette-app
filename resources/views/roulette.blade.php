@@ -93,6 +93,22 @@
                             <button id="crt-toggle" type="button" class="rl-bank__key" aria-pressed="true">CRT</button>
                         </div>
                     </div>
+
+                    {{-- 가격대: 상아색 페이더 캡 두 개 (최저 / 최고) --}}
+                    <div class="rl-fader" role="group" aria-labelledby="lbl-price">
+                        <div class="rl-fader__head">
+                            <span id="lbl-price" class="rl-console__label">PRICE · 1인</span>
+                            <output id="price-out" class="rl-fader__out" for="price-min price-max">전체</output>
+                        </div>
+                        <div class="rl-fader__slot">
+                            <div class="rl-fader__rail" aria-hidden="true"><span id="price-fill" class="rl-fader__fill"></span></div>
+                            <label for="price-min" class="sr-only">최저 가격</label>
+                            <input id="price-min" class="rl-fader__input" type="range" min="0" max="30000" step="1000" value="0">
+                            <label for="price-max" class="sr-only">최고 가격</label>
+                            <input id="price-max" class="rl-fader__input" type="range" min="0" max="30000" step="1000" value="30000">
+                        </div>
+                        <div class="rl-fader__ticks" aria-hidden="true"><span>0</span><span>1만</span><span>2만</span><span>3만+</span></div>
+                    </div>
                 </div>
             </section>
 
