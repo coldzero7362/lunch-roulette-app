@@ -1,6 +1,6 @@
 # 개발 환경
-#   https://lunch.158-247-240-171.sslip.io  (Caddy 프록시: ~/infra/proxy, 위치 권한은 여기서만 동작)
-#   http://<서버IP>:8001                    (직접 접속)
+#   https://lunch.158-247-240-171.sslip.io  (Caddy 프록시: ~/infra/proxy)
+#   앱 포트 8001 은 서버 안(127.0.0.1)에서만 열림 → 외부 접속은 모두 Caddy(HTTPS)를 거친다
 #
 #   docker compose up -d --build
 #   docker compose exec -u www-data app php artisan ...
@@ -12,10 +12,19 @@ services:
     container_name: lunch-roulette
     restart: unless-stopped
     ports:
-      - "8001:80"
+      - "127.0.0.1:8001:80"   # 외부에서 직접 못 들어오게 (프록시 우회·헤더 위조 차단)
     volumes:
       - ./:/var/www/html   # 코드 수정 즉시 반영
+    depends_on: [redis]
     networks: [default, proxy]
+
+  # 캐시·요청 제한 카운터. 메모리 상한을 넘으면 오래 안 쓴 키부터 지워서 디스크·메모리가 무한히 늘지 않음
+  redis:
+    image: redis:7.4-alpine
+    container_name: lunch-roulette-redis
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru", "--save", "", "--appendonly", "no"]
+    networks: [default]
 
 networks:
   proxy:

@@ -38,6 +38,9 @@ return [
     'kakao' => [
         'js_key' => env('KAKAO_JS_KEY'),          // 브라우저용 (지도 SDK)
         'rest_api_key' => env('KAKAO_REST_API_KEY'), // 서버 전용 (로컬 검색 API)
+        // 카카오 호출 예산: 넘으면 503 으로 거절 (요청 폭주·할당량 소진 방지)
+        'minute_budget' => (int) env('KAKAO_MINUTE_BUDGET', 600),
+        'daily_budget' => (int) env('KAKAO_DAILY_BUDGET', 50000),
     ],
 
 ];
