@@ -3,7 +3,7 @@
 <head>
     @include('partials.head', ['title' => '점심 룰렛'])
     {{-- 링크 미리보기 (카카오톡·슬랙·디스코드 등 Open Graph, X 카드) --}}
-    @php($description = '지금 위치 근처 식당을 룰렛으로 골라 드립니다. 영업 중인 곳만 추리고, 메뉴로 찾아 후보에 직접 넣을 수 있어요.')
+    @php($description = '근처 식당을 룰렛으로 고릅니다.')
     {{-- 이미지를 바꾸면 주소도 바뀌게 (?v=내용 해시): 미리보기를 캐시한 앱들이 새 이미지를 받아 가도록 --}}
     @php($ogImage = url('/og-image.jpg').'?v='.substr((string) md5_file(public_path('og-image.jpg')), 0, 8))
     <meta name="description" content="{{ $description }}">
