@@ -145,23 +145,19 @@
                     <span class="rl-screw br" aria-hidden="true"></span>
 
                     <div class="rl-window">
-                        {{-- 바늘: 테 위에 나사로 고정한 금속 받침 + 가운데 능선이 선 바늘 날 (왼쪽 면 밝고 오른쪽 면 그늘) --}}
-                        <svg class="rl-pointer" width="36" height="46" viewBox="0 0 36 46" aria-hidden="true">
-                            <!-- 받침: 짙은 금속 블록, 아래 모서리 그늘, 양쪽 나사 -->
-                            <rect x="2" y="1" width="32" height="12" rx="2.5" fill="#4a4338" stroke="#14110e" stroke-width="1.5"/>
-                            <rect x="3.5" y="2.5" width="29" height="2" rx="1" fill="rgb(255 255 255 / .12)"/>
-                            <rect x="3.5" y="10" width="29" height="2" rx="1" fill="rgb(0 0 0 / .35)"/>
-                            <circle cx="8" cy="7" r="2.6" fill="#958d78" stroke="#14110e" stroke-width=".9"/>
-                            <path d="M6.4 7 H9.6 M8 5.4 V8.6" stroke="#1f1b16" stroke-width=".9"/>
-                            <circle cx="28" cy="7" r="2.6" fill="#958d78" stroke="#14110e" stroke-width=".9"/>
-                            <path d="M26.6 5.6 L29.4 8.4 M29.4 5.6 L26.6 8.4" stroke="#1f1b16" stroke-width=".9"/>
+                        {{-- 바늘: 테 위 금속 받침 + 가운데 능선이 선 바늘 날 (왼쪽 면 밝고 오른쪽 면 그늘) --}}
+                        <svg class="rl-pointer" width="36" height="38" viewBox="0 0 36 38" aria-hidden="true">
+                            <!-- 받침: 짙은 금속 블록, 위 모서리 빛·아래 모서리 그늘 -->
+                            <rect x="5" y="1" width="26" height="8" rx="2" fill="#4a4338" stroke="#14110e" stroke-width="1.5"/>
+                            <rect x="6.5" y="2.3" width="23" height="1.6" rx=".8" fill="rgb(255 255 255 / .12)"/>
+                            <rect x="6.5" y="6.4" width="23" height="1.6" rx=".8" fill="rgb(0 0 0 / .35)"/>
                             <!-- 바늘 날: 받침 아래에서 끝까지, 두 면 + 능선 -->
-                            <path d="M18 43 L10 13 L18 13 Z" fill="#e0662a"/>
-                            <path d="M18 43 L26 13 L18 13 Z" fill="#a8441a"/>
-                            <path d="M18 43 L10 13 L26 13 Z" fill="none" stroke="#1d1a16" stroke-width="1.6" stroke-linejoin="round"/>
-                            <path d="M18 14 L18 41" stroke="rgb(255 230 200 / .55)" stroke-width=".8"/>
+                            <path d="M18 35 L10 9 L18 9 Z" fill="#e0662a"/>
+                            <path d="M18 35 L26 9 L18 9 Z" fill="#a8441a"/>
+                            <path d="M18 35 L10 9 L26 9 Z" fill="none" stroke="#1d1a16" stroke-width="1.6" stroke-linejoin="round"/>
+                            <path d="M18 10 L18 33" stroke="rgb(255 230 200 / .55)" stroke-width=".8"/>
                             <!-- 끝: 작은 고무 팁 -->
-                            <circle cx="18" cy="42" r="1.6" fill="#1d1a16"/>
+                            <circle cx="18" cy="34" r="1.6" fill="#1d1a16"/>
                         </svg>
                         <svg id="wheel" viewBox="-100 -100 200 200" class="rl-wheel" role="img" aria-label="돌림판. 칸 번호는 SIDE A 후보 번호와 같음">
                             <g id="wheel-rotor"></g>
