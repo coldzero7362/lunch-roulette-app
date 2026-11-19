@@ -12,6 +12,12 @@
 }
 
 @font-face {
+    font-family: 'DSEG7';
+    src: url('/fonts/dseg7-classic-bold.woff2') format('woff2');
+    font-display: swap;
+}
+
+@font-face {
     font-family: 'Mulmaru Mono';
     src: url('/fonts/mulmaru-mono.otf') format('opentype');
     font-display: swap;
@@ -712,49 +718,80 @@
     background: repeating-linear-gradient(rgb(0 0 0 / .28) 0 1px, transparent 1px 3px);
 }
 
-/* 상태 CRT: 칸별 값(LOC/RANGE/TYPE/FOUND/WHEEL) + 시스템 메시지 한 줄 */
+/*
+ * 상태 표시창: 반사형 LCD (워크맨·계산기). 갈색 베젤 안에 회녹색 유리, 글자는 먹색.
+ * 글자 뒤 옅은 그림자 = 액정 층 아래로 비치는 세그먼트 그림자
+ */
+.rl-lcd {
+    position: relative;
+    padding: 10px;
+    border: 2px solid var(--c-carbon);
+    border-radius: 10px;
+    background-color: var(--c-panel);
+    background-image: var(--texture);
+    box-shadow: 0 3px 0 rgb(0 0 0 / .3);
+}
+
 .rl-readout {
     margin: 20px 32px 0;
     font-family: var(--font-pixel-mono);
+    color: #1f2519;
+}
+
+.rl-readout__fields,
+.rl-readout__msg {
+    background: linear-gradient(180deg, #b3bd9f, #a2ad8d);
+    text-shadow: 1.5px 1.5px 0 rgb(31 37 25 / .14);
 }
 
 .rl-readout__fields {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     margin: 0;
-    border-bottom: 1px solid #1f2a22;
+    border-radius: 4px 4px 0 0;
+    border-bottom: 1px solid rgb(31 37 25 / .22);
+    box-shadow: inset 0 2px 4px rgb(0 0 0 / .3);
 }
 
-.rl-readout__fields > div { min-width: 0; padding: 8px 14px; border-right: 1px solid #1f2a22; }
+.rl-readout__fields > div { min-width: 0; padding: 8px 14px; border-right: 1px solid rgb(31 37 25 / .16); }
 .rl-readout__fields > div:last-child { border-right: 0; }
 
 .rl-readout__fields dt {
     font-size: 10px;
     letter-spacing: .14em;
-    color: var(--c-phosphor-dim);
+    color: #4d5741;
     text-shadow: none;
 }
 
 .rl-readout__fields dd {
     margin: 2px 0 0;
     overflow: hidden;
+    font-family: var(--font-pixel);
     font-size: 15px;
+    line-height: 22px;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
 
+/* 7세그먼트 숫자: 글자 높이를 한글과 맞춤 */
+.rl-seg {
+    margin-right: 2px;
+    font-family: 'DSEG7', var(--font-pixel-mono);
+    font-size: 17px;
+    letter-spacing: .04em;
+}
+
 .rl-readout__msg {
+    display: flex;
+    gap: 8px;
     margin: 0;
     padding: 7px 14px;
+    border-radius: 0 0 4px 4px;
     font-size: 13px;
     line-height: 1.5;
 }
 
-/* 깜빡이는 입력 커서 (::after 는 주사선이 쓰므로 따로 둔다) */
-.rl-caret {
-    margin-left: 4px;
-    animation: rl-blink 1s steps(1) infinite;
-}
+.rl-lcd__mark { flex: none; font-size: 10px; line-height: 19.5px; }
 
 .rl-crt .amber { color: var(--c-phosphor-amber); text-shadow: 0 0 8px rgb(255 178 63 / .6); }
 .rl-crt .dim { color: var(--c-phosphor-dim); text-shadow: none; }
@@ -1337,7 +1374,7 @@
     .rl-readout { margin: 14px 12px 0; }
     .rl-readout__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .rl-readout__fields > div:nth-child(2n) { border-right: 0; }
-    .rl-readout__fields > div { border-bottom: 1px solid #1f2a22; }
+    .rl-readout__fields > div { border-bottom: 1px solid rgb(31 37 25 / .16); }
     .rl-readout__fields > div:last-child { grid-column: span 2; border-bottom: 0; }
     .rl-steps { display: none; }
     /* 종류 키 7개를 한 줄에 */
@@ -1350,7 +1387,6 @@
 
 @media (prefers-reduced-motion: reduce) {
     .rl-cursor,
-    .rl-caret,
     .rl-crt-fx,
     .rl-crt-fx::after,
     .rl-ticket__paper,

@@ -1309,10 +1309,11 @@ function render() {
 /** 상태 CRT 칸: LOC / RANGE / TYPE / FOUND / WHEEL */
 function updateReadout() {
     el.fields.loc.textContent = state.place?.label ?? (state.center ? '좌표 지정' : '—');
-    el.fields.range.textContent = radiusLabel();
+    segments(el.fields.range, state.radius >= 1000 ? [state.radius / 1000, 'km'] : [state.radius, 'm']);
     el.fields.type.textContent = state.types.size ? [...state.types].map(typeLabel).join(' · ') : '전체';
-    el.fields.found.textContent = state.poolLoaded ? `${state.pool.length}건` : '—';
-    el.fields.wheel.textContent = `${state.candidates.length}/${state.slots}`;
+    if (state.poolLoaded) segments(el.fields.found, [state.pool.length, '건']);
+    else el.fields.found.textContent = '—';
+    segments(el.fields.wheel, [state.candidates.length, '/', state.slots]);
     updateSteps();
 }
 
@@ -1331,6 +1332,16 @@ function updateSteps() {
         if (!done[key] && !nowSet) { st = 'now'; nowSet = true; }
         li.dataset.state = st;
     });
+}
+
+/** LCD 칸: 숫자는 7세그먼트 글꼴, 단위·기호는 일반 글꼴 ([220, '건'] → 220건) */
+function segments(target, parts) {
+    target.replaceChildren(...parts.map((part) => {
+        const span = document.createElement('span');
+        span.textContent = String(part);
+        if (typeof part === 'number') span.className = 'rl-seg';
+        return span;
+    }));
 }
 
 function setBusy(busy) {

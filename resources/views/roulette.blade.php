@@ -23,16 +23,16 @@
         </header>
         <div class="rl-stripes" aria-hidden="true"></div>
 
-        {{-- 상태 CRT: 칸별 값 + 시스템 메시지 --}}
-        <div class="rl-readout rl-crt">
+        {{-- 상태 표시창: 반사형 LCD (칸별 값 + 상태 한 줄). 숫자는 7세그먼트 --}}
+        <div class="rl-readout rl-lcd">
             <dl class="rl-readout__fields">
                 <div><dt>LOC</dt><dd id="f-loc">—</dd></div>
                 <div><dt>RANGE</dt><dd id="f-range">500m</dd></div>
                 <div><dt>TYPE</dt><dd id="f-type">전체</dd></div>
                 <div><dt>FOUND</dt><dd id="f-found">—</dd></div>
-                <div><dt>WHEEL</dt><dd id="f-wheel" class="amber">0/8</dd></div>
+                <div><dt>WHEEL</dt><dd id="f-wheel">0/8</dd></div>
             </dl>
-            <p class="rl-readout__msg"><span class="dim" aria-hidden="true">SYS&gt;</span> <span id="status" role="status" aria-live="polite">BOOT</span><span class="rl-caret" aria-hidden="true">_</span></p>
+            <p class="rl-readout__msg"><span class="rl-lcd__mark" aria-hidden="true">▶</span><span id="status" role="status" aria-live="polite">BOOT</span></p>
         </div>
 
         <main class="rl-main">
@@ -220,6 +220,7 @@
             <span class="rl-label" aria-hidden="true">LR-01 · 점심 룰렛</span>
             <nav class="rl-plate__licenses" aria-label="라이선스">
                 <a href="/fonts/Mulmaru-OFL.txt">FONT OFL</a>
+                <a href="/fonts/DSEG-OFL.txt">DSEG OFL</a>
                 <a href="/licenses/pixelarticons-LICENSE.txt">ICON MIT</a>
             </nav>
         </footer>
