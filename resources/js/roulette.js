@@ -813,7 +813,8 @@ function showResult(place) {
     renderLog();
     highlightWinner(place);
     updateSteps();
-    el.result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // 영수증(프린터 칸)으로 스크롤
+    el.result.scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'center' });
 }
 
 /* ---------- 오늘 기록 ---------- */

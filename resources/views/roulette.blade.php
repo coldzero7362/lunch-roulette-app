@@ -118,33 +118,6 @@
                     </div>
                 </div>
 
-                {{-- 결과 프린터: 자리를 항상 차지해서 결과가 나와도 아래가 밀리지 않음 --}}
-                <div class="rl-printer rl-ribs">
-                    <span class="rl-console__label">PRINT</span>
-                    <div id="result" class="rl-ticket is-idle">
-                        <div class="rl-ticket__slot" aria-hidden="true"></div>
-                        <article class="rl-ticket__paper" aria-live="polite">
-                            <div class="rl-ticket__head"><span id="result-time">LR-01 · --:--</span><span id="result-no">NO.--</span></div>
-                            <p id="result-kicker" class="rl-ticket__kicker">STANDBY</p>
-                            <p id="result-name" class="rl-ticket__name">—</p>
-                            <p id="result-meta" class="rl-ticket__meta">후보 2곳 이상 → ▶ 돌리기</p>
-                            <p id="result-address" class="rl-ticket__sub">&nbsp;</p>
-                            <div class="rl-ticket__cut" aria-hidden="true"></div>
-                            <div class="rl-ticket__actions">
-                                <a id="result-route" target="_blank" rel="noopener" class="rl-key rl-key--amber rl-key--small" aria-disabled="true" tabindex="-1">길찾기</a>
-                                <a id="result-link" target="_blank" rel="noopener" class="rl-key rl-key--beige rl-key--small" aria-disabled="true" tabindex="-1">상세</a>
-                                <button id="result-exclude" type="button" class="rl-key rl-key--beige rl-key--small" disabled>제외 후 재실행</button>
-                                <button id="result-again" type="button" class="rl-key rl-key--beige rl-key--small" disabled>재실행</button>
-                            </div>
-                        </article>
-                    </div>
-
-                    <div class="rl-log" aria-labelledby="log-title">
-                        <span id="log-title" class="rl-console__label">LOG · 오늘</span>
-                        <ol id="result-log" class="rl-log__list"></ol>
-                    </div>
-                </div>
-
                 {{-- 03 후보: 카세트 A면 / B면 --}}
                 <div class="rl-jcard rl-jcard--full">
                     <div class="rl-stripes" style="height:8px;border-top:0" aria-hidden="true"></div>
@@ -175,6 +148,33 @@
                         </form>
                         <p id="search-status" class="rl-track__empty" aria-live="polite">반경 내 메뉴 검색 → [+]로 후보 추가</p>
                         <ul id="search-results" class="rl-search__results m-0 list-none p-0"></ul>
+                    </div>
+                </div>
+
+                {{-- 결과 프린터: 자리를 항상 차지해서 결과가 나와도 아래가 밀리지 않음 --}}
+                <div class="rl-printer rl-ribs">
+                    <span class="rl-console__label">PRINT</span>
+                    <div id="result" class="rl-ticket is-idle">
+                        <div class="rl-ticket__slot" aria-hidden="true"></div>
+                        <article class="rl-ticket__paper" aria-live="polite">
+                            <div class="rl-ticket__head"><span id="result-time">LR-01 · --:--</span><span id="result-no">NO.--</span></div>
+                            <p id="result-kicker" class="rl-ticket__kicker">STANDBY</p>
+                            <p id="result-name" class="rl-ticket__name">—</p>
+                            <p id="result-meta" class="rl-ticket__meta">후보 2곳 이상 → ▶ 돌리기</p>
+                            <p id="result-address" class="rl-ticket__sub">&nbsp;</p>
+                            <div class="rl-ticket__cut" aria-hidden="true"></div>
+                            <div class="rl-ticket__actions">
+                                <a id="result-route" target="_blank" rel="noopener" class="rl-key rl-key--amber rl-key--small" aria-disabled="true" tabindex="-1">길찾기</a>
+                                <a id="result-link" target="_blank" rel="noopener" class="rl-key rl-key--beige rl-key--small" aria-disabled="true" tabindex="-1">상세</a>
+                                <button id="result-exclude" type="button" class="rl-key rl-key--beige rl-key--small" disabled>제외 후 재실행</button>
+                                <button id="result-again" type="button" class="rl-key rl-key--beige rl-key--small" disabled>재실행</button>
+                            </div>
+                        </article>
+                    </div>
+
+                    <div class="rl-log" aria-labelledby="log-title">
+                        <span id="log-title" class="rl-console__label">LOG · 오늘</span>
+                        <ol id="result-log" class="rl-log__list"></ol>
                     </div>
                 </div>
             </section>
