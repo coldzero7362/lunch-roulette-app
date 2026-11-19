@@ -1118,8 +1118,14 @@
     padding: 16px 18px 14px;
     border: 2px solid var(--c-carbon);
     border-top: 0;
-    background: #f5efe0;
-    box-shadow: 0 6px 0 rgb(0 0 0 / .22);
+    /* 감열지: 고운 입자 + 가로 섬유 + 고르지 않은 얼룩, 가장자리는 살짝 누렇게 */
+    background-color: #f5efe0;
+    background-image:
+        radial-gradient(ellipse at 50% 40%, transparent 55%, rgb(150 120 60 / .14) 100%),
+        url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27160%27 height=%27160%27%3E%3Cfilter id=%27p%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%27.95%27 numOctaves=%273%27 seed=%277%27 stitchTiles=%27stitch%27/%3E%3CfeColorMatrix values=%270 0 0 0 .42 0 0 0 0 .34 0 0 0 0 .22 0 0 0 .9 -.48%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url%28%23p%29%27/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27240%27 height=%27240%27%3E%3Cfilter id=%27p%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%27.03 .9%27 numOctaves=%272%27 seed=%2711%27 stitchTiles=%27stitch%27/%3E%3CfeColorMatrix values=%270 0 0 0 .45 0 0 0 0 .37 0 0 0 0 .25 0 0 0 .55 -.32%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url%28%23p%29%27/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27300%27 height=%27300%27%3E%3Cfilter id=%27p%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%27.018%27 numOctaves=%272%27 seed=%275%27 stitchTiles=%27stitch%27/%3E%3CfeColorMatrix values=%270 0 0 0 .55 0 0 0 0 .45 0 0 0 0 .28 0 0 0 .55 -.22%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url%28%23p%29%27/%3E%3C/svg%3E");
+    box-shadow: 0 6px 0 rgb(0 0 0 / .22), inset 0 8px 10px -8px rgb(60 45 20 / .35);
     animation: rl-ticket-out .7s steps(14, end);
 }
 
