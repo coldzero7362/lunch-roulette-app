@@ -69,6 +69,7 @@
                     <div class="rl-crt-fx" aria-hidden="true"></div>
                 </div>
 
+                <div class="rl-console__row">
                 <div class="rl-console__controls">
                     <div class="rl-bank" role="group" aria-labelledby="lbl-range">
                         <span id="lbl-range" class="rl-console__label">RANGE</span>
@@ -99,6 +100,18 @@
                             <button id="crt-toggle" type="button" class="rl-bank__key" aria-pressed="true">CRT</button>
                         </div>
                     </div>
+                </div>
+
+                {{-- 장식: 타공 스피커 그릴 (넓은 화면에서 컨트롤 오른쪽 빈자리) --}}
+                <div class="rl-speaker" aria-hidden="true">
+                    <span class="rl-console__label">SPEAKER · 8Ω</span>
+                    <div class="rl-speaker__grille">
+                        <span class="rl-screw tl"></span>
+                        <span class="rl-screw tr"></span>
+                        <span class="rl-screw bl"></span>
+                        <span class="rl-screw br"></span>
+                    </div>
+                </div>
                 </div>
             </section>
 
