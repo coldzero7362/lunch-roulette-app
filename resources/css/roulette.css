@@ -222,10 +222,20 @@
 .rl-key--icon { --depth: 7px; width: 52px; height: 52px; padding: 0; }
 .rl-key--square { width: 40px; height: 40px; padding: 0; }
 /* 목록 줄 안의 링크 키: 줄 높이에 맞춰 조금 작게, 옆 키와 간격 */
-.rl-key--row { flex: none; padding: 5px 10px; font-size: 12px; }
-/* 검색 결과 맨 오른쪽 칸([+] 또는 #번호) 폭을 같게 → [상세] 줄이 세로로 맞음 */
-.rl-search__results .rl-key--tiny,
-.rl-search__results .rl-track__on { flex: none; width: 40px; min-width: 40px; box-sizing: border-box; padding-inline: 0; text-align: center; }
+/* 목록 줄의 정사각 아이콘 키 (픽셀 아이콘 24px 를 그대로) */
+.rl-key--sq {
+    --depth: 4px;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    gap: 0;
+}
+
+.rl-key--sq svg { display: block; flex: none; }
+
+/* 검색 결과의 #번호 칸도 키와 같은 폭 → 줄마다 세로로 맞음 */
+.rl-search__results .rl-track__on { flex: none; width: 40px; text-align: center; }
 .rl-track { gap: 8px 10px; }
 
 /* ---------- 키 묶음 (KeyBank) ---------- */
@@ -954,6 +964,10 @@
     height: 34px;
     background: radial-gradient(circle, var(--c-carbon) 1.4px, transparent 1.7px) 0 0 / 7px 7px;
 }
+
+.rl-plate__licenses { display: flex; gap: 10px; font-family: var(--font-pixel-mono); font-size: 10px; letter-spacing: .08em; }
+.rl-plate__licenses a { color: var(--c-panel-2); text-decoration: none; }
+.rl-plate__licenses a:hover { color: var(--c-carbon); text-decoration: underline; }
 
 .rl-ticks {
     flex: 1;

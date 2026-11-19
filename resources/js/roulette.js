@@ -1,3 +1,5 @@
+import { pixelIcon } from './pixel-icons';
+
 /**
  * 점심 룰렛: 현재 위치 → 반경 안 식당 → 돌림판.
  * 식당 데이터는 서버(/restaurants)가 카카오 로컬 API로 조회한다. REST 키는 브라우저에 노출하지 않는다.
@@ -645,15 +647,23 @@ function placeUrl(place) {
     return place.url || `https://map.kakao.com/link/map/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
 }
 
-/** 목록 줄 오른쪽 [상세] 키: 카카오맵 가게 페이지를 새 탭으로 */
+/** 목록 줄 오른쪽 정사각 아이콘 키 (글자 대신 픽셀 아이콘. 이름은 aria-label·툴팁으로) */
+function iconKey(tag, icon, label, tip) {
+    const key = document.createElement(tag);
+    key.className = 'rl-key rl-key--beige rl-key--sq';
+    if (tag === 'button') key.type = 'button';
+    key.setAttribute('aria-label', label);
+    key.title = tip;
+    key.append(pixelIcon(icon));
+    return key;
+}
+
+/** [상세]: 카카오맵 가게 페이지를 새 탭으로 */
 function detailLink(place) {
-    const a = document.createElement('a');
-    a.className = 'rl-key rl-key--beige rl-key--small rl-key--row';
+    const a = iconKey('a', 'external-link', `${place.name} 카카오맵에서 보기 (새 탭)`, '상세 · 카카오맵');
     a.href = placeUrl(place);
     a.target = '_blank';
     a.rel = 'noopener';
-    a.textContent = '상세';
-    a.setAttribute('aria-label', `${place.name} 카카오맵에서 보기 (새 탭)`);
     return a;
 }
 
@@ -705,12 +715,8 @@ function searchRow(place) {
             return li;
         }
 
-        const add = document.createElement('button');
-        add.type = 'button';
-        add.className = 'rl-key rl-key--beige rl-key--tiny';
-        add.textContent = '+';
+        const add = iconKey('button', 'plus', `${place.name} 후보 추가`, '후보 추가');
         add.disabled = state.spinning;
-        add.setAttribute('aria-label', `${place.name} 후보 추가`);
         add.addEventListener('click', () => addCandidate(place));
 
         li.append(info, detailLink(place), add);
@@ -1012,12 +1018,8 @@ function renderCandidates() {
         name.textContent = place.name;
         info.append(name, metaLine(place, state.pinned.has(place.id)));
 
-        const remove = document.createElement('button');
-        remove.type = 'button';
-        remove.className = 'rl-key rl-key--beige rl-key--small';
-        remove.textContent = '제외';
+        const remove = iconKey('button', 'close', `${place.name} 후보에서 제외`, '제외');
         remove.disabled = state.spinning;
-        remove.setAttribute('aria-label', `${place.name} 후보에서 제외`);
         remove.addEventListener('click', () => exclude(place.id));
 
         li.append(no, info, detailLink(place), remove);

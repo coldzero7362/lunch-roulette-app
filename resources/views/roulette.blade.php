@@ -182,10 +182,14 @@
         </main>
 
         {{-- 명판 --}}
-        <footer class="rl-plate rl-ribs" aria-hidden="true">
-            <div class="rl-grille"></div>
-            <div class="rl-ticks"></div>
-            <span class="rl-label">LR-01 · 점심 룰렛</span>
+        <footer class="rl-plate rl-ribs">
+            <div class="rl-grille" aria-hidden="true"></div>
+            <div class="rl-ticks" aria-hidden="true"></div>
+            <span class="rl-label" aria-hidden="true">LR-01 · 점심 룰렛</span>
+            <nav class="rl-plate__licenses" aria-label="라이선스">
+                <a href="/fonts/Mulmaru-OFL.txt">FONT OFL</a>
+                <a href="/licenses/pixelarticons-LICENSE.txt">ICON MIT</a>
+            </nav>
         </footer>
     </div>
 </body>
