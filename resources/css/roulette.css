@@ -1634,6 +1634,47 @@
 
 .rl-ticket__actions { display: inline-flex; flex-wrap: wrap; gap: 3px; max-width: 100%; }
 
+/*
+ * 천공 카드 띠: 영수증 아래에 붙은 마닐라지 카드. 왼쪽 위 모서리를 비스듬히 자른 것도 천공 카드 그대로.
+ * 열마다 0~9 숫자를 옅게 인쇄하고, 찍힌 자리는 직사각형 구멍 (뒤 프린터가 비쳐 어둡게)
+ */
+.rl-ticket__punch {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 0 2px;
+    margin: 14px -18px -14px;
+    padding: 8px 14px 8px 18px;
+    border-top: 1px solid rgb(120 100 60 / .35);
+    background-color: #ecdfbf;
+    background-image:
+        linear-gradient(rgb(255 255 255 / .25), transparent 30%),
+        var(--grain-light);
+    clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%, 0 14px);
+}
+
+.rl-punch__col { display: grid; grid-template-rows: repeat(10, 7px); justify-items: center; }
+
+.rl-punch__cell {
+    width: 100%;
+    max-width: 6px;
+    font-family: var(--font-pixel-mono);
+    font-size: 6px;
+    line-height: 7px;
+    text-align: center;
+    color: rgb(140 100 70 / .55);
+}
+
+/* 구멍: 뒤가 비쳐 어둡고, 위 모서리에 종이 두께 그늘 */
+.rl-punch__cell.is-hole {
+    height: 6px;
+    margin-top: .5px;
+    border-radius: .5px;
+    background: #2b2620;
+    box-shadow: inset 0 1px 1px rgb(0 0 0 / .7);
+    color: transparent;
+}
+
 /* ---------- 오늘 기록 ---------- */
 
 .rl-log { display: flex; flex-direction: column; gap: 6px; }

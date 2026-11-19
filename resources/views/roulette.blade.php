@@ -258,6 +258,8 @@
                             <button id="result-exclude" type="button" class="rl-key rl-key--beige rl-key--small" disabled>제외 후 재실행</button>
                             <button id="result-again" type="button" class="rl-key rl-key--beige rl-key--small" disabled>재실행</button>
                         </div>
+                        {{-- 천공 카드 띠: 당첨 가게 ID·시각·거리를 열마다 구멍으로 (장식) --}}
+                        <div id="result-punch" class="rl-ticket__punch" aria-hidden="true"></div>
                     </article>
                 </div>
 

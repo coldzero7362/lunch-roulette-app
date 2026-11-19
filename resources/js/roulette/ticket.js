@@ -6,6 +6,7 @@ import { el, REDUCED_MOTION } from './dom.js';
 import { ensureHours, hoursOf } from './hours.js';
 import { hhmm, logKey, typeLabel, walkMinutes } from './logic/format.js';
 import { hoursText } from './logic/hours.js';
+import { punchColumns, punchDigits } from './logic/punch.js';
 import { clearWinnerMarker, highlightWinner, restoreView } from './map.js';
 import { setStatus, updateSteps } from './readout.js';
 import { placeUrl } from './rows.js';
@@ -26,6 +27,7 @@ export function showResult(place) {
     el.resultMeta.textContent = [typeLabel(place.type), place.category !== place.type ? place.category : '', `${place.distance}m`, `도보 약 ${walkMinutes(place.distance)}분`].filter(Boolean).join(' · ');
     el.resultAddress.textContent = [place.address, place.phone].filter(Boolean).join(' · ');
     setTicketHours(place);
+    renderPunch(place);
     el.resultRoute.href = `https://map.kakao.com/link/to/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
     el.resultLink.href = placeUrl(place);
     setTicketActions(true);
@@ -35,6 +37,24 @@ export function showResult(place) {
     updateSteps();
     // 영수증(프린터 칸)으로 스크롤
     el.result.scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'center' });
+}
+
+const PUNCH_COLUMNS = 32;
+
+/** 천공 카드 띠: 열마다 0~9 숫자를 옅게 인쇄하고, 찍을 숫자 자리엔 구멍 */
+function renderPunch(place) {
+    const holes = punchColumns(punchDigits(place), PUNCH_COLUMNS);
+    el.resultPunch.replaceChildren(...holes.map((hole) => {
+        const col = document.createElement('span');
+        col.className = 'rl-punch__col';
+        for (let row = 0; row < 10; row++) {
+            const cell = document.createElement('span');
+            cell.className = row === hole ? 'rl-punch__cell is-hole' : 'rl-punch__cell';
+            cell.textContent = String(row);
+            col.append(cell);
+        }
+        return col;
+    }));
 }
 
 /** 영수증의 영업 줄. 아직 모르면 받아 와서 채움 */
