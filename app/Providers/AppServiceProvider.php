@@ -23,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
             (string) config('services.kakao.rest_api_key'),
             (int) config('services.kakao.minute_budget'),
             (int) config('services.kakao.daily_budget'),
+            (int) config('services.kakao.detail_minute_budget'),
+            (int) config('services.kakao.detail_daily_budget'),
         ));
     }
 

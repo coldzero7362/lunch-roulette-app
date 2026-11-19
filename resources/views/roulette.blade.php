@@ -171,27 +171,33 @@
                 </div>
 
                 {{-- 03 후보: 카세트 A면 / B면 --}}
-                <div class="rl-jcard rl-jcard--full">
-                    <div class="rl-stripes" style="height:8px;border-top:0" aria-hidden="true"></div>
+                {{-- 상아색 모듈: 선택 키(SIDE A/B) + 판에 파인 목록 창(투명 덮개) --}}
+                <div class="rl-jcard rl-jcard--full rl-ivory">
+                    <span class="rl-screw tl" aria-hidden="true"></span>
+                    <span class="rl-screw tr" aria-hidden="true"></span>
+                    <span class="rl-screw bl" aria-hidden="true"></span>
+                    <span class="rl-screw br" aria-hidden="true"></span>
+                    <div class="rl-stripes rl-ivory__stripe" aria-hidden="true"></div>
                     <div class="rl-tabs" role="tablist" aria-label="03 후보">
-                        <button id="tab-a" type="button" role="tab" class="rl-tabs__tab" aria-selected="true" aria-controls="panel-a">SIDE A · 후보 <span id="candidate-count" class="rl-jcard__count">0/8</span></button>
-                        <button id="tab-b" type="button" role="tab" class="rl-tabs__tab" aria-selected="false" aria-controls="panel-b" tabindex="-1">SIDE B · 메뉴 검색</button>
+                        <button id="tab-a" type="button" role="tab" class="rl-tabs__tab" aria-selected="true" aria-controls="panel-a"><span class="rl-tabs__side">SIDE A</span><span class="rl-tabs__name">후보 <span id="candidate-count" class="rl-jcard__count">0/8</span></span></button>
+                        <button id="tab-b" type="button" role="tab" class="rl-tabs__tab" aria-selected="false" aria-controls="panel-b" tabindex="-1"><span class="rl-tabs__side">SIDE B</span><span class="rl-tabs__name">메뉴 검색</span></button>
                     </div>
 
                     <div id="panel-a" role="tabpanel" aria-labelledby="tab-a">
                         <div class="rl-jcard__tools">
-                            <div class="rl-well" role="group" aria-label="후보 채우기">
+                            <div class="rl-well rl-legend" data-legend="LOAD" role="group" aria-label="후보 채우기">
                                 <button id="auto" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="sparkles" aria-label="자동 채움" title="자동 채움" disabled></button>
                                 <button id="shuffle" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="shuffle" aria-label="섞기" title="섞기" disabled></button>
                                 <button id="clear" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="trash" aria-label="비움" title="비움" disabled></button>
                             </div>
-                            <div class="rl-well rl-stepper" role="group" aria-label="후보 수">
+                            <div class="rl-well rl-stepper rl-legend" data-legend="QTY" role="group" aria-label="후보 수">
                                 <button id="slots-down" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="minus" aria-label="후보 수 감소" title="후보 수 −"></button>
                                 <output id="slots" class="rl-counter" aria-live="polite" aria-label="후보 수 08"><span class="rl-drum"><span class="rl-drum__digit">0</span></span><span class="rl-drum"><span class="rl-drum__digit">8</span></span></output>
                                 <button id="slots-up" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="plus" aria-label="후보 수 증가" title="후보 수 +"></button>
                             </div>
                         </div>
-                        <ul id="candidates" class="m-0 list-none p-0"></ul>
+                        <span class="rl-ivory__legend" aria-hidden="true">TRACK LIST</span>
+                        <div class="rl-ivory__window"><ul id="candidates" class="m-0 list-none p-0"></ul></div>
                     </div>
 
                     <div id="panel-b" role="tabpanel" aria-labelledby="tab-b" hidden>
@@ -202,8 +208,11 @@
                                 <button type="submit" class="rl-key rl-key--beige rl-key--sq rl-key--sq-lg" data-icon="search" aria-label="메뉴 검색" title="검색"></button>
                             </div>
                         </form>
-                        <p id="search-status" class="rl-track__empty" aria-live="polite">반경 내 메뉴 검색 → [+]로 후보 추가</p>
-                        <ul id="search-results" class="rl-search__results rl-scroll m-0 list-none p-0"></ul>
+                        <span class="rl-ivory__legend" aria-hidden="true">RESULTS</span>
+                        <div class="rl-ivory__window">
+                            <p id="search-status" class="rl-track__empty" aria-live="polite">반경 내 메뉴 검색 → [+]로 후보 추가</p>
+                            <ul id="search-results" class="rl-search__results rl-scroll m-0 list-none p-0"></ul>
+                        </div>
                     </div>
                 </div>
 

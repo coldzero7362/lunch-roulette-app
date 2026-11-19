@@ -40,15 +40,17 @@ class OpenHoursTest extends TestCase
                 ['day_of_the_week_desc' => '토(11/21)', 'off_days_desc' => '휴무일', 'is_highlight' => true],
             ])),
             'place-api.map.kakao.com/places/panel3/104' => Http::response(['open_hours' => null]),
+            'place-api.map.kakao.com/places/panel3/105' => Http::response($this->detail('CLOSING_SOON', '곧 영업 마감', '22:00 까지', [])),
         ]);
 
-        $this->getJson(route('restaurants.hours', ['ids' => ['101', '102', '103', '104']]))
+        $this->getJson(route('restaurants.hours', ['ids' => ['101', '102', '103', '104', '105']]))
             ->assertOk()
             ->assertExactJson(['hours' => [
                 '101' => ['status' => 'open', 'label' => '영업 중', 'info' => '22:00 까지', 'today' => '11:30 ~ 22:00'],
                 '102' => ['status' => 'break', 'label' => '브레이크타임', 'info' => '16:30 오픈', 'today' => '11:00 ~ 20:30 (브레이크 14:30 ~ 16:30)'],
                 '103' => ['status' => 'closed', 'label' => '영업 마감', 'info' => '내일 10:00 오픈', 'today' => '휴무일'],
                 '104' => ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => ''],
+                '105' => ['status' => 'open', 'label' => '곧 영업 마감', 'info' => '22:00 까지', 'today' => ''],
             ]]);
     }
 
@@ -61,7 +63,7 @@ class OpenHoursTest extends TestCase
         Http::assertSent(fn (Request $r) => ! $r->hasHeader('Authorization'));
     }
 
-    public function test_failures_become_unknown_and_are_not_cached(): void
+    public function test_failures_become_unknown_and_are_retried_after_a_short_while(): void
     {
         Http::fake([
             'place-api.map.kakao.com/places/panel3/201' => Http::sequence()
@@ -75,7 +77,14 @@ class OpenHoursTest extends TestCase
             ->assertJsonPath('hours.201.status', 'unknown')
             ->assertJsonPath('hours.202.status', 'unknown');
 
-        // 실패는 캐시하지 않아서 다음 요청에 다시 물어봄
+        // 실패는 2분만 기억: 그 안엔 다시 두드리지 않고
+        $this->getJson(route('restaurants.hours', ['ids' => ['201']]))
+            ->assertOk()
+            ->assertJsonPath('hours.201.status', 'unknown');
+        Http::assertSentCount(2);
+
+        // 지나면 다시 물어봄
+        $this->travel(3)->minutes();
         $this->getJson(route('restaurants.hours', ['ids' => ['201']]))
             ->assertOk()
             ->assertJsonPath('hours.201.status', 'open');
@@ -104,7 +113,7 @@ class OpenHoursTest extends TestCase
 
     public function test_returns_busy_when_budget_is_spent(): void
     {
-        config(['services.kakao.minute_budget' => 1]);
+        config(['services.kakao.detail_minute_budget' => 1]);
         Http::fake(['place-api.map.kakao.com/*' => Http::response(['open_hours' => null])]);
 
         $this->getJson(route('restaurants.hours', ['ids' => ['401', '402']]))
@@ -112,5 +121,13 @@ class OpenHoursTest extends TestCase
             ->assertHeader('Retry-After', '60');
 
         Http::assertNothingSent();
+    }
+
+    public function test_hours_do_not_spend_the_search_budget(): void
+    {
+        config(['services.kakao.minute_budget' => 1]);
+        Http::fake(['place-api.map.kakao.com/*' => Http::response(['open_hours' => null])]);
+
+        $this->getJson(route('restaurants.hours', ['ids' => ['501', '502', '503']]))->assertOk();
     }
 }
