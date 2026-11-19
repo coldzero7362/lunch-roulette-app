@@ -59,7 +59,7 @@
                             <span class="rl-locate__keys" aria-hidden="true">↑↓ 선택 · ENTER 확정 · ESC 닫기</span>
                             <button id="loc-close" type="button" class="rl-locate__close" aria-label="결과 닫기" data-icon="close"></button>
                         </div>
-                        <ul id="loc-results" class="rl-locate__results" role="listbox" aria-label="위치 검색 결과"></ul>
+                        <ul id="loc-results" class="rl-locate__results rl-scroll" role="listbox" aria-label="위치 검색 결과"></ul>
                     </div>
                 </div>
 
@@ -156,7 +156,7 @@
                             </div>
                         </form>
                         <p id="search-status" class="rl-track__empty" aria-live="polite">반경 내 메뉴 검색 → [+]로 후보 추가</p>
-                        <ul id="search-results" class="rl-search__results m-0 list-none p-0"></ul>
+                        <ul id="search-results" class="rl-search__results rl-scroll m-0 list-none p-0"></ul>
                     </div>
                 </div>
 

@@ -489,14 +489,7 @@
     padding: 0;
     overflow-y: auto;
     list-style: none;
-    /* 스크롤바: 짙은 홈 + 베이지 손잡이 */
-    scrollbar-width: thin;
-    scrollbar-color: #b8b0a0 #3f382f;
 }
-
-.rl-locate__results::-webkit-scrollbar { width: 8px; }
-.rl-locate__results::-webkit-scrollbar-track { background: #3f382f; }
-.rl-locate__results::-webkit-scrollbar-thumb { background: #b8b0a0; border: 1px solid #2b2620; border-radius: 2px; }
 
 /* 한 줄: [번호] [이름 / 태그 + 주소] */
 .rl-locate__item {
@@ -538,6 +531,59 @@
     .rl-locate__bar .rl-console__label { display: none; }
     .rl-locate__keys { display: none; }
     .rl-locate__close { margin-left: auto; }
+}
+
+/* ---------- 옛 윈도우식 스크롤바 ----------
+   각진 화살표 버튼 + 입체 베벨(위·왼쪽 밝음, 아래·오른쪽 어두움) + 손잡이 돌기 + 체크무늬 트랙.
+   크롬은 scrollbar-color 를 주면 ::-webkit-scrollbar 를 무시하므로, 그 속성은 지원 안 하는 브라우저(파이어폭스)에만 */
+
+.rl-scroll::-webkit-scrollbar { width: 16px; height: 16px; }
+
+.rl-scroll::-webkit-scrollbar-track {
+    background-color: #9e9687;
+    background-image: conic-gradient(#8a8273 25%, transparent 0 50%, #8a8273 0 75%, transparent 0);
+    background-size: 2px 2px;
+}
+
+.rl-scroll::-webkit-scrollbar-thumb,
+.rl-scroll::-webkit-scrollbar-button {
+    border: 1px solid;
+    border-color: #e9e3d4 #2b2620 #2b2620 #e9e3d4;
+    background-color: #b8b0a0;
+    box-shadow: inset -1px -1px 0 #6e6656, inset 1px 1px 0 #d9d2c5;
+}
+
+/* 손잡이 돌기: 가운데 가로 홈 세 줄 (밝은 선 + 어두운 선) */
+.rl-scroll::-webkit-scrollbar-thumb {
+    background-image: repeating-linear-gradient(to bottom, #e9e3d4 0 1px, #595347 1px 2px, transparent 2px 3px);
+    background-size: 8px 8px;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-height: 24px;
+}
+
+.rl-scroll::-webkit-scrollbar-button:single-button { display: block; height: 16px; background-repeat: no-repeat; background-position: center; background-size: 8px 8px; }
+
+.rl-scroll::-webkit-scrollbar-button:single-button:vertical:decrement {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%232b2620' d='M3 2h2v1H3zM2 3h4v1H2zM1 4h6v1H1z'/%3E%3C/svg%3E");
+}
+
+.rl-scroll::-webkit-scrollbar-button:single-button:vertical:increment {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%232b2620' d='M1 3h6v1H1zM2 4h4v1H2zM3 5h2v1H3z'/%3E%3C/svg%3E");
+}
+
+/* 누르면 베벨이 뒤집혀 눌린 모양 */
+.rl-scroll::-webkit-scrollbar-button:active,
+.rl-scroll::-webkit-scrollbar-thumb:active {
+    border-color: #2b2620 #e9e3d4 #e9e3d4 #2b2620;
+    box-shadow: inset 1px 1px 0 #6e6656;
+    background-color: #a9a191;
+}
+
+.rl-scroll::-webkit-scrollbar-corner { background: #9e9687; }
+
+@supports not selector(::-webkit-scrollbar) {
+    .rl-scroll { scrollbar-color: #b8b0a0 #8a8273; }
 }
 
 /* ---------- 메뉴 찾기 ---------- */
