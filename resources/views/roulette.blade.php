@@ -15,10 +15,10 @@
                 <span class="rl-model">MODEL LR-01 · LUNCH ROULETTE</span>
             </div>
             <ol id="steps" class="rl-steps" aria-label="진행 단계">
-                <li data-step="loc"><span class="rl-steps__lamp" aria-hidden="true"></span>01 위치</li>
-                <li data-step="cond"><span class="rl-steps__lamp" aria-hidden="true"></span>02 조건</li>
-                <li data-step="cand"><span class="rl-steps__lamp" aria-hidden="true"></span>03 후보</li>
-                <li data-step="spin"><span class="rl-steps__lamp" aria-hidden="true"></span>04 돌리기</li>
+                <li data-step="loc"><span class="rl-steps__lamp" aria-hidden="true"></span>01 LOCATE</li>
+                <li data-step="cond"><span class="rl-steps__lamp" aria-hidden="true"></span>02 FILTER</li>
+                <li data-step="cand"><span class="rl-steps__lamp" aria-hidden="true"></span>03 LOAD</li>
+                <li data-step="spin"><span class="rl-steps__lamp" aria-hidden="true"></span>04 SPIN</li>
             </ol>
         </header>
         <div class="rl-stripes" aria-hidden="true"></div>
@@ -170,7 +170,7 @@
                         <div class="rl-well rl-well--dark rl-well--block">
                             <button id="spin" type="button" disabled class="rl-key rl-key--wide rl-spin" aria-label="돌리기"><span class="rl-spin__tri" aria-hidden="true"></span><span class="rl-spin__label">SPIN</span></button>
                         </div>
-                        <p class="rl-deck__hint">칸 번호 = 후보 번호. 바늘 위치 = 결과.</p>
+                        <p class="rl-deck__hint">SLOT NO. = TRACK NO. · NEEDLE = RESULT</p>
                     </div>
                 </div>
 
@@ -236,7 +236,7 @@
                 </div>
 
                 <div class="rl-log" aria-labelledby="log-title">
-                    <span id="log-title" class="rl-console__label">LOG · 오늘</span>
+                    <span id="log-title" class="rl-console__label">LOG · TODAY</span>
                     {{-- 작은 CRT 단말: 형광 글자 + 주사선, 맨 아래 깜빡이는 프롬프트 --}}
                     <div class="rl-crt rl-log__screen">
                         <ol id="result-log" class="rl-log__list"></ol>
@@ -250,7 +250,7 @@
         <footer class="rl-plate rl-ribs">
             <div class="rl-grille" aria-hidden="true"></div>
             <div class="rl-ticks" aria-hidden="true"></div>
-            <span class="rl-label" aria-hidden="true">LR-01 · 점심 룰렛</span>
+            <span class="rl-label" aria-hidden="true">LR-01 · LUNCH ROULETTE</span>
             <nav class="rl-plate__licenses" aria-label="라이선스">
                 <a href="/fonts/Mulmaru-OFL.txt">FONT OFL</a>
                 <a href="/fonts/DSEG-OFL.txt">DSEG OFL</a>
