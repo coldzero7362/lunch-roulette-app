@@ -12,6 +12,13 @@
 }
 
 @font-face {
+    font-family: 'Orbitron';
+    src: url('/fonts/orbitron-900.woff2') format('woff2');
+    font-weight: 900;
+    font-display: swap;
+}
+
+@font-face {
     font-family: 'DSEG7';
     src: url('/fonts/dseg7-classic-bold.woff2') format('woff2');
     font-display: swap;
@@ -233,6 +240,28 @@
 .rl-key--small { padding: 6px 12px; font-size: 13px; }
 /* 돌리기: 같은 구조, 번트 오렌지, 크게 */
 .rl-key--wide { --key: var(--c-signal); --ink: #1d1a16; width: 100%; padding: 13px 18px; font-size: 20px; }
+
+/* SPIN 키: 각진 SF 계기판 글꼴(Orbitron Black)로 각인, 앞에 재생 삼각형 */
+.rl-spin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-family: 'Orbitron', var(--font-pixel-mono);
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: .28em;
+}
+
+.rl-spin__tri {
+    width: 13px;
+    height: 15px;
+    background: currentColor;
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+/* 자간이 마지막 글자 뒤에도 붙어 오른쪽으로 쏠리는 것 보정 */
+.rl-spin__label { margin-right: -.28em; }
 
 /* ---------- 홈 (매립 베젤) ----------
    패널을 음각으로 판 홈: 위·왼쪽은 그늘, 아래·오른쪽은 빛. 키 묶음을 담는다. */

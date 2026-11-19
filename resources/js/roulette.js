@@ -1335,7 +1335,7 @@ function setTicketIdle() {
     el.resultKicker.textContent = state.spinning ? 'SPIN' : 'STANDBY';
     el.resultName.textContent = '—';
     el.resultName.removeAttribute('title');
-    el.resultMeta.textContent = state.candidates.length >= 1 ? '▶ 돌리기 대기' : '후보 추가 → ▶ 돌리기';
+    el.resultMeta.textContent = state.candidates.length >= 1 ? '▶ SPIN 대기' : '후보 추가 → ▶ SPIN';
     el.resultAddress.textContent = '\u00a0';
     el.resultHours.textContent = '\u00a0';
     delete el.resultHours.dataset.status;

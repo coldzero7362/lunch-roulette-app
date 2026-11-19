@@ -157,7 +157,7 @@
                     <div class="rl-deck__controls">
                         <span class="rl-console__label">04 SPIN</span>
                         <div class="rl-well rl-well--dark rl-well--block">
-                            <button id="spin" type="button" disabled class="rl-key rl-key--wide">▶ 돌리기</button>
+                            <button id="spin" type="button" disabled class="rl-key rl-key--wide rl-spin" aria-label="돌리기"><span class="rl-spin__tri" aria-hidden="true"></span><span class="rl-spin__label">SPIN</span></button>
                         </div>
                         <p class="rl-deck__hint">칸 번호 = 후보 번호. 바늘 위치 = 결과.</p>
                     </div>
@@ -211,7 +211,7 @@
                         <div class="rl-ticket__head"><span id="result-time">LR-01 · --:--</span><span id="result-no">NO.--</span></div>
                         <p id="result-kicker" class="rl-ticket__kicker">STANDBY</p>
                         <p id="result-name" class="rl-ticket__name">—</p>
-                        <p id="result-meta" class="rl-ticket__meta">후보 2곳 이상 → ▶ 돌리기</p>
+                        <p id="result-meta" class="rl-ticket__meta">후보 추가 → ▶ SPIN</p>
                         <p id="result-hours" class="rl-ticket__sub">&nbsp;</p>
                         <p id="result-address" class="rl-ticket__sub">&nbsp;</p>
                         <div class="rl-ticket__cut" aria-hidden="true"></div>
@@ -243,6 +243,7 @@
             <nav class="rl-plate__licenses" aria-label="라이선스">
                 <a href="/fonts/Mulmaru-OFL.txt">FONT OFL</a>
                 <a href="/fonts/DSEG-OFL.txt">DSEG OFL</a>
+                <a href="/fonts/Orbitron-OFL.txt">ORBITRON OFL</a>
                 <a href="/licenses/pixelarticons-LICENSE.txt">ICON MIT</a>
             </nav>
         </footer>
