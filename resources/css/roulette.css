@@ -1649,7 +1649,15 @@
     padding: 0 16px 18px;
     border-radius: 10px;
     background-color: var(--ivory);
-    background-image: var(--grain-light);
+    /* 쓰던 기계: 거친 결 + 가로 주름 결 + 가장자리로 갈수록 누렇게 바랜 때 + 나사 주변 손때 */
+    background-image:
+        radial-gradient(circle at 12px 20px, rgb(90 70 35 / .22), transparent 22px),
+        radial-gradient(circle at calc(100% - 12px) 20px, rgb(90 70 35 / .2), transparent 22px),
+        radial-gradient(circle at 12px calc(100% - 10px), rgb(90 70 35 / .24), transparent 24px),
+        radial-gradient(circle at calc(100% - 12px) calc(100% - 10px), rgb(90 70 35 / .2), transparent 24px),
+        radial-gradient(ellipse at 50% 45%, transparent 55%, rgb(120 95 45 / .2) 100%),
+        repeating-linear-gradient(0deg, rgb(0 0 0 / .025) 0 1px, transparent 1px 4px),
+        var(--texture);
     box-shadow:
         inset 0 2px 0 rgb(255 255 255 / .55),
         inset 0 -3px 0 rgb(0 0 0 / .12),
@@ -1752,7 +1760,7 @@
 }
 
 /* 도구 줄: 가운데 선 대신 판에 새긴 홈 */
-.rl-ivory .rl-jcard__tools { padding: 12px 0 10px; border-bottom: 0; }
+.rl-ivory .rl-jcard__tools { padding: 24px 0 10px; border-bottom: 0; }
 .rl-ivory .rl-search { padding: 12px 0 10px; border-bottom: 0; }
 
 /* 목록 창: 판에 파인 홈 + 밝은 종이 + 투명 덮개 */
@@ -1764,8 +1772,47 @@
     border-left: 2px solid #a59c86;
     border-bottom: 2px solid #fbf6ea;
     border-right: 2px solid #f6f0e2;
-    background: #f7f2e6;
+    background-color: #f3eddd;
+    background-image:
+        radial-gradient(ellipse at 50% 40%, transparent 50%, rgb(150 120 60 / .16) 100%),
+        var(--grain-light);
     box-shadow: inset 0 3px 6px rgb(0 0 0 / .22);
+}
+
+/* 판 실크 인쇄 표기: 짙은 잉크, 오른쪽으로 가는 선 (── TRACK LIST ──────) */
+.rl-ivory__legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 2px 6px;
+    font-family: 'Orbitron', var(--font-pixel-mono);
+    font-weight: 900;
+    font-size: 9px;
+    letter-spacing: .22em;
+    color: #6b6352;
+}
+
+.rl-ivory__legend::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: currentColor;
+    opacity: .45;
+}
+
+/* 키 홈 위 표기 (LOAD, QTY) */
+.rl-ivory .rl-legend { position: relative; }
+
+.rl-ivory .rl-legend::before {
+    content: attr(data-legend);
+    position: absolute;
+    left: 2px;
+    bottom: calc(100% + 4px);
+    font-family: 'Orbitron', var(--font-pixel-mono);
+    font-weight: 900;
+    font-size: 9px;
+    letter-spacing: .22em;
+    color: #6b6352;
 }
 
 .rl-ivory__window::after {
