@@ -47,13 +47,20 @@
                 <div class="rl-locate">
                     <form id="loc-form" class="rl-locate__bar" role="search">
                         <label for="loc-input" class="rl-console__label">01 LOC</label>
-                        <input id="loc-input" type="search" class="rl-search__input" placeholder="역 · 건물 · 도로명 주소" maxlength="50" autocomplete="off" enterkeyhint="search">
+                        <input id="loc-input" type="search" class="rl-search__input" placeholder="역 · 건물 · 도로명 주소" maxlength="50" autocomplete="off" enterkeyhint="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="loc-results">
                         <div class="rl-well rl-well--dark">
                             <button type="submit" class="rl-key rl-key--beige rl-key--sq rl-key--sq-lg" data-icon="search" aria-label="위치 검색" title="검색"></button>
                             <button id="locate" type="button" class="rl-key rl-key--beige rl-key--sq rl-key--sq-lg" data-icon="gps" aria-label="현재 위치 사용" title="현재 위치"></button>
                         </div>
                     </form>
-                    <ul id="loc-results" class="rl-locate__results" hidden></ul>
+                    <div id="loc-pop" class="rl-locate__pop" hidden>
+                        <div class="rl-locate__head">
+                            <span id="loc-head">RESULT</span>
+                            <span class="rl-locate__keys" aria-hidden="true">↑↓ 선택 · ENTER 확정 · ESC 닫기</span>
+                            <button id="loc-close" type="button" class="rl-locate__close" aria-label="결과 닫기" data-icon="close"></button>
+                        </div>
+                        <ul id="loc-results" class="rl-locate__results" role="listbox" aria-label="위치 검색 결과"></ul>
+                    </div>
                 </div>
 
                 <div id="map-screen" class="rl-map is-crt">

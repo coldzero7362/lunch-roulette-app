@@ -71,6 +71,9 @@ const el = {
     locForm: $('loc-form'),
     locInput: $('loc-input'),
     locResults: $('loc-results'),
+    locPop: $('loc-pop'),
+    locHead: $('loc-head'),
+    locClose: $('loc-close'),
 };
 
 const state = {
@@ -563,22 +566,73 @@ function forgetPlace() {
     try { localStorage.removeItem(PLACE_KEY); } catch { /* 무시 */ }
 }
 
+let locItems = [];   // 지금 결과 목록 (위치 검색)
+let locActive = -1;  // 키보드로 고른 줄
+
+function showLocPop(head) {
+    el.locHead.textContent = head;
+    el.locPop.hidden = false;
+    el.locInput.setAttribute('aria-expanded', 'true');
+}
+
 function hideLocResults() {
-    el.locResults.hidden = true;
+    el.locPop.hidden = true;
     el.locResults.replaceChildren();
+    el.locInput.setAttribute('aria-expanded', 'false');
+    el.locInput.removeAttribute('aria-activedescendant');
+    locItems = [];
+    locActive = -1;
+}
+
+/** 이름에서 검색어 부분을 강조 (공백 무시, 대소문자 무시) */
+function highlight(text, query) {
+    const q = query.replace(/\s+/g, '').toLowerCase();
+    const frag = document.createDocumentFragment();
+    if (!q) { frag.append(text); return frag; }
+    // 공백을 뺀 위치 ↔ 원문 위치 대응
+    const map = [];
+    let flat = '';
+    [...text].forEach((ch, i) => { if (!/\s/.test(ch)) { map.push(i); flat += ch.toLowerCase(); } });
+    const at = flat.indexOf(q);
+    if (at === -1) { frag.append(text); return frag; }
+    const chars = [...text];
+    const from = map[at];
+    const to = map[at + q.length - 1] + 1;
+    const mark = document.createElement('mark');
+    mark.className = 'rl-hit';
+    mark.textContent = chars.slice(from, to).join('');
+    frag.append(chars.slice(0, from).join(''), mark, chars.slice(to).join(''));
+    return frag;
+}
+
+function setLocActive(i) {
+    const rows = [...el.locResults.querySelectorAll('.rl-locate__item')];
+    if (!rows.length) return;
+    locActive = (i + rows.length) % rows.length;
+    rows.forEach((r, k) => r.setAttribute('aria-selected', String(k === locActive)));
+    el.locInput.setAttribute('aria-activedescendant', rows[locActive].id);
+    rows[locActive].scrollIntoView({ block: 'nearest' });
+}
+
+function pickLocation(loc) {
+    el.locInput.value = loc.name;
+    hideLocResults();
+    choosePlace(loc.lat, loc.lng, loc.name);
 }
 
 async function searchLocation(query) {
     if (!query) return;
 
-    const note = (text) => {
+    const note = (head, text) => {
         const li = document.createElement('li');
         li.className = 'rl-locate__note';
         li.textContent = text;
         el.locResults.replaceChildren(li);
-        el.locResults.hidden = false;
+        locItems = [];
+        locActive = -1;
+        showLocPop(head);
     };
-    note(`'${query}' 검색 중`);
+    note('SEARCH', `'${query}' 검색 중`);
 
     const url = new URL(root.dataset.locationsUrl);
     url.searchParams.set('q', query);
@@ -590,19 +644,28 @@ async function searchLocation(query) {
 
         const locations = body.locations ?? [];
         if (!locations.length) {
-            note(`'${query}' 0건 — 역·건물명 또는 도로명 주소 입력`);
+            note('RESULT 0건', `'${query}' 0건 — 역·건물명 또는 도로명 주소 입력`);
             return;
         }
 
-        el.locResults.replaceChildren(...locations.map((loc) => {
+        locItems = locations;
+        el.locResults.replaceChildren(...locations.map((loc, i) => {
             const li = document.createElement('li');
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'rl-locate__item';
+            li.className = 'rl-locate__item';
+            li.id = `loc-opt-${i}`;
+            li.setAttribute('role', 'option');
+            li.setAttribute('aria-selected', 'false');
 
+            const no = document.createElement('span');
+            no.className = 'rl-locate__no';
+            no.textContent = String(i + 1).padStart(2, '0');
+            no.setAttribute('aria-hidden', 'true');
+
+            const body = document.createElement('div');
+            body.className = 'min-w-0';
             const name = document.createElement('p');
             name.className = 'rl-track__name truncate';
-            name.textContent = loc.name;
+            name.append(highlight(loc.name, query));
 
             const meta = document.createElement('p');
             meta.className = 'rl-track__meta truncate';
@@ -611,18 +674,15 @@ async function searchLocation(query) {
             tag.textContent = loc.kind === 'address' ? '주소' : loc.kind || '장소';
             meta.append(tag, loc.kind === 'address' ? '' : loc.address);
 
-            button.append(name, meta);
-            button.addEventListener('click', () => {
-                el.locInput.value = loc.name;
-                hideLocResults();
-                choosePlace(loc.lat, loc.lng, loc.name);
-            });
-            li.append(button);
+            body.append(name, meta);
+            li.append(no, body);
+            li.addEventListener('click', () => pickLocation(loc));
+            li.addEventListener('mousemove', () => { if (locActive !== i) setLocActive(i); });
             return li;
         }));
-        el.locResults.hidden = false;
+        showLocPop(`RESULT ${locations.length}건`);
     } catch (e) {
-        note(e.message);
+        note('ERROR', e.message);
     }
 }
 
@@ -1161,13 +1221,30 @@ el.locate.addEventListener('click', () => {
 });
 el.locForm.addEventListener('submit', (e) => {
     e.preventDefault();
+    // 목록에서 고른 줄이 있으면 그걸 확정, 아니면 새로 검색
+    if (!el.locPop.hidden && locActive >= 0 && locItems[locActive]) {
+        pickLocation(locItems[locActive]);
+        return;
+    }
     searchLocation(el.locInput.value.trim());
 });
 el.locInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') hideLocResults();
+    if (e.key === 'Escape') { hideLocResults(); return; }
+    if (el.locPop.hidden || !locItems.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setLocActive(locActive + 1); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); setLocActive(locActive < 0 ? -1 : locActive - 1); }
 });
+el.locInput.addEventListener('input', () => {
+    // 글자를 바꾸면 고른 줄은 해제 (Enter = 새 검색)
+    if (locActive >= 0) {
+        locActive = -1;
+        el.locResults.querySelectorAll('[aria-selected="true"]').forEach((r) => r.setAttribute('aria-selected', 'false'));
+        el.locInput.removeAttribute('aria-activedescendant');
+    }
+});
+el.locClose.addEventListener('click', () => { hideLocResults(); el.locInput.focus(); });
 document.addEventListener('click', (e) => {
-    if (!el.locResults.hidden && !e.target.closest('.rl-locate')) hideLocResults();
+    if (!el.locPop.hidden && !e.target.closest('.rl-locate')) hideLocResults();
 });
 el.resultExclude.addEventListener('click', () => {
     if (!state.winner) return;
