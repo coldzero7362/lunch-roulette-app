@@ -645,41 +645,42 @@
     .rl-scroll { scrollbar-color: #b8b0a0 #8a8273; }
 }
 
-/* 상아색 모듈 안: 금속 레일 스크롤바.
-   판에 판 홈 + 은색 봉, 손잡이는 은색 슬라이더(미끄럼 방지 홈). 화살표 버튼 없음 */
-.rl-ivory .rl-scroll::-webkit-scrollbar { width: 14px; }
+/* 상아색 모듈 안: 슬라이드 페이더 스크롤바.
+   판에 판 좁은 홈(어두운 슬롯) + 상아색 플라스틱 페이더 캡(가로 홈 + 가운데 기준선). 화살표 버튼 없음 */
+.rl-ivory .rl-scroll::-webkit-scrollbar { width: 16px; }
 
 .rl-ivory .rl-scroll::-webkit-scrollbar-button { display: none; }
 
 .rl-ivory .rl-scroll::-webkit-scrollbar-track {
     margin: 6px 0;
+    /* 가운데 4px 슬롯: 바닥은 어둡고 왼쪽 벽에 그늘, 오른쪽 벽에 빛 */
     background:
-        /* 은색 봉: 왼쪽 빛, 오른쪽 그늘 */
-        linear-gradient(90deg, transparent 5.5px, #55554f 5.5px, #f2f2ee 6.5px, #b4b4ae 7.5px, #5a5a55 8.5px, transparent 8.5px),
-        /* 봉이 박힌 홈 */
-        linear-gradient(90deg, transparent 3px, rgb(60 50 30 / .2) 3px, rgb(60 50 30 / .08) 11px, transparent 11px);
+        linear-gradient(90deg, transparent 6px, #1d1a16 6px, #3a342c 7.5px, #2b2620 9px, rgb(255 255 255 / .55) 10px, transparent 10.5px);
 }
 
 .rl-ivory .rl-scroll::-webkit-scrollbar-thumb {
-    min-height: 24px;
+    min-height: 28px;
     border: 0;
-    border-radius: 3px;
+    border-radius: 2px;
     background:
-        /* 미끄럼 방지 가로 홈 */
-        repeating-linear-gradient(0deg, rgb(0 0 0 / .3) 0 1px, rgb(255 255 255 / .55) 1px 2px, transparent 2px 4px) center / 8px 11px no-repeat,
-        /* 깎은 은색 블록 */
-        linear-gradient(90deg, #6f6f6a, #ecece8 30%, #c4c4bf 55%, #7c7c77);
-    box-shadow: inset 0 0 0 1px #2e2c28, inset 0 2px 0 rgb(255 255 255 / .45), inset 0 -2px 0 rgb(0 0 0 / .2);
+        /* 가운데 기준선 */
+        linear-gradient(#2b2620, #2b2620) center / 100% 2px no-repeat,
+        /* 손가락 걸림 가로 홈 (기준선 위아래) */
+        repeating-linear-gradient(0deg, rgb(0 0 0 / .22) 0 1px, rgb(255 255 255 / .6) 1px 2px, transparent 2px 4px) center / 100% 18px no-repeat,
+        /* 상아색 캡: 위 밝고 아래 어두운 사출 플라스틱 */
+        linear-gradient(#f6f0e2, #e2d9c1 55%, #c9bfa5);
+    box-shadow: inset 0 0 0 1px #6e6656, inset 0 1px 0 rgb(255 255 255 / .8), inset 0 -2px 0 rgb(0 0 0 / .15);
 }
 
 .rl-ivory .rl-scroll::-webkit-scrollbar-thumb:active {
     background:
-        repeating-linear-gradient(0deg, rgb(0 0 0 / .3) 0 1px, rgb(255 255 255 / .45) 1px 2px, transparent 2px 4px) center / 8px 11px no-repeat,
-        linear-gradient(90deg, #62625d, #d6d6d1 30%, #b0b0ab 55%, #6d6d68);
+        linear-gradient(var(--c-signal), var(--c-signal)) center / 100% 2px no-repeat,
+        repeating-linear-gradient(0deg, rgb(0 0 0 / .22) 0 1px, rgb(255 255 255 / .5) 1px 2px, transparent 2px 4px) center / 100% 18px no-repeat,
+        linear-gradient(#e8e1d0, #d4cab0 55%, #bcb197);
 }
 
 @supports not selector(::-webkit-scrollbar) {
-    .rl-ivory .rl-scroll { scrollbar-color: #b4b4ae transparent; }
+    .rl-ivory .rl-scroll { scrollbar-color: #e2d9c1 #3a342c; }
 }
 
 /* ---------- 메뉴 찾기 ---------- */
