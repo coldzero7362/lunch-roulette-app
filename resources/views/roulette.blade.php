@@ -48,8 +48,10 @@
                     <form id="loc-form" class="rl-locate__bar" role="search">
                         <label for="loc-input" class="rl-console__label">01 LOC</label>
                         <input id="loc-input" type="search" class="rl-search__input" placeholder="역 · 건물 · 도로명 주소" maxlength="50" autocomplete="off" enterkeyhint="search">
-                        <button type="submit" class="rl-key rl-key--beige rl-key--sq rl-key--sq-lg" data-icon="search" aria-label="위치 검색" title="검색"></button>
-                        <button id="locate" type="button" class="rl-key rl-key--beige rl-key--sq rl-key--sq-lg" data-icon="gps" aria-label="현재 위치 사용" title="현재 위치"></button>
+                        <div class="rl-well rl-well--dark">
+                            <button type="submit" class="rl-key rl-key--beige rl-key--sq rl-key--sq-lg" data-icon="search" aria-label="위치 검색" title="검색"></button>
+                            <button id="locate" type="button" class="rl-key rl-key--beige rl-key--sq rl-key--sq-lg" data-icon="gps" aria-label="현재 위치 사용" title="현재 위치"></button>
+                        </div>
                     </form>
                     <ul id="loc-results" class="rl-locate__results" hidden></ul>
                 </div>
@@ -107,7 +109,9 @@
 
                     <div class="rl-deck__controls">
                         <span class="rl-console__label">04 SPIN</span>
-                        <button id="spin" type="button" disabled class="rl-key rl-key--wide">▶ 돌리기</button>
+                        <div class="rl-well rl-well--dark rl-well--block">
+                            <button id="spin" type="button" disabled class="rl-key rl-key--wide">▶ 돌리기</button>
+                        </div>
                         <p class="rl-deck__hint">칸 번호 = 후보 번호. 바늘 위치 = 결과.</p>
                     </div>
                 </div>
@@ -122,10 +126,12 @@
 
                     <div id="panel-a" role="tabpanel" aria-labelledby="tab-a">
                         <div class="rl-jcard__tools">
-                            <button id="auto" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="sparkles" aria-label="자동 채움" title="자동 채움" disabled></button>
-                            <button id="shuffle" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="shuffle" aria-label="섞기" title="섞기" disabled></button>
-                            <button id="clear" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="trash" aria-label="비움" title="비움" disabled></button>
-                            <div class="rl-stepper" role="group" aria-label="후보 수">
+                            <div class="rl-well" role="group" aria-label="후보 채우기">
+                                <button id="auto" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="sparkles" aria-label="자동 채움" title="자동 채움" disabled></button>
+                                <button id="shuffle" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="shuffle" aria-label="섞기" title="섞기" disabled></button>
+                                <button id="clear" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="trash" aria-label="비움" title="비움" disabled></button>
+                            </div>
+                            <div class="rl-well rl-stepper" role="group" aria-label="후보 수">
                                 <button id="slots-down" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="minus" aria-label="후보 수 감소" title="후보 수 −"></button>
                                 <output id="slots" class="rl-counter" aria-live="polite">08</output>
                                 <button id="slots-up" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="plus" aria-label="후보 수 증가" title="후보 수 +"></button>
@@ -138,7 +144,9 @@
                         <form id="search-form" class="rl-search" role="search">
                             <label for="search-input" class="sr-only">메뉴 또는 가게 이름</label>
                             <input id="search-input" type="search" class="rl-search__input" placeholder="메뉴 · 가게 이름" maxlength="30" autocomplete="off" enterkeyhint="search">
-                            <button type="submit" class="rl-key rl-key--beige rl-key--sq rl-key--sq-lg" data-icon="search" aria-label="메뉴 검색" title="검색"></button>
+                            <div class="rl-well">
+                                <button type="submit" class="rl-key rl-key--beige rl-key--sq rl-key--sq-lg" data-icon="search" aria-label="메뉴 검색" title="검색"></button>
+                            </div>
                         </form>
                         <p id="search-status" class="rl-track__empty" aria-live="polite">반경 내 메뉴 검색 → [+]로 후보 추가</p>
                         <ul id="search-results" class="rl-search__results m-0 list-none p-0"></ul>
@@ -159,7 +167,7 @@
                         <p id="result-meta" class="rl-ticket__meta">후보 2곳 이상 → ▶ 돌리기</p>
                         <p id="result-address" class="rl-ticket__sub">&nbsp;</p>
                         <div class="rl-ticket__cut" aria-hidden="true"></div>
-                        <div class="rl-ticket__actions">
+                        <div class="rl-ticket__actions rl-well">
                             <a id="result-route" target="_blank" rel="noopener" class="rl-key rl-key--amber rl-key--small" aria-disabled="true" tabindex="-1">길찾기</a>
                             <a id="result-link" target="_blank" rel="noopener" class="rl-key rl-key--beige rl-key--small" aria-disabled="true" tabindex="-1">상세</a>
                             <button id="result-exclude" type="button" class="rl-key rl-key--beige rl-key--small" disabled>제외 후 재실행</button>

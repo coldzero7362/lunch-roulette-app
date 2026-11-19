@@ -658,6 +658,14 @@ function iconKey(tag, icon, label, tip) {
     return key;
 }
 
+/** 키 묶음을 매립 홈(.rl-well)에 담음 */
+function well(...keys) {
+    const w = document.createElement('span');
+    w.className = 'rl-well';
+    w.append(...keys);
+    return w;
+}
+
 /** [상세]: 카카오맵 가게 페이지를 새 탭으로 */
 function detailLink(place) {
     const a = iconKey('a', 'external-link', `${place.name} 카카오맵에서 보기 (새 탭)`, '상세 · 카카오맵');
@@ -711,7 +719,7 @@ function searchRow(place) {
             on.className = 'rl-track__on';
             on.textContent = `#${slot + 1}`;
             on.setAttribute('aria-label', `후보 ${slot + 1}번에 있음`);
-            li.append(info, detailLink(place), on);
+            li.append(info, well(detailLink(place)), on);
             return li;
         }
 
@@ -719,7 +727,7 @@ function searchRow(place) {
         add.disabled = state.spinning;
         add.addEventListener('click', () => addCandidate(place));
 
-        li.append(info, detailLink(place), add);
+        li.append(info, well(detailLink(place), add));
         return li;
 }
 
@@ -1022,7 +1030,7 @@ function renderCandidates() {
         remove.disabled = state.spinning;
         remove.addEventListener('click', () => exclude(place.id));
 
-        li.append(no, info, detailLink(place), remove);
+        li.append(no, info, well(detailLink(place), remove));
         return li;
     }));
 }
