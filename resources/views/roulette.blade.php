@@ -50,24 +50,17 @@
         </div>
 
         <main class="rl-main">
+            {{-- 장식: 위 표시창 뒤에서 나와 콘솔 뒤로 들어가는 전선 3가닥 (나일론 타이 + 번호 꼬리표) --}}
+            <div class="rl-cables" aria-hidden="true">
+                <span class="rl-cables__wire rl-cables__wire--red"></span>
+                <span class="rl-cables__wire rl-cables__wire--black"></span>
+                <span class="rl-cables__wire rl-cables__wire--amber"></span>
+                <span class="rl-cables__tie"></span>
+                <span class="rl-cables__tag">J1</span>
+            </div>
 
             {{-- 01 위치 · 02 조건: 한 장비 --}}
             <section class="rl-console rl-ribs" aria-label="위치와 조건">
-                {{-- 장식: 위 표시창에서 내려와 콘솔로 들어가는 전선 3가닥 (고무 부싱 + 케이블 타이) --}}
-                <svg class="rl-cables" viewBox="0 0 40 40" preserveAspectRatio="none" aria-hidden="true">
-                    <g fill="none" stroke-linecap="butt">
-                        <path d="M12 0 C12 14 9 22 10 40" stroke="#1a1713" stroke-width="6.5" vector-effect="non-scaling-stroke"/>
-                        <path d="M12 0 C12 14 9 22 10 40" stroke="#c8442a" stroke-width="4.5" vector-effect="non-scaling-stroke"/>
-                        <path d="M20 0 C20 16 21 24 20 40" stroke="#1a1713" stroke-width="6.5" vector-effect="non-scaling-stroke"/>
-                        <path d="M20 0 C20 16 21 24 20 40" stroke="#3a342c" stroke-width="4.5" vector-effect="non-scaling-stroke"/>
-                        <path d="M28 0 C28 14 31 22 30 40" stroke="#1a1713" stroke-width="6.5" vector-effect="non-scaling-stroke"/>
-                        <path d="M28 0 C28 14 31 22 30 40" stroke="#e0a42a" stroke-width="4.5" vector-effect="non-scaling-stroke"/>
-                        <path d="M11.2 0 C11.2 14 8.2 22 9.2 40 M19.2 0 C19.2 16 20.2 24 19.2 40 M27.2 0 C27.2 14 30.2 22 29.2 40" stroke="rgb(255 255 255 / .28)" stroke-width="1" vector-effect="non-scaling-stroke"/>
-                    </g>
-                </svg>
-                <span class="rl-cables__tie" aria-hidden="true"></span>
-                <span class="rl-cables__boot rl-cables__boot--top" aria-hidden="true"></span>
-                <span class="rl-cables__boot rl-cables__boot--bottom" aria-hidden="true"></span>
                 <span class="rl-screw tl" aria-hidden="true"></span>
                 <span class="rl-screw tr" aria-hidden="true"></span>
                 <span class="rl-screw bl" aria-hidden="true"></span>
