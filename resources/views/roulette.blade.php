@@ -2,14 +2,16 @@
 <html lang="ko">
 <head>
     @include('partials.head', ['title' => '점심 룰렛'])
-    {{-- 링크 미리보기 (카카오톡·슬랙·디스코드 등 Open Graph, X 카드): 이미지와 제목만.
-         설명 태그는 일부러 두지 않음 (없으면 앱이 meta description 을 대신 가져가므로 그것도 뺌) --}}
+    {{-- 링크 미리보기 (카카오톡·슬랙·디스코드 등 Open Graph, X 카드) --}}
+    @php($description = '지금 위치 근처 식당을 룰렛으로 골라 드립니다. 영업 중인 곳만 추리고, 메뉴로 찾아 후보에 직접 넣을 수 있어요.')
+    <meta name="description" content="{{ $description }}">
     <meta name="theme-color" content="#3f382f">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="점심 룰렛">
     <meta property="og:locale" content="ko_KR">
     <meta property="og:url" content="{{ url('/') }}">
     <meta property="og:title" content="점심 룰렛 — 근처 식당 돌림판">
+    <meta property="og:description" content="{{ $description }}">
     <meta property="og:image" content="{{ url('/og-image.jpg') }}">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
@@ -17,6 +19,7 @@
     <meta property="og:image:alt" content="점심 룰렛: 레트로 계기판 모양의 식당 돌림판">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="점심 룰렛 — 근처 식당 돌림판">
+    <meta name="twitter:description" content="{{ $description }}">
     <meta name="twitter:image" content="{{ url('/og-image.jpg') }}">
     @vite(['resources/css/roulette.css', 'resources/js/roulette.js'])
     <script nonce="{{ Vite::cspNonce() }}" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ config('services.kakao.js_key') }}&autoload=false&libraries=clusterer"></script>

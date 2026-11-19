@@ -18,18 +18,10 @@ class LinkPreviewTest extends TestCase
             '<meta property="og:image:height" content="630">',
             '<meta property="og:url" content="'.url('/').'">',
             '<meta name="twitter:card" content="summary_large_image">',
+            '<meta name="description"',
         ] as $tag) {
             $this->assertStringContainsString($tag, (string) $html);
         }
-    }
-
-    public function test_preview_shows_only_image_and_title(): void
-    {
-        $html = (string) $this->get(route('home'))->assertOk()->getContent();
-
-        $this->assertStringNotContainsString('og:description', $html);
-        $this->assertStringNotContainsString('twitter:description', $html);
-        $this->assertStringNotContainsString('name="description"', $html);
     }
 
     public function test_preview_image_and_icons_exist(): void
