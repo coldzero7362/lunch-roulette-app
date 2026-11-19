@@ -104,7 +104,6 @@
 
                 {{-- 장식: 타공 스피커 그릴 (넓은 화면에서 컨트롤 오른쪽 빈자리) --}}
                 <div class="rl-speaker" aria-hidden="true">
-                    <span class="rl-console__label">SPEAKER · 8Ω</span>
                     <div class="rl-speaker__grille">
                         <span class="rl-screw tl"></span>
                         <span class="rl-screw tr"></span>
