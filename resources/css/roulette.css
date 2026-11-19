@@ -647,36 +647,49 @@
 
 /* 상아색 모듈 안: 슬라이드 페이더 스크롤바.
    판에 판 좁은 홈(어두운 슬롯) + 상아색 플라스틱 페이더 캡(가로 홈 + 가운데 기준선). 화살표 버튼 없음 */
-.rl-ivory .rl-scroll::-webkit-scrollbar { width: 16px; }
+.rl-ivory .rl-scroll::-webkit-scrollbar { width: 18px; }
 
 .rl-ivory .rl-scroll::-webkit-scrollbar-button { display: none; }
 
 .rl-ivory .rl-scroll::-webkit-scrollbar-track {
-    margin: 6px 0;
-    /* 가운데 4px 슬롯: 바닥은 어둡고 왼쪽 벽에 그늘, 오른쪽 벽에 빛 */
+    margin: 8px 0;
     background:
-        linear-gradient(90deg, transparent 6px, #1d1a16 6px, #3a342c 7.5px, #2b2620 9px, rgb(255 255 255 / .55) 10px, transparent 10.5px);
+        /* 왼쪽 눈금: 12px 마다 짧은 선, 60px 마다 긴 선 */
+        repeating-linear-gradient(180deg, #6b6352 0 1px, transparent 1px 60px) left top / 5px 100% no-repeat,
+        repeating-linear-gradient(180deg, #8f8670 0 1px, transparent 1px 12px) left top / 3px 100% no-repeat,
+        /* 슬롯: 금속 테 두 줄(빛) 사이 어두운 바닥, 바닥 안쪽은 왼쪽 그늘 */
+        linear-gradient(90deg,
+            transparent 7px,
+            rgb(255 255 255 / .7) 7px, rgb(255 255 255 / .7) 7.6px,
+            #14110e 7.6px, #2b2620 9.5px, #3d362c 11px,
+            #8f8670 11px, rgb(255 255 255 / .8) 11.8px, transparent 12.4px);
 }
 
+/* 페이더 캡: 위에서 비스듬히 본 상아색 손잡이
+   윗면(가운데 오목하게 파인 손가락 자리 + 가로 홈 + 기준선) 아래에 두꺼운 앞면, 좌우는 둥글게 어두워짐 */
 .rl-ivory .rl-scroll::-webkit-scrollbar-thumb {
-    min-height: 28px;
+    min-height: 32px;
     border: 0;
-    border-radius: 2px;
+    border-radius: 3px;
     background:
-        /* 가운데 기준선 */
-        linear-gradient(#2b2620, #2b2620) center / 100% 2px no-repeat,
-        /* 손가락 걸림 가로 홈 (기준선 위아래) */
-        repeating-linear-gradient(0deg, rgb(0 0 0 / .22) 0 1px, rgb(255 255 255 / .6) 1px 2px, transparent 2px 4px) center / 100% 18px no-repeat,
-        /* 상아색 캡: 위 밝고 아래 어두운 사출 플라스틱 */
-        linear-gradient(#f6f0e2, #e2d9c1 55%, #c9bfa5);
-    box-shadow: inset 0 0 0 1px #6e6656, inset 0 1px 0 rgb(255 255 255 / .8), inset 0 -2px 0 rgb(0 0 0 / .15);
+        linear-gradient(#2b2620, #2b2620) 50% 44% / 100% 2px no-repeat,
+        repeating-linear-gradient(0deg, rgb(0 0 0 / .2) 0 1px, rgb(255 255 255 / .65) 1px 2px, transparent 2px 4px) 50% 44% / 76% 16px no-repeat,
+        linear-gradient(transparent 12%, rgb(0 0 0 / .12) 44%, transparent 76%),
+        linear-gradient(transparent calc(100% - 6px), #b9af95 calc(100% - 6px), #978e77 calc(100% - 1px), #6e6656 calc(100% - 1px)),
+        linear-gradient(90deg, #c9bfa5, #f4eee0 28%, #ece4cf 62%, #bfb59b);
+    box-shadow:
+        inset 0 0 0 1px #5f584b,
+        inset 0 1px 0 rgb(255 255 255 / .85),
+        inset 1px 0 0 rgb(255 255 255 / .4);
 }
 
 .rl-ivory .rl-scroll::-webkit-scrollbar-thumb:active {
     background:
-        linear-gradient(var(--c-signal), var(--c-signal)) center / 100% 2px no-repeat,
-        repeating-linear-gradient(0deg, rgb(0 0 0 / .22) 0 1px, rgb(255 255 255 / .5) 1px 2px, transparent 2px 4px) center / 100% 18px no-repeat,
-        linear-gradient(#e8e1d0, #d4cab0 55%, #bcb197);
+        linear-gradient(var(--c-signal), var(--c-signal)) 50% 44% / 100% 2px no-repeat,
+        repeating-linear-gradient(0deg, rgb(0 0 0 / .2) 0 1px, rgb(255 255 255 / .55) 1px 2px, transparent 2px 4px) 50% 44% / 76% 16px no-repeat,
+        linear-gradient(transparent 12%, rgb(0 0 0 / .16) 44%, transparent 76%),
+        linear-gradient(transparent calc(100% - 6px), #b0a68c calc(100% - 6px), #8d846d calc(100% - 1px), #655d4f calc(100% - 1px)),
+        linear-gradient(90deg, #bfb59b, #e9e2d2 28%, #e0d8c1 62%, #b4aa90);
 }
 
 @supports not selector(::-webkit-scrollbar) {
