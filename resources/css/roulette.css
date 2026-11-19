@@ -220,6 +220,7 @@
 
 /* 아이콘만 있는 정사각 키 (내 위치) */
 .rl-key--icon { --depth: 7px; width: 52px; height: 52px; padding: 0; }
+.rl-key--square { width: 40px; height: 40px; padding: 0; }
 
 /* ---------- 키 묶음 (KeyBank) ---------- */
 
@@ -331,7 +332,7 @@
     gap: 10px;
 }
 
-.rl-locate__label { flex: none; align-self: center; margin-top: -6px; }
+.rl-locate__bar .rl-console__label { align-self: center; margin-top: -4px; }
 
 /* 결과: 입력칸 아래로 지도를 덮으며 펼쳐지는 라벨 종이 */
 .rl-locate__results {
@@ -370,7 +371,7 @@
 .rl-locate__note { padding: 12px; font-size: 13px; color: var(--c-panel-2); }
 
 @media (max-width: 640px) {
-    .rl-locate__label { display: none; }
+    .rl-locate__bar .rl-console__label { display: none; }
 }
 
 /* ---------- 메뉴 찾기 ---------- */
@@ -445,15 +446,42 @@
     background: repeating-linear-gradient(rgb(0 0 0 / .28) 0 1px, transparent 1px 3px);
 }
 
-.rl-crt--readout {
-    margin: 0;
-    padding: 10px 16px;
+/* 상태 CRT: 칸별 값(LOC/RANGE/TYPE/FOUND/WHEEL) + 시스템 메시지 한 줄 */
+.rl-readout {
+    margin: 20px 32px 0;
     font-family: var(--font-pixel-mono);
+}
+
+.rl-readout__fields {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin: 0;
+    border-bottom: 1px solid #1f2a22;
+}
+
+.rl-readout__fields > div { min-width: 0; padding: 8px 14px; border-right: 1px solid #1f2a22; }
+.rl-readout__fields > div:last-child { border-right: 0; }
+
+.rl-readout__fields dt {
+    font-size: 10px;
+    letter-spacing: .14em;
+    color: var(--c-phosphor-dim);
+    text-shadow: none;
+}
+
+.rl-readout__fields dd {
+    margin: 2px 0 0;
+    overflow: hidden;
     font-size: 15px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.rl-readout__msg {
+    margin: 0;
+    padding: 7px 14px;
+    font-size: 13px;
     line-height: 1.5;
-    min-height: 50px;
-    display: flex;
-    align-items: center;
 }
 
 /* 깜빡이는 입력 커서 (::after 는 주사선이 쓰므로 따로 둔다) */
@@ -462,23 +490,56 @@
     animation: rl-blink 1s steps(1) infinite;
 }
 
-.rl-crt--readout::before {
-    content: '>';
-    margin-right: 8px;
-    color: var(--c-phosphor-dim);
-}
-
 .rl-crt .amber { color: var(--c-phosphor-amber); text-shadow: 0 0 8px rgb(255 178 63 / .6); }
 .rl-crt .dim { color: var(--c-phosphor-dim); text-shadow: none; }
 
-/* ---------- 지도 베젤 ---------- */
+/* ---------- 01·02 콘솔 (위치 + 지도 + 조건) ---------- */
 
-.rl-bezel {
+.rl-main {
+    display: grid;
+    gap: 24px;
+    padding: 20px 32px 28px;
+}
+
+@media (min-width: 1024px) {
+    .rl-main { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
+}
+
+.rl-console {
     position: relative;
-    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 22px 22px 20px;
     border: 2px solid var(--c-carbon);
     border-radius: 10px;
     background-color: var(--c-panel);
+    min-width: 0;
+}
+
+/* 실크스크린 각인 (패널 위 라벨) */
+.rl-console__label {
+    flex: none;
+    font-family: var(--font-pixel-mono);
+    font-size: 11px;
+    letter-spacing: .12em;
+    color: var(--c-sky);
+}
+
+.rl-console__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 14px 18px;
+}
+
+.rl-console__controls .rl-bank { align-items: flex-start; gap: 5px; }
+.rl-console__controls .rl-bank--wide { flex: 1 1 320px; flex-direction: column; min-width: 0; }
+
+.rl-map__canvas { width: 100%; height: 44vh; min-height: 280px; }
+
+@media (min-width: 1024px) {
+    .rl-map__canvas { height: 470px; }
 }
 
 .rl-map {
@@ -561,18 +622,38 @@
     84% { opacity: 1; }
 }
 
-.rl-bezel .rl-key { position: absolute; right: 32px; bottom: 32px; z-index: 10; }
 
-/* ---------- 데크 (돌림판 창) ---------- */
+/* ---------- 04 데크 (돌림판 창) ---------- */
+
+.rl-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 
 .rl-deck {
     position: relative;
-    width: 100%;
-    max-width: 380px;
-    padding: 26px 26px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px 22px;
+    padding: 24px 24px 22px;
     border: 2px solid var(--c-carbon);
     border-radius: 10px;
     background-color: var(--c-panel);
+}
+
+.rl-deck .rl-window { flex: 1 1 240px; max-width: 300px; margin-inline: auto; }
+
+.rl-wheel { display: block; width: 100%; aspect-ratio: 1; }
+
+/* 칸 번호: 자기 자리를 축으로 돌려 똑바로 세움 */
+.rl-wheel__no { transform-box: fill-box; transform-origin: center; transition: transform .35s ease-out; }
+
+.rl-deck__controls { flex: 1 1 160px; display: flex; flex-direction: column; gap: 10px; }
+
+.rl-deck__hint {
+    margin: 2px 0 0;
+    font-family: var(--font-pixel-mono);
+    font-size: 11px;
+    letter-spacing: .04em;
+    color: var(--c-sky);
 }
 
 .rl-window {
@@ -596,7 +677,6 @@
 
 .rl-jcard {
     width: 100%;
-    max-width: 380px;
     border: 2px solid var(--c-carbon);
     border-radius: 6px;
     background: var(--c-paper);
@@ -653,6 +733,16 @@
 
 .rl-track__meta { margin: 0; font-size: 12px; color: var(--c-panel-2); }
 
+/* 검색 결과: 이미 후보에 있는 칸 번호 */
+.rl-track__on {
+    flex: none;
+    min-width: 40px;
+    font-family: var(--font-pixel-mono);
+    font-size: 13px;
+    color: var(--c-panel-2);
+    text-align: center;
+}
+
 .rl-track__empty {
     padding: 22px 16px;
     font-size: 13px;
@@ -660,34 +750,141 @@
     text-align: center;
 }
 
-/* ---------- 결과 CRT ---------- */
+/* ---------- 결과 티켓 ---------- */
 
-.rl-result {
+.rl-ticket { display: flex; flex-direction: column; align-items: center; }
+
+/* 티켓이 나오는 배출구 */
+.rl-ticket__slot {
     width: 100%;
-    max-width: 380px;
+    height: 14px;
+    border: 2px solid var(--c-carbon);
+    border-radius: 4px;
+    background: #1d1a16;
+    box-shadow: inset 0 4px 6px rgb(0 0 0 / .9);
 }
 
-.rl-result__screen {
-    padding: 16px 18px;
+.rl-ticket__paper {
+    width: 90%;
+    margin-top: -7px;
+    padding: 16px 18px 14px;
+    border: 2px solid var(--c-carbon);
+    border-top: 0;
+    background: #f5efe0;
+    box-shadow: 0 6px 0 rgb(0 0 0 / .22);
+    animation: rl-ticket-out .5s ease-out;
 }
 
-.rl-result__kicker { margin: 0; font-size: 12px; letter-spacing: .1em; }
-
-.rl-result__name {
-    margin: 6px 0 0;
-    font-size: 28px;
-    line-height: 1.2;
-    word-break: break-all;
+@keyframes rl-ticket-out {
+    from { transform: translateY(-40px); clip-path: inset(40px 0 0 0); }
+    to { transform: translateY(0); clip-path: inset(0 0 0 0); }
 }
 
-.rl-result__meta { margin: 8px 0 0; font-family: var(--font-body); font-size: 13px; }
-
-.rl-result__actions {
+.rl-ticket__head {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 14px;
+    justify-content: space-between;
+    font-family: var(--font-pixel-mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    color: var(--c-panel-2);
 }
+
+.rl-ticket__kicker {
+    margin: 8px 0 0;
+    font-family: var(--font-pixel-mono);
+    font-size: 12px;
+    letter-spacing: .16em;
+    color: var(--c-panel-2);
+}
+
+.rl-ticket__name {
+    margin: 2px 0 0;
+    font-family: var(--font-pixel);
+    font-size: 30px;
+    line-height: 1.15;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+
+.rl-ticket__meta { margin: 6px 0 0; font-size: 14px; color: var(--c-panel); }
+.rl-ticket__sub { margin: 2px 0 0; font-size: 13px; color: var(--c-panel-2); }
+
+/* 절취선 */
+.rl-ticket__cut { margin: 12px -18px 10px; border-top: 2px dashed var(--c-periwinkle); }
+
+.rl-ticket__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ---------- 오늘 기록 ---------- */
+
+.rl-log { display: flex; flex-direction: column; gap: 6px; padding: 0 4px; }
+.rl-log[hidden] { display: none; }
+
+.rl-log__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-family: var(--font-pixel-mono);
+    font-size: 13px;
+    color: var(--c-panel);
+}
+
+.rl-log__list li { display: flex; gap: 10px; }
+.rl-log__list .rl-log__act { margin-left: auto; color: var(--c-panel-2); }
+.rl-log__list .rl-log__act--win { color: var(--c-signal); }
+
+/* ---------- 카세트 A면 / B면 탭 ---------- */
+
+.rl-tabs { display: flex; border-bottom: 2px solid var(--c-carbon); }
+
+.rl-tabs__tab {
+    flex: 1;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 0;
+    background: var(--c-platinum);
+    color: var(--c-panel-2);
+    font-family: var(--font-pixel);
+    font-size: 14px;
+    letter-spacing: .04em;
+    text-align: left;
+    cursor: pointer;
+}
+
+.rl-tabs__tab + .rl-tabs__tab { border-left: 2px solid var(--c-carbon); }
+.rl-tabs__tab[aria-selected='true'] { background: var(--c-paper); color: var(--c-carbon); box-shadow: inset 0 -3px 0 var(--c-signal); }
+.rl-tabs__tab:focus-visible { outline: 3px solid var(--c-stripe-1); outline-offset: -3px; }
+
+/* ---------- 단계 표시등 ---------- */
+
+.rl-steps {
+    display: flex;
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--font-pixel-mono);
+    font-size: 13px;
+    letter-spacing: .06em;
+    color: var(--c-periwinkle);
+}
+
+.rl-steps li { display: flex; align-items: center; gap: 8px; }
+
+.rl-steps__lamp {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    background: var(--c-hairline);
+    box-shadow: inset 0 1px 0 rgb(0 0 0 / .4);
+}
+
+.rl-steps li[data-state='done'] { color: var(--c-platinum); }
+.rl-steps li[data-state='done'] .rl-steps__lamp { background: var(--c-phosphor-dim); box-shadow: 0 0 6px var(--c-phosphor-dim); }
+.rl-steps li[data-state='now'] { color: var(--c-stripe-1); }
+.rl-steps li[data-state='now'] .rl-steps__lamp { background: var(--c-stripe-1); box-shadow: 0 0 8px var(--c-stripe-1); }
 
 /* 깜빡이는 커서 */
 .rl-cursor { animation: rl-blink 1s steps(1) infinite; }
@@ -721,8 +918,18 @@
 @media (max-width: 640px) {
     .rl-head { padding: 14px 18px; }
     .rl-title { font-size: 21px; }
-    .rl-bezel { padding: 16px; }
-    .rl-bezel .rl-key { right: 24px; bottom: 24px; }
+    .rl-console { padding: 18px 14px 16px; }
+    .rl-main { padding: 16px 12px 24px; }
+    .rl-readout { margin: 14px 12px 0; }
+    .rl-readout__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rl-readout__fields > div:nth-child(2n) { border-right: 0; }
+    .rl-readout__fields > div { border-bottom: 1px solid #1f2a22; }
+    .rl-readout__fields > div:last-child { grid-column: span 2; border-bottom: 0; }
+    .rl-steps { display: none; }
+    /* 종류 키 7개를 한 줄에 */
+    .rl-console__controls .rl-bank--wide { flex-basis: 100%; }
+    .rl-bank--wide .rl-bank__slot { width: 100%; box-sizing: border-box; }
+    .rl-bank--wide .rl-bank__key { flex: 1 1 0; min-width: 0; padding-inline: 2px; }
     .rl-plate { padding: 12px 18px 16px; }
     .rl-grille { width: 70px; }
 }
@@ -731,5 +938,7 @@
     .rl-cursor,
     .rl-caret,
     .rl-crt-fx,
-    .rl-crt-fx::after { animation: none; }
+    .rl-crt-fx::after,
+    .rl-ticket__paper { animation: none; }
+    .rl-wheel__no { transition: none; }
 }
