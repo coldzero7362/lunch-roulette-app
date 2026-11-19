@@ -13,9 +13,3 @@ Route::middleware('throttle:lookup')->group(function () {
     Route::get('restaurants/hours', [RestaurantController::class, 'hours'])->name('restaurants.hours');
     Route::get('locations/search', [RestaurantController::class, 'locations'])->name('locations.search');
 });
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
-});
-
-require __DIR__.'/settings.php';

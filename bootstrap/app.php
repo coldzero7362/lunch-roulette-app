@@ -1,9 +1,7 @@
 <?php
 
-use App\Http\Middleware\BlockAuthPages;
 use App\Http\Middleware\RedirectToSecureUrl;
 use App\Http\Middleware\SecurityHeaders;
-use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -24,12 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // CSP(nonce)·클릭재킹·MIME 스니핑 방지 등 보안 헤더
         $middleware->web(append: [SecurityHeaders::class]);
 
-        // 계정 기능을 쓰지 않는 동안 로그인·대시보드 등 주소를 막음 (config/auth.php pages_enabled)
-        $middleware->web(prepend: [BlockAuthPages::class]);
         // http 로 직접 들어오면 https 주소로 (위치 권한은 HTTPS 에서만 동작)
         $middleware->web(prepend: [RedirectToSecureUrl::class]);
-        // 로그인 확인(auth)이 먼저 돌면 404 대신 로그인으로 보내 버리므로 그보다 앞에 둔다
-        $middleware->prependToPriorityList(before: AuthenticatesRequests::class, prepend: BlockAuthPages::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
