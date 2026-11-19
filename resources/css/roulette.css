@@ -305,13 +305,8 @@
 .rl-well--block { display: flex; width: 100%; box-sizing: border-box; }
 .rl-well .rl-key { margin-bottom: 2px; }
 
-/* 아이콘만 있는 정사각 키 (내 위치) */
-.rl-key--icon { --depth: 7px; width: 52px; height: 52px; padding: 0; }
-.rl-key--square { width: 40px; height: 40px; padding: 0; }
-/* 목록 줄 안의 링크 키: 줄 높이에 맞춰 조금 작게, 옆 키와 간격 */
 /* 목록 줄의 정사각 아이콘 키 (픽셀 아이콘 24px 를 그대로) */
 .rl-key--sq {
-    --depth: 3px;
     flex: none;
     width: 30px;
     height: 30px;
@@ -323,7 +318,7 @@
 .rl-key--sq svg { display: block; flex: none; width: 18px; height: 18px; }
 
 /* 입력칸 옆 키: 입력칸 높이에 맞추고 아이콘은 원래 크기(24px)로 또렷하게 */
-.rl-key--sq-lg { --depth: 4px; width: 38px; height: 38px; }
+.rl-key--sq-lg { width: 38px; height: 38px; }
 .rl-key--sq-lg svg { width: 24px; height: 24px; }
 
 /* 도구 줄: 마법봉·섞기처럼 선이 복잡한 아이콘은 줄이면 뭉개지므로 원래 크기(24px), 키 34px */
@@ -416,7 +411,6 @@
 
 /* ---------- 후보 수 · 자동 ---------- */
 
-.rl-key--tiny { --depth: 3px; padding: 1px 9px; font-size: 15px; line-height: 1.4; }
 
 .rl-stepper { display: inline-flex; align-items: flex-start; gap: 6px; }
 
@@ -1048,8 +1042,6 @@
 
 @keyframes rl-lamp-blink { 50% { filter: brightness(.32) saturate(.7); box-shadow: inset 0 1px 2px rgb(0 0 0 / .8); } }
 
-.rl-crt .amber { color: var(--c-phosphor-amber); text-shadow: 0 0 8px rgb(255 178 63 / .6); }
-.rl-crt .dim { color: var(--c-phosphor-dim); text-shadow: none; }
 
 /* ---------- 01·02 콘솔 (위치 + 지도 + 조건) ---------- */
 
@@ -1494,24 +1486,6 @@
     border-radius: 6px;
     background: var(--c-paper);
     overflow: hidden;
-}
-
-.rl-jcard__head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 8px 12px;
-    border-bottom: 2px solid var(--c-carbon);
-    background: var(--c-paper);
-}
-
-.rl-jcard__title {
-    margin: 0;
-    font-family: var(--font-pixel);
-    font-size: 15px;
-    font-weight: normal;
-    letter-spacing: .06em;
 }
 
 .rl-jcard__count {
@@ -2028,10 +2002,6 @@
 .rl-steps li[data-state='now'] { color: #a8925e; }
 .rl-steps li[data-state='now'] .rl-lamp { --lit: #ffb43c; --lit-core: #fff0cc; }
 
-/* 깜빡이는 커서 */
-.rl-cursor { animation: rl-blink 1s steps(1) infinite; }
-
-@keyframes rl-blink { 50% { opacity: 0; } }
 
 /* ---------- 명판 (CassetteNameplate) ---------- */
 
@@ -2121,7 +2091,6 @@
 
 @media (prefers-reduced-motion: reduce) {
     .rl-lamp::before,
-    .rl-cursor,
     .rl-crt-fx,
     .rl-crt-fx::after,
     .rl-ticket__paper,
