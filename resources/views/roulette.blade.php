@@ -41,9 +41,9 @@
             </dl>
             <div class="rl-readout__foot">
                 <ul class="rl-lamps" aria-hidden="true">
-                    <li><span id="lamp-pwr" class="rl-lamp" data-state="on"></span>PWR</li>
-                    <li><span id="lamp-gps" class="rl-lamp" data-state="off" title="위치"></span>GPS</li>
-                    <li><span id="lamp-net" class="rl-lamp" data-state="off" title="조회"></span>NET</li>
+                    <li><span id="lamp-pwr" class="rl-lamp" data-color="green" data-state="on"></span>PWR</li>
+                    <li><span id="lamp-gps" class="rl-lamp" data-color="green" data-state="off"></span>GPS</li>
+                    <li><span id="lamp-net" class="rl-lamp" data-color="amber" data-state="off"></span>NET</li>
                 </ul>
                 <p class="rl-readout__msg"><span class="rl-lcd__mark" aria-hidden="true">▶</span><span id="status" role="status" aria-live="polite">BOOT</span></p>
             </div>
