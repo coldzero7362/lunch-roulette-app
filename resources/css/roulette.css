@@ -892,6 +892,17 @@
     text-shadow: none;
 }
 
+/* TYPE 표시자: 꺼진 글자는 액정에 비치는 잔상처럼, 켜진 글자는 먹색 */
+.rl-readout__fields dd.rl-annun {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: .5em;
+}
+
+.rl-annun__mark { flex: none; color: rgb(31 37 25 / .14); text-shadow: none; }
+.rl-annun__mark.is-on { color: inherit; text-shadow: 1.5px 1.5px 0 rgb(31 37 25 / .13); }
+
 .rl-unit { margin-left: 6px; font-family: var(--font-pixel-mono); font-size: 13px; letter-spacing: .08em; }
 
 .rl-readout__foot {

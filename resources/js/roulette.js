@@ -1409,11 +1409,35 @@ function updateReadout() {
         : '--.---N ---.---E';
     // 계기판식 고정 자릿수: 0500 M / 238 EA / 08/08
     segments(el.fields.range, [pad(state.radius, 4), unit('M')]);
-    el.fields.type.textContent = state.types.size ? [...state.types].map(typeLabel).join(' · ') : '전체';
+    renderTypeAnnunciators();
     segments(el.fields.found, [state.poolLoaded ? pad(state.pool.length, 3) : { seg: '---' }, unit('EA')]);
     segments(el.fields.wheel, [pad(state.candidates.length, 2), '/', pad(state.slots, 2)]);
     setLamp('gps', locating ? 'busy' : state.center ? 'on' : 'off');
     updateSteps();
+}
+
+/**
+ * TYPE 칸: LCD 고정 표시자. 종류 첫 글자(한 중 일 양 분 주)를 늘 희미하게 새겨 두고 고른 것만 켬.
+ * 아무것도 안 고르면(전체) 모두 켬. 여러 개 골라도 칸 폭이 그대로
+ */
+function renderTypeAnnunciators() {
+    const all = el.typeButtons.map((b) => b.dataset.type).filter(Boolean);
+    const target = el.fields.type;
+    if (!target.childElementCount) {
+        target.classList.add('rl-annun');
+        target.replaceChildren(...all.map((type) => {
+            const mark = document.createElement('span');
+            mark.className = 'rl-annun__mark';
+            mark.dataset.annun = type; // data-type 은 종류 키가 씀
+            mark.textContent = typeLabel(type).slice(0, 1);
+            mark.setAttribute('aria-hidden', 'true');
+            return mark;
+        }));
+    }
+    target.querySelectorAll('.rl-annun__mark').forEach((mark) => {
+        mark.classList.toggle('is-on', !state.types.size || state.types.has(mark.dataset.annun));
+    });
+    target.setAttribute('aria-label', state.types.size ? [...state.types].map(typeLabel).join(', ') : '전체');
 }
 
 const pad = (n, width) => ({ seg: String(n).padStart(width, '0') });
@@ -1601,6 +1625,7 @@ el.typeButtons.forEach((button) => {
             const on = b.dataset.type ? state.types.has(b.dataset.type) : state.types.size === 0;
             b.setAttribute('aria-pressed', String(on));
         });
+        updateReadout(); // 표시창 TYPE 은 조회를 기다리지 않고 바로
         if (state.center) fetchPlaces();
     });
 });
