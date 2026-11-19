@@ -1,3 +1,6 @@
+import { hydrateIcons, pixelIcon } from './pixel-icons';
+import { terminalInput } from './terminal-input';
+
 /**
  * 점심 룰렛: 현재 위치 → 반경 안 식당 → 돌림판.
  * 식당 데이터는 서버(/restaurants)가 카카오 로컬 API로 조회한다. REST 키는 브라우저에 노출하지 않는다.
@@ -9,6 +12,8 @@ const SLOTS_DEFAULT = 8;
 const SLOTS_KEY = 'lunch-roulette:slots';
 const PLACE_KEY = 'lunch-roulette:place'; // 직접 고른 위치 (검색·지도 클릭)
 const ACCURACY_WARN_M = 1000;             // 기기 위치 오차가 이보다 크면 안내
+const LOG_KEY = 'lunch-roulette:log';     // 오늘 결과 기록 (날짜별)
+const WALK_M_PER_MIN = 67;                 // 도보 약 4km/h
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }; // 위치를 못 받을 때: 서울시청
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const SPIN_MS = REDUCED_MOTION ? 600 : 4500;
@@ -47,7 +52,16 @@ const el = {
     resultMeta: $('result-meta'),
     resultAddress: $('result-address'),
     resultLink: $('result-link'),
+    resultRoute: $('result-route'),
     resultExclude: $('result-exclude'),
+    resultAgain: $('result-again'),
+    resultNo: $('result-no'),
+    resultKicker: $('result-kicker'),
+    resultTime: $('result-time'),
+    log: $('result-log'),
+    steps: [...document.querySelectorAll('#steps [data-step]')],
+    fields: { loc: $('f-loc'), range: $('f-range'), type: $('f-type'), found: $('f-found'), wheel: $('f-wheel') },
+    tabs: [$('tab-a'), $('tab-b')],
     radiusButtons: [...document.querySelectorAll('[data-radius]')],
     typeButtons: [...document.querySelectorAll('[data-type]')],
     searchForm: $('search-form'),
@@ -57,6 +71,9 @@ const el = {
     locForm: $('loc-form'),
     locInput: $('loc-input'),
     locResults: $('loc-results'),
+    locPop: $('loc-pop'),
+    locHead: $('loc-head'),
+    locClose: $('loc-close'),
 };
 
 const state = {
@@ -64,10 +81,12 @@ const state = {
     place: null,         // 지금 중심이 어디서 왔는지 { label, accuracy }
     radius: 500,
     pool: [],            // 반경 안 전체 식당
+    poolLoaded: false,   // 반경 검색을 한 번이라도 마쳤는지 (단계 표시등)
     excluded: new Set(), // 사용자가 뺀 식당 id
     candidates: [],      // 돌림판에 올라간 식당
     slots: SLOTS_DEFAULT, // 돌림판 칸 수
     types: new Set(),    // 고른 종류 (비면 전체)
+    price: { min: 0, max: 30000 }, // 1인 가격대 (max 30000 = 상한 없음). 걸러내기는 가격 데이터가 생기면 연결
     pinned: new Map(),   // 메뉴 찾기로 직접 넣은 식당 (id → place). 섞어도 빠지지 않음
     searchResults: [],
     rotation: 0,
@@ -83,7 +102,7 @@ let placeMarkers = [];
 
 function initMap() {
     if (!window.kakao?.maps) {
-        setStatus('지도를 불러오지 못했어요. 새로고침해 주세요.');
+        setStatus('지도 로드 실패 — 새로고침');
         return;
     }
 
@@ -95,7 +114,7 @@ function initMap() {
         clusterer = createClusterer();
 
         kakao.maps.event.addListener(map, 'click', (e) => {
-            choosePlace(e.latLng.getLat(), e.latLng.getLng(), '지도에서 고른 곳');
+            choosePlace(e.latLng.getLat(), e.latLng.getLng(), '지도 선택 지점');
         });
 
         if (pendingCenter) {
@@ -119,14 +138,14 @@ function getPosition(options) {
  */
 async function locate() {
     if (!window.isSecureContext || !navigator.geolocation) {
-        setStatus('이 주소에서는 위치를 받을 수 없어요. 지도를 눌러 위치를 정해 주세요');
+        setStatus('위치 사용 불가(HTTP) — 지도 선택 또는 위치 검색');
         return;
     }
     if (locating) return;
 
     locating = true;
     el.locate.disabled = true;
-    setStatus('현재 위치를 확인하는 중이에요');
+    setStatus('위치 확인 중');
 
     try {
         let pos;
@@ -134,7 +153,7 @@ async function locate() {
             pos = await getPosition({ enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 });
         } catch (e) {
             if (e.code === 1) throw e; // 권한 거부는 다시 물어도 같다
-            setStatus('정확한 위치를 못 찾아서 대략적인 위치로 다시 찾는 중이에요');
+            setStatus('정밀 위치 실패 — 대략 위치로 재시도');
             pos = await getPosition({ enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
         }
         applyCenter(pos.coords.latitude, pos.coords.longitude, { label: '현재 위치', accuracy: pos.coords.accuracy });
@@ -148,10 +167,10 @@ async function locate() {
 
 function locateErrorMessage(e) {
     switch (e?.code) {
-        case 1: return '위치 권한이 꺼져 있어요. 주소창의 자물쇠 아이콘에서 위치를 허용하거나 지도를 눌러 주세요';
-        case 2: return '기기에서 위치를 찾지 못했어요. 위치 서비스를 켜거나 지도를 눌러 위치를 정해 주세요';
-        case 3: return '위치를 확인하는 데 시간이 너무 걸려요. 다시 누르거나 지도를 눌러 주세요';
-        default: return '현재 위치를 받지 못했어요. 지도를 눌러 위치를 정해 주세요';
+        case 1: return '위치 권한 없음 — 주소창 자물쇠에서 허용, 또는 지도 선택';
+        case 2: return '위치 확인 불가 — 기기 위치 서비스 확인, 또는 지도 선택';
+        case 3: return '위치 응답 시간 초과 — 재시도 또는 지도 선택';
+        default: return '위치 확인 실패 — 지도 선택 또는 위치 검색';
     }
 }
 
@@ -167,6 +186,7 @@ function applyCenter(lat, lng, place = null) {
 function setCenter(lat, lng, place = null) {
     state.center = { lat, lng };
     state.place = place;
+    updateReadout();
     const pos = new kakao.maps.LatLng(lat, lng);
 
     centerOverlay?.setMap(null);
@@ -248,7 +268,8 @@ function createClusterer() {
         minLevel: 4,
         gridSize: 56,
         calculator: [10, 40],
-        styles: [style(34, '#f2b632', 13), style(42, '#e0662a', 14), style(50, '#c8442a', 15)],
+        // 바탕만 10% 투명 (숫자·테두리는 그대로 선명하게): 아래 지도 글자가 살짝 비침
+        styles: [style(34, 'rgb(242 182 50 / .9)', 13), style(42, 'rgb(224 102 42 / .9)', 14), style(50, 'rgb(200 68 42 / .9)', 15)],
     });
 }
 
@@ -304,7 +325,7 @@ async function fetchPlaces() {
     if (!state.center) return;
 
     const requestId = ++state.requestId;
-    setStatus('근처 식당을 찾는 중…');
+    setStatus('반경 내 식당 조회 중');
     setBusy(true);
 
     const url = new URL(root.dataset.restaurantsUrl);
@@ -317,24 +338,23 @@ async function fetchPlaces() {
         if (requestId !== state.requestId) return; // 더 최신 요청이 있음
 
         if (!res.ok) {
-            const msg = res.status === 422 ? '국내 위치에서만 검색할 수 있어요.'
-                : res.status === 429 ? '요청이 너무 많아요. 잠시 후 다시 시도해 주세요.'
-                : body.message ?? '식당 정보를 불러오지 못했어요.';
+            const msg = res.status === 422 ? '국내 좌표만 지원'
+                : res.status === 429 ? '요청 초과 — 60초 후 재시도'
+                : body.message ?? '식당 조회 실패 — 재시도';
             throw new Error(msg);
         }
 
         state.pool = body.places ?? [];
+        state.poolLoaded = true;
         clearResult();
         dropAutoCandidates();
         drawMarkers();
 
-        const label = radiusLabel();
-        const kinds = state.types.size ? [...state.types].map(typeLabel).join('·') : '식당';
-        const where = state.place?.label ? `${state.place.label} ` : '';
-        let message = state.pool.length ? `${where}반경 ${label} 안 ${kinds} ${state.pool.length}곳` : `${where}반경 ${label} 안에 ${kinds}이 없어요. 반경을 넓혀 보세요`;
+        let message = !state.pool.length ? '반경 내 결과 0건 — 반경 확대 또는 종류 변경'
+            : state.candidates.length ? 'READY' : 'READY — 자동 채움 또는 메뉴 검색';
         const accuracy = state.place?.accuracy;
         if (accuracy > ACCURACY_WARN_M) {
-            message += ` · 위치 오차가 약 ${(accuracy / 1000).toFixed(1)}km예요. 위치 찾기로 정해 보세요`;
+            message += ` · 위치 오차 ±${(accuracy / 1000).toFixed(1)}km — 위치 검색 권장`;
         }
         setStatus(message);
     } catch (e) {
@@ -383,22 +403,54 @@ function spare() {
     return available().filter((p) => !ids.has(p.id));
 }
 
-/** 자동: 빈 칸을 반경 안 식당으로 무작위 채움 */
+/**
+ * 자동 채움 보정: 가중치를 둔 무작위.
+ * - 돌림판에 이미 있는 세부 분류(예: 육류,고기)와 같으면 확률을 크게 낮춤 → 한 종류로 쏠리지 않게
+ * - '전체'일 때 같은 큰 분류(한식 등)가 많으면 조금 낮춤
+ * - 주점은 점심 후보로 덜 맞아 낮춤 (종류에서 주점을 직접 고르면 보정 안 함)
+ */
+function weightOf(place, chosen) {
+    let w = 1;
+    if (place.type === '술집' && !state.types.has('술집')) w *= 0.15;
+    const sameCategory = chosen.filter((p) => p.category === place.category).length;
+    w /= 1 + 5 * sameCategory;
+    if (!state.types.size) {
+        const sameType = chosen.filter((p) => p.type === place.type).length;
+        w /= 1 + 0.6 * sameType;
+    }
+    return w;
+}
+
+/** pool 에서 n곳을 하나씩 가중치 무작위로 뽑음. chosen 은 이미 돌림판에 있는 곳 */
+function weightedPick(pool, n, chosen = []) {
+    const left = [...pool];
+    const picked = [];
+    while (picked.length < n && left.length) {
+        const weights = left.map((p) => weightOf(p, [...chosen, ...picked]));
+        let r = Math.random() * weights.reduce((a, b) => a + b, 0);
+        let i = 0;
+        while (i < left.length - 1 && (r -= weights[i]) > 0) i++;
+        picked.push(left.splice(i, 1)[0]);
+    }
+    return picked;
+}
+
+/** 자동: 빈 칸을 반경 안 식당으로 채움 (보정된 무작위) */
 function autoFill() {
     const need = state.slots - state.candidates.length;
     if (need <= 0) return;
-    const picks = shuffle(spare()).slice(0, need);
+    const picks = weightedPick(spare(), need, state.candidates);
     state.candidates.push(...picks);
     clearResult();
     render();
-    if (picks.length < need) setStatus(picks.length ? `남은 식당이 ${picks.length}곳뿐이라 다 채우지 못했어요` : '채울 식당이 없어요. 반경이나 종류를 바꿔 보세요');
+    if (picks.length < need) setStatus(picks.length ? `잔여 ${picks.length}곳만 추가` : '추가 가능 식당 없음 — 반경·종류 변경');
 }
 
 /** 섞기: 직접 넣은 곳은 두고, 자동으로 들어간 곳만 새로 뽑아 순서도 섞음 */
 function reshuffle() {
     const pins = state.candidates.filter((p) => state.pinned.has(p.id));
     const autoCount = state.candidates.length - pins.length;
-    const rest = shuffle(available()).slice(0, autoCount);
+    const rest = weightedPick(available(), autoCount, pins);
     state.candidates = shuffle([...pins, ...rest]);
     clearResult();
     render();
@@ -435,13 +487,29 @@ function setSlots(n, save = true) {
         const [removed] = state.candidates.splice(index, 1);
         state.pinned.delete(removed.id);
     }
-    el.slots.textContent = String(state.slots).padStart(2, '0');
+    setCounter(el.slots, state.slots);
     if (save) {
         try { localStorage.setItem(SLOTS_KEY, String(state.slots)); } catch { /* 저장 못 해도 동작 */ }
     }
     clearResult();
     drawMarkers();
     render();
+}
+
+/** 만보기식 카운터: 바뀐 자리의 드럼만 굴림 */
+function setCounter(counter, value) {
+    const text = String(value).padStart(2, '0');
+    const prev = Number(counter.dataset.value ?? value);
+    const dir = value > prev ? 'is-up' : 'is-down';
+    counter.querySelectorAll('.rl-drum__digit').forEach((digit, i) => {
+        if (digit.textContent === text[i]) return;
+        digit.textContent = text[i];
+        digit.classList.remove('is-up', 'is-down');
+        void digit.offsetWidth; // 애니메이션 다시 시작
+        digit.classList.add(dir);
+    });
+    counter.dataset.value = String(value);
+    counter.setAttribute('aria-label', `후보 수 ${text}`);
 }
 
 function initSlots() {
@@ -464,7 +532,7 @@ function addCandidate(place) {
             .map((p, i) => [p, i])
             .filter(([p]) => !state.pinned.has(p.id));
         if (!swappable.length) {
-            setSearchStatus('후보가 가득 찼어요. 후보 수를 늘리거나 빼기로 자리를 비워 주세요');
+            setSearchStatus(`후보 가득 참 (${state.slots}/${state.slots}) — 후보 수 증가 또는 제외`);
             return;
         }
         const [, index] = swappable[Math.floor(Math.random() * swappable.length)];
@@ -475,7 +543,7 @@ function addCandidate(place) {
     clearResult();
     drawMarkers();
     render();
-    setSearchStatus(`${place.name}을(를) 후보에 넣었어요`);
+    setSearchStatus(`추가: #${state.candidates.findIndex((p) => p.id === place.id) + 1} ${place.name}`);
 }
 
 /* ---------- 위치 찾기 · 기억 ---------- */
@@ -499,22 +567,73 @@ function forgetPlace() {
     try { localStorage.removeItem(PLACE_KEY); } catch { /* 무시 */ }
 }
 
+let locItems = [];   // 지금 결과 목록 (위치 검색)
+let locActive = -1;  // 키보드로 고른 줄
+
+function showLocPop(head) {
+    el.locHead.textContent = head;
+    el.locPop.hidden = false;
+    el.locInput.setAttribute('aria-expanded', 'true');
+}
+
 function hideLocResults() {
-    el.locResults.hidden = true;
+    el.locPop.hidden = true;
     el.locResults.replaceChildren();
+    el.locInput.setAttribute('aria-expanded', 'false');
+    el.locInput.removeAttribute('aria-activedescendant');
+    locItems = [];
+    locActive = -1;
+}
+
+/** 이름에서 검색어 부분을 강조 (공백 무시, 대소문자 무시) */
+function highlight(text, query) {
+    const q = query.replace(/\s+/g, '').toLowerCase();
+    const frag = document.createDocumentFragment();
+    if (!q) { frag.append(text); return frag; }
+    // 공백을 뺀 위치 ↔ 원문 위치 대응
+    const map = [];
+    let flat = '';
+    [...text].forEach((ch, i) => { if (!/\s/.test(ch)) { map.push(i); flat += ch.toLowerCase(); } });
+    const at = flat.indexOf(q);
+    if (at === -1) { frag.append(text); return frag; }
+    const chars = [...text];
+    const from = map[at];
+    const to = map[at + q.length - 1] + 1;
+    const mark = document.createElement('mark');
+    mark.className = 'rl-hit';
+    mark.textContent = chars.slice(from, to).join('');
+    frag.append(chars.slice(0, from).join(''), mark, chars.slice(to).join(''));
+    return frag;
+}
+
+function setLocActive(i) {
+    const rows = [...el.locResults.querySelectorAll('.rl-locate__item')];
+    if (!rows.length) return;
+    locActive = (i + rows.length) % rows.length;
+    rows.forEach((r, k) => r.setAttribute('aria-selected', String(k === locActive)));
+    el.locInput.setAttribute('aria-activedescendant', rows[locActive].id);
+    rows[locActive].scrollIntoView({ block: 'nearest' });
+}
+
+function pickLocation(loc) {
+    el.locInput.value = loc.name;
+    hideLocResults();
+    choosePlace(loc.lat, loc.lng, loc.name);
 }
 
 async function searchLocation(query) {
     if (!query) return;
 
-    const note = (text) => {
+    const note = (head, text) => {
         const li = document.createElement('li');
         li.className = 'rl-locate__note';
         li.textContent = text;
         el.locResults.replaceChildren(li);
-        el.locResults.hidden = false;
+        locItems = [];
+        locActive = -1;
+        showLocPop(head);
     };
-    note(`'${query}' 찾는 중이에요`);
+    note('SEARCH', `'${query}' 검색 중`);
 
     const url = new URL(root.dataset.locationsUrl);
     url.searchParams.set('q', query);
@@ -522,23 +641,32 @@ async function searchLocation(query) {
     try {
         const res = await fetch(url, { headers: { Accept: 'application/json' } });
         const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(res.status === 429 ? '요청이 너무 많아요. 잠시 후 다시 시도해 주세요' : body.message ?? '위치를 찾지 못했어요');
+        if (!res.ok) throw new Error(res.status === 429 ? '요청 초과 — 60초 후 재시도' : body.message ?? '위치 조회 실패 — 재시도');
 
         const locations = body.locations ?? [];
         if (!locations.length) {
-            note(`'${query}'에 맞는 곳이 없어요. 역이나 건물 이름, 도로명 주소로 찾아 보세요`);
+            note('RESULT 0건', `'${query}' 0건 — 역·건물명 또는 도로명 주소 입력`);
             return;
         }
 
-        el.locResults.replaceChildren(...locations.map((loc) => {
+        locItems = locations;
+        el.locResults.replaceChildren(...locations.map((loc, i) => {
             const li = document.createElement('li');
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'rl-locate__item';
+            li.className = 'rl-locate__item';
+            li.id = `loc-opt-${i}`;
+            li.setAttribute('role', 'option');
+            li.setAttribute('aria-selected', 'false');
 
+            const no = document.createElement('span');
+            no.className = 'rl-locate__no';
+            no.textContent = String(i + 1).padStart(2, '0');
+            no.setAttribute('aria-hidden', 'true');
+
+            const body = document.createElement('div');
+            body.className = 'min-w-0';
             const name = document.createElement('p');
             name.className = 'rl-track__name truncate';
-            name.textContent = loc.name;
+            name.append(highlight(loc.name, query));
 
             const meta = document.createElement('p');
             meta.className = 'rl-track__meta truncate';
@@ -547,18 +675,15 @@ async function searchLocation(query) {
             tag.textContent = loc.kind === 'address' ? '주소' : loc.kind || '장소';
             meta.append(tag, loc.kind === 'address' ? '' : loc.address);
 
-            button.append(name, meta);
-            button.addEventListener('click', () => {
-                el.locInput.value = loc.name;
-                hideLocResults();
-                choosePlace(loc.lat, loc.lng, loc.name);
-            });
-            li.append(button);
+            body.append(name, meta);
+            li.append(no, body);
+            li.addEventListener('click', () => pickLocation(loc));
+            li.addEventListener('mousemove', () => { if (locActive !== i) setLocActive(i); });
             return li;
         }));
-        el.locResults.hidden = false;
+        showLocPop(`RESULT ${locations.length}건`);
     } catch (e) {
-        note(e.message);
+        note('ERROR', e.message);
     }
 }
 
@@ -567,11 +692,11 @@ async function searchLocation(query) {
 async function searchMenu(query) {
     if (!query) return;
     if (!state.center) {
-        setSearchStatus('먼저 위치를 정해 주세요');
+        setSearchStatus('위치 미설정 — 01 LOC 먼저');
         return;
     }
 
-    setSearchStatus(`'${query}' 찾는 중이에요`);
+    setSearchStatus(`'${query}' 검색 중`);
     el.searchResults.replaceChildren();
 
     const url = new URL(root.dataset.searchUrl);
@@ -582,12 +707,12 @@ async function searchMenu(query) {
         const res = await fetch(url, { headers: { Accept: 'application/json' } });
         const body = await res.json().catch(() => ({}));
         if (!res.ok) {
-            throw new Error(res.status === 429 ? '요청이 너무 많아요. 잠시 후 다시 시도해 주세요' : body.message ?? '찾지 못했어요. 다시 시도해 주세요');
+            throw new Error(res.status === 429 ? '요청 초과 — 60초 후 재시도' : body.message ?? '검색 실패 — 재시도');
         }
         state.searchResults = body.places ?? [];
         setSearchStatus(state.searchResults.length
-            ? `반경 ${radiusLabel()} 안 '${query}' ${state.searchResults.length}곳`
-            : `반경 ${radiusLabel()} 안에 '${query}' 파는 곳이 없어요. 반경을 넓혀 보세요`);
+            ? `'${query}' ${state.searchResults.length}건 · 반경 ${radiusLabel()}`
+            : `'${query}' 0건 — 반경 확대`);
         renderSearchResults();
     } catch (e) {
         state.searchResults = [];
@@ -595,31 +720,93 @@ async function searchMenu(query) {
     }
 }
 
+/** 카카오맵 가게 페이지 (없으면 좌표로 지도 열기) */
+function placeUrl(place) {
+    return place.url || `https://map.kakao.com/link/map/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
+}
+
+/** 목록 줄 오른쪽 정사각 아이콘 키 (글자 대신 픽셀 아이콘. 이름은 aria-label·툴팁으로) */
+function iconKey(tag, icon, label, tip) {
+    const key = document.createElement(tag);
+    key.className = 'rl-key rl-key--beige rl-key--sq';
+    if (tag === 'button') key.type = 'button';
+    key.setAttribute('aria-label', label);
+    key.title = tip;
+    key.append(pixelIcon(icon));
+    return key;
+}
+
+/** 키 묶음을 매립 홈(.rl-well)에 담음 */
+function well(...keys) {
+    const w = document.createElement('span');
+    w.className = 'rl-well';
+    w.append(...keys);
+    return w;
+}
+
+/** [상세]: 카카오맵 가게 페이지를 새 탭으로 */
+function detailLink(place) {
+    const a = iconKey('a', 'external-link', `${place.name} 카카오맵에서 보기 (새 탭)`, '상세 · 카카오맵');
+    a.href = placeUrl(place);
+    a.target = '_blank';
+    a.rel = 'noopener';
+    return a;
+}
+
+/** 메뉴 일부로만 걸린 곳 (서버 등급: menu / pub) */
+const isPartial = (place) => place.match === 'menu' || place.match === 'pub';
+
 function renderSearchResults() {
-    const onWheel = new Set(state.candidates.map((p) => p.id));
-    el.searchResults.replaceChildren(...state.searchResults.map((place) => {
+    const rows = [];
+    let sepAdded = false;
+    state.searchResults.forEach((place) => {
+        if (isPartial(place) && !sepAdded) {
+            // 분류 태그·이름이 안 맞는 결과는 구분줄 아래로
+            const sep = document.createElement('li');
+            sep.className = 'rl-search__sep';
+            sep.textContent = '— 부분 일치 · 메뉴 일부 —';
+            rows.push(sep);
+            sepAdded = true;
+        }
+        rows.push(searchRow(place));
+    });
+    el.searchResults.replaceChildren(...rows);
+}
+
+function searchRow(place) {
         const li = document.createElement('li');
-        li.className = 'rl-track';
+        li.className = isPartial(place) ? 'rl-track rl-track--partial' : 'rl-track';
 
         const info = document.createElement('div');
         info.className = 'min-w-0 flex-1';
         const name = document.createElement('p');
         name.className = 'rl-track__name truncate';
         name.textContent = place.name;
-        info.append(name, metaLine(place, false));
+        const meta = metaLine(place, false);
+        if (isPartial(place)) {
+            const tag = document.createElement('span');
+            tag.className = 'rl-tag rl-tag--dim';
+            tag.textContent = '부분';
+            meta.prepend(tag);
+        }
+        info.append(name, meta);
 
-        const add = document.createElement('button');
-        add.type = 'button';
-        const added = onWheel.has(place.id);
-        add.className = added ? 'rl-key rl-key--beige rl-key--small' : 'rl-key rl-key--small';
-        add.textContent = added ? '들어감' : '넣기';
-        add.disabled = added || state.spinning;
-        add.setAttribute('aria-label', added ? `${place.name} 이미 후보에 있음` : `${place.name} 후보에 넣기`);
+        const slot = state.candidates.findIndex((p) => p.id === place.id);
+        if (slot !== -1) {
+            const on = document.createElement('span');
+            on.className = 'rl-track__on';
+            on.textContent = `#${slot + 1}`;
+            on.setAttribute('aria-label', `후보 ${slot + 1}번에 있음`);
+            li.append(info, well(detailLink(place)), on);
+            return li;
+        }
+
+        const add = iconKey('button', 'plus', `${place.name} 후보 추가`, '후보 추가');
+        add.disabled = state.spinning;
         add.addEventListener('click', () => addCandidate(place));
 
-        li.append(info, add);
+        li.append(info, well(detailLink(place), add));
         return li;
-    }));
 }
 
 function setSearchStatus(message) {
@@ -633,7 +820,7 @@ function metaLine(place, pinned) {
     if (pinned) {
         const pin = document.createElement('span');
         pin.className = 'rl-tag rl-tag--pin';
-        pin.textContent = '직접';
+        pin.textContent = '수동';
         meta.append(pin);
     }
     if (place.type) {
@@ -686,27 +873,33 @@ function renderWheel() {
         shape.setAttribute('stroke', INK);
         shape.setAttribute('stroke-width', '1.2');
 
-        // 이름은 조각 가운데 방향으로. 왼쪽 절반은 뒤집어서 거꾸로 보이지 않게
+        // 조각엔 번호만 (이름은 SIDE A 목록에 같은 번호로). 잘리거나 뒤집혀 읽기 어려운 문제를 없앰
         const mid = (i + 0.5) * slice;
-        const flip = mid > 180;
+        const [tx, ty] = point(mid, n > 8 ? 78 : 72);
         const text = document.createElementNS(SVG_NS, 'text');
-        // 가운데 릴 허브에 닿지 않게 7자까지
-        const maxChars = n > 8 ? 5 : 7;
-        text.textContent = place.name.length > maxChars ? `${place.name.slice(0, maxChars - 1)}…` : place.name;
-        text.setAttribute('x', flip ? '-88' : '88');
-        text.setAttribute('y', '0');
-        text.setAttribute('text-anchor', flip ? 'start' : 'end');
-        text.setAttribute('dominant-baseline', 'middle');
-        text.setAttribute('font-size', n > 8 ? '8.5' : n > 6 ? '10' : '12');
-        text.setAttribute('font-family', "'Mulmaru', monospace");
+        text.textContent = String(i + 1);
+        text.setAttribute('x', tx.toFixed(1));
+        text.setAttribute('y', ty.toFixed(1));
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('dominant-baseline', 'central');
+        text.setAttribute('font-size', n > 8 ? '15' : n > 4 ? '20' : '24');
+        text.setAttribute('font-family', "'Mulmaru Mono', monospace");
         text.setAttribute('fill', tone.ink);
-        text.setAttribute('transform', `rotate(${flip ? mid + 90 : mid - 90})`);
+        text.classList.add('rl-wheel__no');
+        text.style.transform = `rotate(${-state.rotation}deg)`; // 멈춘 돌림판 기준으로 똑바로
 
         g.append(shape, text);
         el.rotor.append(g);
     });
 
     el.rotor.append(reelHub());
+}
+
+/** 돌림판이 멈추면 칸 번호를 다시 똑바로 세움 (돌아간 채로 두면 6과 9가 헷갈림) */
+function uprightNumbers() {
+    el.rotor.querySelectorAll('.rl-wheel__no').forEach((t) => {
+        t.style.transform = `rotate(${-state.rotation}deg)`;
+    });
 }
 
 /** 가운데 카세트 릴 허브: 톱니 6개. 돌림판과 같이 돈다 */
@@ -741,6 +934,7 @@ function spin() {
     state.spinning = true;
     clearResult();
     setBusy(true);
+    setStatus('SPIN');
 
     const slice = 360 / n;
     const index = Math.floor(Math.random() * n);
@@ -757,6 +951,7 @@ function spin() {
     setTimeout(() => {
         state.spinning = false;
         setBusy(false);
+        uprightNumbers();
         showResult(state.candidates[index]);
     }, SPIN_MS + 50);
 }
@@ -765,19 +960,116 @@ function spin() {
 
 function showResult(place) {
     state.winner = place;
+    const log = readLog();
+    log.unshift({ t: hhmm(new Date()), name: place.name, act: '당첨' });
+    writeLog(log);
+
+    const walk = Math.max(1, Math.round(place.distance / WALK_M_PER_MIN));
+    el.resultTime.textContent = `LR-01 · ${hhmm(new Date())}`;
+    el.resultNo.textContent = `NO.${String(log.filter((e) => e.act !== '-').length).padStart(2, '0')}`;
+    el.result.classList.remove('is-idle');
+    el.resultKicker.textContent = 'RESULT';
     el.resultName.textContent = place.name;
-    el.resultMeta.textContent = [typeLabel(place.type), place.category !== place.type ? place.category : '', `${place.distance}m`, place.phone].filter(Boolean).join('  ·  ');
-    el.resultAddress.textContent = place.address;
-    el.resultLink.href = place.url || `https://map.kakao.com/link/map/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
-    el.result.hidden = false;
+    el.resultName.title = place.name;
+    el.resultMeta.textContent = [typeLabel(place.type), place.category !== place.type ? place.category : '', `${place.distance}m`, `도보 약 ${walk}분`].filter(Boolean).join(' · ');
+    el.resultAddress.textContent = [place.address, place.phone].filter(Boolean).join(' · ');
+    el.resultRoute.href = `https://map.kakao.com/link/to/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
+    el.resultLink.href = placeUrl(place);
+    setTicketActions(true);
+    setStatus(`RESULT — #${state.candidates.findIndex((p) => p.id === place.id) + 1} ${place.name}`);
+    renderLog();
     highlightWinner(place);
-    el.result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    updateSteps();
+    // 영수증(프린터 칸)으로 스크롤
+    el.result.scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'center' });
+}
+
+/* ---------- 오늘 기록 ---------- */
+
+function hhmm(d) {
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function logKey() {
+    const d = new Date();
+    return `${LOG_KEY}:${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+function readLog() {
+    try {
+        const list = JSON.parse(localStorage.getItem(logKey()) ?? '[]');
+        return Array.isArray(list) ? list.slice(0, 20) : [];
+    } catch {
+        return [];
+    }
+}
+
+function writeLog(list) {
+    try { localStorage.setItem(logKey(), JSON.stringify(list.slice(0, 20))); } catch { /* 저장 못 해도 동작 */ }
+}
+
+/** 가장 최근 당첨 기록의 처리 결과를 바꿈 (제외 / 재실행) */
+function markLastResult(act) {
+    const log = readLog();
+    if (log[0]?.act === '당첨') {
+        log[0].act = act;
+        writeLog(log);
+    }
+}
+
+const LOG_ROWS = 5;
+
+/** 최근 5건. 빈 줄도 채워서 칸 높이가 늘 같게 */
+function renderLog() {
+    const log = readLog().slice(0, LOG_ROWS);
+    const blanks = Array.from({ length: LOG_ROWS - log.length }, () => {
+        const li = document.createElement('li');
+        li.className = 'rl-log__empty';
+        li.textContent = '--:--  ------';
+        li.setAttribute('aria-hidden', 'true');
+        return li;
+    });
+    el.log.replaceChildren(...log.map((e) => {
+        const li = document.createElement('li');
+        const t = document.createElement('span');
+        t.textContent = e.t;
+        const name = document.createElement('span');
+        name.textContent = e.name;
+        const act = document.createElement('span');
+        act.className = e.act === '당첨' ? 'rl-log__act rl-log__act--win' : 'rl-log__act';
+        act.textContent = e.act;
+        li.append(t, name, act);
+        return li;
+    }), ...blanks);
+}
+
+/** 티켓 키 켜고 끄기 (링크는 aria-disabled 로) */
+function setTicketActions(on) {
+    [el.resultRoute, el.resultLink].forEach((a) => {
+        if (on) { a.removeAttribute('aria-disabled'); a.removeAttribute('tabindex'); }
+        else { a.setAttribute('aria-disabled', 'true'); a.setAttribute('tabindex', '-1'); a.removeAttribute('href'); }
+    });
+    el.resultExclude.disabled = !on;
+    el.resultAgain.disabled = !on;
+}
+
+/** 프린터 칸을 대기 티켓으로 (자리는 그대로 두어 아래가 밀리지 않게) */
+function setTicketIdle() {
+    el.result.classList.add('is-idle');
+    el.resultTime.textContent = 'LR-01 · --:--';
+    el.resultNo.textContent = 'NO.--';
+    el.resultKicker.textContent = state.spinning ? 'SPIN' : 'STANDBY';
+    el.resultName.textContent = '—';
+    el.resultName.removeAttribute('title');
+    el.resultMeta.textContent = state.candidates.length >= 1 ? '▶ 돌리기 대기' : '후보 추가 → ▶ 돌리기';
+    el.resultAddress.textContent = '\u00a0';
+    setTicketActions(false);
 }
 
 function clearResult() {
     if (state.winner) restoreView(); // 클로즈업 상태였으면 반경 전체로
     state.winner = null;
-    el.result.hidden = true;
+    setTicketIdle();
     winnerOverlay?.setMap(null);
     winnerMarker?.setMap(null);
 }
@@ -788,7 +1080,7 @@ function renderCandidates() {
     if (!state.candidates.length) {
         const li = document.createElement('li');
         li.className = 'rl-track__empty';
-        li.textContent = state.pool.length ? '자동으로 채우거나 메뉴를 찾아 넣어 보세요' : '위치를 정하면 자동으로 채우거나 메뉴를 찾아 넣을 수 있어요';
+        li.textContent = state.center ? 'EMPTY — 자동 채움 또는 SIDE B 메뉴 검색' : 'NO LOC — 01 LOC 위치 설정 필요';
         el.candidates.replaceChildren(li);
         return;
     }
@@ -801,7 +1093,7 @@ function renderCandidates() {
         // 트랙 번호: 돌림판 조각과 같은 색
         const no = document.createElement('span');
         no.className = 'rl-track__no';
-        no.textContent = `A${i + 1}`;
+        no.textContent = String(i + 1);
         no.style.background = tone.fill;
         no.style.color = tone.ink;
 
@@ -812,15 +1104,11 @@ function renderCandidates() {
         name.textContent = place.name;
         info.append(name, metaLine(place, state.pinned.has(place.id)));
 
-        const remove = document.createElement('button');
-        remove.type = 'button';
-        remove.className = 'rl-key rl-key--beige rl-key--small';
-        remove.textContent = '빼기';
+        const remove = iconKey('button', 'close', `${place.name} 후보에서 제외`, '제외');
         remove.disabled = state.spinning;
-        remove.setAttribute('aria-label', `${place.name} 후보에서 빼기`);
         remove.addEventListener('click', () => exclude(place.id));
 
-        li.append(no, info, remove);
+        li.append(no, info, well(detailLink(place), remove));
         return li;
     }));
 }
@@ -830,6 +1118,35 @@ function render() {
     renderCandidates();
     if (state.searchResults.length) renderSearchResults();
     setBusy(state.spinning);
+    updateReadout();
+    if (!state.winner) setTicketIdle(); // 대기 문구를 후보 상태에 맞춤
+}
+
+/** 상태 CRT 칸: LOC / RANGE / TYPE / FOUND / WHEEL */
+function updateReadout() {
+    el.fields.loc.textContent = state.place?.label ?? (state.center ? '좌표 지정' : '—');
+    el.fields.range.textContent = radiusLabel();
+    el.fields.type.textContent = state.types.size ? [...state.types].map(typeLabel).join(' · ') : '전체';
+    el.fields.found.textContent = state.poolLoaded ? `${state.pool.length}건` : '—';
+    el.fields.wheel.textContent = `${state.candidates.length}/${state.slots}`;
+    updateSteps();
+}
+
+/** 단계 표시등: 끝난 단계 녹색, 다음 할 단계 앰버 */
+function updateSteps() {
+    const done = {
+        loc: !!state.center,
+        cond: state.poolLoaded,
+        cand: state.candidates.length >= 2,
+        spin: !!state.winner,
+    };
+    let nowSet = false;
+    el.steps.forEach((li) => {
+        const key = li.dataset.step;
+        let st = done[key] ? 'done' : 'off';
+        if (!done[key] && !nowSet) { st = 'now'; nowSet = true; }
+        li.dataset.state = st;
+    });
 }
 
 function setBusy(busy) {
@@ -847,6 +1164,59 @@ function setBusy(busy) {
 
 function setStatus(message) {
     el.status.textContent = message;
+}
+
+/* ---------- 가격대 페이더 ---------- */
+
+const PRICE_KEY = 'lunch-roulette:price';
+const PRICE_MAX = 30000;
+const PRICE_STEP = 1000;
+
+function won(v) {
+    return `₩${v.toLocaleString('ko-KR')}`;
+}
+
+function renderPrice() {
+    const { min, max } = state.price;
+    const lo = $('price-min');
+    const hi = $('price-max');
+    lo.value = min;
+    hi.value = max;
+    // 레일 위 켜진 구간
+    const fill = $('price-fill');
+    fill.style.left = `${(min / PRICE_MAX) * 100}%`;
+    fill.style.width = `${((max - min) / PRICE_MAX) * 100}%`;
+    const open = max >= PRICE_MAX;
+    $('price-out').textContent = min === 0 && open ? '전체'
+        : open ? `${won(min)} 이상`
+        : `${won(min)} – ${won(max)}`;
+    lo.setAttribute('aria-valuetext', won(min));
+    hi.setAttribute('aria-valuetext', open ? '상한 없음' : won(max));
+    // 두 캡이 끝에서 겹치면 움직일 수 있는 쪽을 위로
+    lo.style.zIndex = min >= PRICE_MAX - PRICE_STEP ? '3' : '2';
+}
+
+function initPrice() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(PRICE_KEY) ?? 'null');
+        if (saved && Number.isFinite(saved.min) && Number.isFinite(saved.max)) state.price = saved;
+    } catch { /* 비공개 모드 등 */ }
+
+    const lo = $('price-min');
+    const hi = $('price-max');
+    const onInput = (which) => {
+        let min = Number(lo.value);
+        let max = Number(hi.value);
+        // 캡끼리 넘어가지 않게: 최소 한 칸 간격
+        if (which === 'min' && min > max - PRICE_STEP) min = max - PRICE_STEP;
+        if (which === 'max' && max < min + PRICE_STEP) max = min + PRICE_STEP;
+        state.price = { min: Math.max(0, min), max: Math.min(PRICE_MAX, max) };
+        renderPrice();
+        try { localStorage.setItem(PRICE_KEY, JSON.stringify(state.price)); } catch { /* 무시 */ }
+    };
+    lo.addEventListener('input', () => onInput('min'));
+    hi.addEventListener('input', () => onInput('max'));
+    renderPrice();
 }
 
 /* ---------- CRT 효과 ---------- */
@@ -870,6 +1240,27 @@ function initCrt() {
     });
 }
 
+/* ---------- 카세트 A면 / B면 ---------- */
+
+function selectTab(tab) {
+    el.tabs.forEach((t) => {
+        const on = t === tab;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        $(t.getAttribute('aria-controls')).hidden = !on;
+    });
+}
+
+el.tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => selectTab(tab));
+    tab.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        const next = el.tabs[(i + (e.key === 'ArrowRight' ? 1 : el.tabs.length - 1)) % el.tabs.length];
+        selectTab(next);
+        next.focus();
+    });
+});
+
 /* ---------- 이벤트 ---------- */
 
 el.spin.addEventListener('click', spin);
@@ -884,19 +1275,44 @@ el.locate.addEventListener('click', () => {
 });
 el.locForm.addEventListener('submit', (e) => {
     e.preventDefault();
+    // 목록에서 고른 줄이 있으면 그걸 확정, 아니면 새로 검색
+    if (!el.locPop.hidden && locActive >= 0 && locItems[locActive]) {
+        pickLocation(locItems[locActive]);
+        return;
+    }
     searchLocation(el.locInput.value.trim());
 });
 el.locInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') hideLocResults();
+    if (e.key === 'Escape') { hideLocResults(); return; }
+    if (el.locPop.hidden || !locItems.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setLocActive(locActive + 1); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); setLocActive(locActive < 0 ? -1 : locActive - 1); }
 });
+el.locInput.addEventListener('input', () => {
+    // 글자를 바꾸면 고른 줄은 해제 (Enter = 새 검색)
+    if (locActive >= 0) {
+        locActive = -1;
+        el.locResults.querySelectorAll('[aria-selected="true"]').forEach((r) => r.setAttribute('aria-selected', 'false'));
+        el.locInput.removeAttribute('aria-activedescendant');
+    }
+});
+el.locClose.addEventListener('click', () => { hideLocResults(); el.locInput.focus(); });
 document.addEventListener('click', (e) => {
-    if (!el.locResults.hidden && !e.target.closest('.rl-locate')) hideLocResults();
+    if (!el.locPop.hidden && !e.target.closest('.rl-locate')) hideLocResults();
 });
 el.resultExclude.addEventListener('click', () => {
     if (!state.winner) return;
     const id = state.winner.id;
+    markLastResult('제외');
     clearResult();
     exclude(id);
+    renderLog();
+    spin();
+});
+el.resultAgain.addEventListener('click', () => {
+    if (!state.winner) return;
+    markLastResult('재실행');
+    renderLog();
     spin();
 });
 el.typeButtons.forEach((button) => {
@@ -928,8 +1344,14 @@ el.radiusButtons.forEach((button) => {
     });
 });
 
+hydrateIcons();
+terminalInput(el.locInput);
+terminalInput(el.searchInput);
 initSlots();
+initPrice();
 initCrt();
+setTicketIdle();
+renderLog();
 initMap();
 // 직접 고른 위치가 있으면 거기서 시작 (PC는 기기 위치가 부정확한 경우가 많음). 없으면 바로 현재 위치를 물음
 const saved = savedPlace();

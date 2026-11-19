@@ -61,7 +61,7 @@ class RestaurantController extends Controller
         } catch (RequestException|ConnectionException $e) {
             Log::warning('Kakao location search failed', ['message' => $e->getMessage()]);
 
-            return response()->json(['message' => '위치를 찾지 못했어요. 잠시 후 다시 시도해 주세요.'], 502);
+            return response()->json(['message' => '위치 조회 실패 — 잠시 후 재시도'], 502);
         }
 
         return response()->json(['locations' => $locations]);
@@ -73,7 +73,7 @@ class RestaurantController extends Controller
         Log::warning('Kakao call budget exhausted');
 
         return response()
-            ->json(['message' => '지금 찾는 사람이 많아요. 잠시 후 다시 시도해 주세요.'], 503)
+            ->json(['message' => '조회량 초과 — 잠시 후 재시도'], 503)
             ->header('Retry-After', '60');
     }
 
@@ -100,7 +100,7 @@ class RestaurantController extends Controller
         } catch (RequestException|ConnectionException $e) {
             Log::warning('Kakao local search failed', ['message' => $e->getMessage()]);
 
-            return response()->json(['message' => '식당 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'], 502);
+            return response()->json(['message' => '식당 조회 실패 — 잠시 후 재시도'], 502);
         }
 
         return response()->json(['places' => $places]);
