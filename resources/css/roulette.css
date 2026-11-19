@@ -1373,8 +1373,12 @@
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: radial-gradient(circle at 40% 35%, #ffffff, #d4d4cf 35%, #8f8f8a 80%, #6a6a65);
-    box-shadow: 0 0 0 1.5px #1d1a16, inset 0 -2px 3px rgb(0 0 0 / .3);
+    /* 무광 은색 면에 작고 부드러운 반사점 하나 + 반대쪽 가장자리에 옅은 반사광 (하얀 공처럼 보이지 않게) */
+    background:
+        radial-gradient(circle at 34% 30%, rgb(255 255 255 / .75) 0 9%, rgb(255 255 255 / .2) 22%, transparent 38%),
+        radial-gradient(circle at 70% 76%, rgb(255 255 255 / .22), transparent 30%),
+        radial-gradient(circle at 50% 50%, #c4c4bf 0 52%, #9a9a95 78%, #6d6d68);
+    box-shadow: 0 0 0 1.5px #1d1a16, inset 0 -1px 2px rgb(0 0 0 / .3), inset 0 1px 1px rgb(255 255 255 / .3);
 }
 
 .rl-arm__base::after {
