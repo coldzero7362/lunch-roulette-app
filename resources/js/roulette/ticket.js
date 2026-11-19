@@ -39,22 +39,25 @@ export function showResult(place) {
     el.result.scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'center' });
 }
 
-const PUNCH_COLUMNS = 32;
+const PUNCH_COLUMNS = 28;
 
-/** 천공 카드 띠: 열마다 0~9 숫자를 옅게 인쇄하고, 찍을 숫자 자리엔 구멍 */
+/**
+ * 천공 카드 느낌만: 영수증 맨 아래 작은 직사각형 구멍 두 줄.
+ * 당첨 정보 숫자로 자리를 정함 (윗줄 = 5 이상, 아랫줄 = 홀수) → 영수증마다 무늬가 조금씩 다름
+ */
 function renderPunch(place) {
     const holes = punchColumns(punchDigits(place), PUNCH_COLUMNS);
-    el.resultPunch.replaceChildren(...holes.map((hole) => {
-        const col = document.createElement('span');
-        col.className = 'rl-punch__col';
-        for (let row = 0; row < 10; row++) {
-            const cell = document.createElement('span');
-            cell.className = row === hole ? 'rl-punch__cell is-hole' : 'rl-punch__cell';
-            cell.textContent = String(row);
-            col.append(cell);
-        }
-        return col;
-    }));
+    const row = (test) => {
+        const line = document.createElement('span');
+        line.className = 'rl-punch__row';
+        line.append(...holes.map((d) => {
+            const hole = document.createElement('span');
+            hole.className = d !== null && test(d) ? 'rl-punch__hole is-on' : 'rl-punch__hole';
+            return hole;
+        }));
+        return line;
+    };
+    el.resultPunch.replaceChildren(row((d) => d >= 5), row((d) => d % 2 === 1));
 }
 
 /** 영수증의 영업 줄. 아직 모르면 받아 와서 채움 */
