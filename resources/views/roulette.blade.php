@@ -204,7 +204,11 @@
 
                 <div class="rl-log" aria-labelledby="log-title">
                     <span id="log-title" class="rl-console__label">LOG · 오늘</span>
-                    <ol id="result-log" class="rl-log__list"></ol>
+                    {{-- 작은 CRT 단말: 형광 글자 + 주사선, 맨 아래 깜빡이는 프롬프트 --}}
+                    <div class="rl-crt rl-log__screen">
+                        <ol id="result-log" class="rl-log__list"></ol>
+                        <p class="rl-log__prompt" aria-hidden="true">LOG&gt;<span class="rl-log__cursor"></span></p>
+                    </div>
                 </div>
             </div>
         </main>
