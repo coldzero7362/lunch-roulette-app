@@ -108,28 +108,23 @@
     width: 11px;
     height: 11px;
     border-radius: 50%;
-    /* 둥근 머리: 왼쪽 위에서 빛, 깎은 금속 결(원뿔 반사) */
-    background:
-        conic-gradient(from 20deg, rgb(255 255 255 / .22), transparent 18%, rgb(255 255 255 / .12) 42%, transparent 60%, rgb(0 0 0 / .12) 80%, rgb(255 255 255 / .22)),
-        radial-gradient(circle at 36% 30%, #f3eedf 0 6%, #cfc8b3 24%, #958d78 58%, #5c5547 92%);
+    /* 둥근 머리: 무광 금속 (반사광 없이 가장자리만 살짝 어둡게) */
+    background: radial-gradient(circle at 45% 40%, #aaa28d 0 45%, #8a8270 80%, #6b6455);
     box-shadow:
-        /* 판에 판 자리(카운터싱크): 어두운 홈 + 바깥 모서리 빛 */
+        /* 판에 판 자리(카운터싱크): 어두운 홈 */
         0 0 0 1.5px #1c1915,
-        0 0 0 2.5px rgb(255 255 255 / .1),
-        0 1.5px 2px 1.5px rgb(0 0 0 / .45),
-        inset 0 1px 0 rgb(255 255 255 / .45),
-        inset 0 -1px 1px rgb(0 0 0 / .45);
+        0 1.5px 2px 1.5px rgb(0 0 0 / .4),
+        inset 0 -1px 1px rgb(0 0 0 / .35);
 }
 
-/* 십자 홈(+): 나사마다 돌아간 각도가 다름. 홈 안쪽 어둡게 + 아래 가장자리에 빛 */
+/* 십자 홈(+): 나사마다 돌아간 각도가 다름 */
 .rl-screw::before,
 .rl-screw::after {
     content: '';
     position: absolute;
     inset: 42% 18%;
     border-radius: .5px;
-    background: linear-gradient(#0d0b09, #3b352c);
-    box-shadow: 0 .6px 0 rgb(255 255 255 / .35);
+    background: #1f1b16;
     transform: rotate(var(--slot, 35deg));
 }
 
