@@ -983,7 +983,9 @@
 
 /* 켜짐: 가운데가 하얗게 타고 가장자리는 렌즈 색, 빛은 렌즈 주변에만 살짝 */
 .rl-lamp[data-state="on"]::before,
-.rl-lamp[data-state="busy"]::before {
+.rl-lamp[data-state="busy"]::before,
+.rl-steps li[data-state='done'] .rl-lamp::before,
+.rl-steps li[data-state='now'] .rl-lamp::before {
     background:
         repeating-radial-gradient(circle at 50% 50%, rgb(255 255 255 / .14) 0 .6px, transparent .6px 1.6px),
         radial-gradient(circle at 50% 50%, var(--lit-core) 0 18%, var(--lit) 55%, color-mix(in srgb, var(--lit) 60%, #000) 100%);
@@ -1576,32 +1578,55 @@
 
 /* ---------- 단계 표시등 ---------- */
 
+/*
+ * 단계 표시등 스트립: 판에 판 어두운 홈 안에 네 단계.
+ * 표시등은 PWR/GPS/NET 과 같은 베젤 렌즈(두 색 LED: 끝난 단계 초록, 지금 할 단계 앰버).
+ * 단계 사이엔 진행 방향 화살표 실크 인쇄.
+ */
 .rl-steps {
     display: flex;
-    gap: 20px;
+    align-items: center;
     margin: 0;
-    padding: 0;
+    padding: 7px 14px;
     list-style: none;
+    border-radius: 6px;
+    border-top: 2px solid #14110e;
+    border-left: 2px solid #17140f;
+    border-bottom: 2px solid #5e5649;
+    border-right: 2px solid #57503f;
+    background-color: #221e19;
+    background-image: var(--texture);
+    box-shadow: inset 0 3px 6px rgb(0 0 0 / .6);
     font-family: var(--font-pixel-mono);
     font-size: 13px;
-    letter-spacing: .06em;
-    color: var(--c-periwinkle);
+    letter-spacing: .08em;
+    color: #7d7563;
 }
 
 .rl-steps li { display: flex; align-items: center; gap: 8px; }
 
-.rl-steps__lamp {
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-    background: var(--c-hairline);
-    box-shadow: inset 0 1px 0 rgb(0 0 0 / .4);
+/* 단계 사이 화살표: 가는 선 + 촉 */
+.rl-steps li + li::before {
+    content: '';
+    width: 22px;
+    height: 7px;
+    margin: 0 10px 0 4px;
+    background:
+        linear-gradient(currentColor, currentColor) left center / calc(100% - 5px) 1px no-repeat,
+        conic-gradient(from 225deg at 100% 50%, currentColor 90deg, transparent 0) right center / 5px 100% no-repeat;
+    opacity: .55;
 }
 
+.rl-steps__no { color: #5f584b; }
+
+/* 렌즈: 꺼지면 무채색 유리 */
+.rl-steps__lamp { --dark: #2a2823; flex: none; }
+
 .rl-steps li[data-state='done'] { color: var(--c-platinum); }
-.rl-steps li[data-state='done'] .rl-steps__lamp { background: var(--c-phosphor-dim); box-shadow: 0 0 6px var(--c-phosphor-dim); }
+.rl-steps li[data-state='done'] .rl-steps__no { color: var(--c-sky); }
 .rl-steps li[data-state='now'] { color: var(--c-stripe-1); }
-.rl-steps li[data-state='now'] .rl-steps__lamp { background: var(--c-stripe-1); box-shadow: 0 0 8px var(--c-stripe-1); }
+.rl-steps li[data-state='now'] .rl-steps__no { color: #b88a2a; }
+.rl-steps li[data-state='now'] .rl-lamp { --lit: #ffb43c; --lit-core: #fff0cc; }
 
 /* 깜빡이는 커서 */
 .rl-cursor { animation: rl-blink 1s steps(1) infinite; }

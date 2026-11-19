@@ -15,10 +15,10 @@
                 <span class="rl-model">MODEL LR-01 · LUNCH ROULETTE</span>
             </div>
             <ol id="steps" class="rl-steps" aria-label="진행 단계">
-                <li data-step="loc"><span class="rl-steps__lamp" aria-hidden="true"></span>01 LOCATE</li>
-                <li data-step="cond"><span class="rl-steps__lamp" aria-hidden="true"></span>02 FILTER</li>
-                <li data-step="cand"><span class="rl-steps__lamp" aria-hidden="true"></span>03 LOAD</li>
-                <li data-step="spin"><span class="rl-steps__lamp" aria-hidden="true"></span>04 SPIN</li>
+                <li data-step="loc"><span class="rl-lamp rl-steps__lamp" aria-hidden="true"></span><span class="rl-steps__no">01</span>LOCATE</li>
+                <li data-step="cond"><span class="rl-lamp rl-steps__lamp" aria-hidden="true"></span><span class="rl-steps__no">02</span>FILTER</li>
+                <li data-step="cand"><span class="rl-lamp rl-steps__lamp" aria-hidden="true"></span><span class="rl-steps__no">03</span>LOAD</li>
+                <li data-step="spin"><span class="rl-lamp rl-steps__lamp" aria-hidden="true"></span><span class="rl-steps__no">04</span>SPIN</li>
             </ol>
         </header>
         <div class="rl-stripes" aria-hidden="true"></div>
