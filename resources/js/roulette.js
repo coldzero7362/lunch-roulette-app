@@ -1,4 +1,4 @@
-import { pixelIcon } from './pixel-icons';
+import { hydrateIcons, pixelIcon } from './pixel-icons';
 
 /**
  * 점심 룰렛: 현재 위치 → 반경 안 식당 → 돌림판.
@@ -1188,6 +1188,7 @@ el.radiusButtons.forEach((button) => {
     });
 });
 
+hydrateIcons();
 initSlots();
 initCrt();
 setTicketIdle();

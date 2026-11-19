@@ -235,6 +235,17 @@
 /* 24칸 격자 아이콘을 18px 로 (선 굵기 2칸 → 1.5px, crispEdges 로 칸 경계를 맞춤) */
 .rl-key--sq svg { display: block; flex: none; width: 18px; height: 18px; }
 
+/* 입력칸 옆 키: 입력칸 높이에 맞추고 아이콘은 원래 크기(24px)로 또렷하게 */
+.rl-key--sq-lg { --depth: 4px; width: 38px; height: 38px; }
+.rl-key--sq-lg svg { width: 24px; height: 24px; }
+
+/* 도구 줄: 마법봉·섞기처럼 선이 복잡한 아이콘은 줄이면 뭉개지므로 원래 크기(24px), 키 34px */
+.rl-jcard__tools { align-items: center; }
+.rl-jcard__tools .rl-key--sq { width: 34px; height: 34px; }
+.rl-jcard__tools .rl-key--sq svg { width: 24px; height: 24px; }
+.rl-stepper { align-items: center; }
+.rl-counter { height: 34px; box-sizing: border-box; display: grid; place-items: center; padding-block: 0; }
+
 /* 검색 결과의 #번호 칸도 키와 같은 폭 → 줄마다 세로로 맞음 */
 .rl-search__results .rl-track__on { flex: none; width: 30px; text-align: center; }
 .rl-track { gap: 8px 10px; }
