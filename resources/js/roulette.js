@@ -396,11 +396,43 @@ function spare() {
     return available().filter((p) => !ids.has(p.id));
 }
 
-/** 자동: 빈 칸을 반경 안 식당으로 무작위 채움 */
+/**
+ * 자동 채움 보정: 가중치를 둔 무작위.
+ * - 돌림판에 이미 있는 세부 분류(예: 육류,고기)와 같으면 확률을 크게 낮춤 → 한 종류로 쏠리지 않게
+ * - '전체'일 때 같은 큰 분류(한식 등)가 많으면 조금 낮춤
+ * - 주점은 점심 후보로 덜 맞아 낮춤 (종류에서 주점을 직접 고르면 보정 안 함)
+ */
+function weightOf(place, chosen) {
+    let w = 1;
+    if (place.type === '술집' && !state.types.has('술집')) w *= 0.15;
+    const sameCategory = chosen.filter((p) => p.category === place.category).length;
+    w /= 1 + 5 * sameCategory;
+    if (!state.types.size) {
+        const sameType = chosen.filter((p) => p.type === place.type).length;
+        w /= 1 + 0.6 * sameType;
+    }
+    return w;
+}
+
+/** pool 에서 n곳을 하나씩 가중치 무작위로 뽑음. chosen 은 이미 돌림판에 있는 곳 */
+function weightedPick(pool, n, chosen = []) {
+    const left = [...pool];
+    const picked = [];
+    while (picked.length < n && left.length) {
+        const weights = left.map((p) => weightOf(p, [...chosen, ...picked]));
+        let r = Math.random() * weights.reduce((a, b) => a + b, 0);
+        let i = 0;
+        while (i < left.length - 1 && (r -= weights[i]) > 0) i++;
+        picked.push(left.splice(i, 1)[0]);
+    }
+    return picked;
+}
+
+/** 자동: 빈 칸을 반경 안 식당으로 채움 (보정된 무작위) */
 function autoFill() {
     const need = state.slots - state.candidates.length;
     if (need <= 0) return;
-    const picks = shuffle(spare()).slice(0, need);
+    const picks = weightedPick(spare(), need, state.candidates);
     state.candidates.push(...picks);
     clearResult();
     render();
@@ -411,7 +443,7 @@ function autoFill() {
 function reshuffle() {
     const pins = state.candidates.filter((p) => state.pinned.has(p.id));
     const autoCount = state.candidates.length - pins.length;
-    const rest = shuffle(available()).slice(0, autoCount);
+    const rest = weightedPick(available(), autoCount, pins);
     state.candidates = shuffle([...pins, ...rest]);
     clearResult();
     render();
@@ -608,17 +640,43 @@ async function searchMenu(query) {
     }
 }
 
+/** 메뉴 일부로만 걸린 곳 (서버 등급: menu / pub) */
+const isPartial = (place) => place.match === 'menu' || place.match === 'pub';
+
 function renderSearchResults() {
-    el.searchResults.replaceChildren(...state.searchResults.map((place) => {
+    const rows = [];
+    let sepAdded = false;
+    state.searchResults.forEach((place) => {
+        if (isPartial(place) && !sepAdded) {
+            // 분류 태그·이름이 안 맞는 결과는 구분줄 아래로
+            const sep = document.createElement('li');
+            sep.className = 'rl-search__sep';
+            sep.textContent = '— 부분 일치 · 메뉴 일부 —';
+            rows.push(sep);
+            sepAdded = true;
+        }
+        rows.push(searchRow(place));
+    });
+    el.searchResults.replaceChildren(...rows);
+}
+
+function searchRow(place) {
         const li = document.createElement('li');
-        li.className = 'rl-track';
+        li.className = isPartial(place) ? 'rl-track rl-track--partial' : 'rl-track';
 
         const info = document.createElement('div');
         info.className = 'min-w-0 flex-1';
         const name = document.createElement('p');
         name.className = 'rl-track__name truncate';
         name.textContent = place.name;
-        info.append(name, metaLine(place, false));
+        const meta = metaLine(place, false);
+        if (isPartial(place)) {
+            const tag = document.createElement('span');
+            tag.className = 'rl-tag rl-tag--dim';
+            tag.textContent = '부분';
+            meta.prepend(tag);
+        }
+        info.append(name, meta);
 
         const slot = state.candidates.findIndex((p) => p.id === place.id);
         if (slot !== -1) {
@@ -640,7 +698,6 @@ function renderSearchResults() {
 
         li.append(info, add);
         return li;
-    }));
 }
 
 function setSearchStatus(message) {

@@ -422,6 +422,21 @@
 }
 
 .rl-tag--pin { border-color: var(--c-signal); background: var(--c-signal); color: var(--c-paper); }
+.rl-tag--dim { border-style: dashed; color: var(--c-panel-2); }
+
+/* 메뉴 검색: 부분 일치 구분줄과 흐린 줄 */
+.rl-search__sep {
+    padding: 6px 12px;
+    border-bottom: 1px dashed var(--c-periwinkle);
+    background: var(--c-platinum);
+    font-family: var(--font-pixel-mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    color: var(--c-panel-2);
+    text-align: center;
+}
+
+.rl-track--partial .rl-track__name { font-weight: 500; color: var(--c-panel); }
 
 /* ---------- CRT 화면 ---------- */
 
