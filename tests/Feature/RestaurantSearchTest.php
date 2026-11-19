@@ -55,6 +55,7 @@ class RestaurantSearchTest extends TestCase
                 'name' => '광화문국밥',
                 'type' => '한식',
                 'category' => '국밥',
+                'tags' => ['한식', '국밥'],
                 'distance' => 357,
                 'address' => '서울 중구 세종대로 110',
                 'phone' => '02-000-0000',
@@ -217,5 +218,26 @@ class RestaurantSearchTest extends TestCase
             ->assertJsonValidationErrors(['q']);
 
         Http::assertNothingSent();
+    }
+
+    public function test_menu_search_ranks_by_category_tags_and_pushes_pub_side_dishes_last(): void
+    {
+        Http::fake(['dapi.kakao.com/*' => Http::response([
+            'meta' => ['is_end' => true],
+            'documents' => [
+                $this->kakaoDocument('pub', '맥주창고', 50, '음식점 > 술집 > 호프,요리주점'),        // 피자 안주
+                $this->kakaoDocument('snack', '김밥나라', 60, '음식점 > 분식'),                     // 메뉴에만 피자
+                $this->kakaoDocument('named', '동네피자펍', 300, '음식점 > 술집 > 호프,요리주점'),   // 이름에 피자
+                $this->kakaoDocument('far', '나폴리화덕', 400, '음식점 > 양식 > 피자'),            // 태그 일치 (멀어도 위)
+                $this->kakaoDocument('near', '피자스쿨', 200, '음식점 > 양식 > 피자'),
+            ],
+        ])]);
+
+        $res = $this->getJson(route('restaurants.search', ['q' => '피자', 'lat' => 37.54, 'lng' => 127.04, 'radius' => 500]))
+            ->assertOk();
+
+        $this->assertSame(['near', 'far', 'named', 'snack', 'pub'], array_column($res->json('places'), 'id'));
+        $this->assertSame(['tag', 'tag', 'name', 'menu', 'pub'], array_column($res->json('places'), 'match'));
+        $this->assertSame(['술집', '호프', '요리주점'], $res->json('places.4.tags'));
     }
 }

@@ -10,6 +10,7 @@ Route::get('restaurants', [RestaurantController::class, 'index'])
     ->middleware('throttle:restaurants')->name('restaurants.index');
 Route::middleware('throttle:lookup')->group(function () {
     Route::get('restaurants/search', [RestaurantController::class, 'search'])->name('restaurants.search');
+    Route::get('restaurants/hours', [RestaurantController::class, 'hours'])->name('restaurants.hours');
     Route::get('locations/search', [RestaurantController::class, 'locations'])->name('locations.search');
 });
 
