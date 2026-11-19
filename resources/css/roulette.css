@@ -1472,7 +1472,10 @@
     .rl-main { padding: 16px 12px 24px; }
     .rl-readout { margin: 14px 12px 0; }
     .rl-readout__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .rl-readout__fields > div:last-child { grid-column: span 2; }
+    /* 좁은 화면 배치: LOC RANGE / WHEEL FOUND / TYPE(전체 폭: 종류를 여러 개 고르면 길어짐) */
+    .rl-readout__fields > div:nth-child(5) { order: 3; }
+    .rl-readout__fields > div:nth-child(4) { order: 4; }
+    .rl-readout__fields > div:nth-child(3) { order: 5; grid-column: span 2; }
     .rl-lcd { padding-inline: 22px; }
     .rl-readout__foot { gap: 12px; }
     /* 좁은 화면: 표시등은 한 줄로 오른쪽에, 상태 줄은 그 아래 전체 폭 */
