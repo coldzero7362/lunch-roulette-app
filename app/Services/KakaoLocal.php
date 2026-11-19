@@ -57,6 +57,8 @@ class KakaoLocal
         private readonly string $restApiKey,
         private readonly int $minuteBudget = 600,
         private readonly int $dailyBudget = 50000,
+        private readonly int $detailMinuteBudget = 300,
+        private readonly int $detailDailyBudget = 20000,
     ) {}
 
     /**
@@ -65,9 +67,13 @@ class KakaoLocal
      *
      * @throws KakaoBudgetExceeded
      */
-    private function reserve(int $calls): void
+    private function reserve(int $calls, bool $detail = false): void
     {
-        $windows = [
+        // 영업시간(비공식 장소 상세)은 공식 로컬 API 와 예산을 따로 씀
+        $windows = $detail ? [
+            ['kakao:detail:minute', $this->detailMinuteBudget, 60],
+            ['kakao:detail:day', $this->detailDailyBudget, 86400],
+        ] : [
             ['kakao:budget:minute', $this->minuteBudget, 60],
             ['kakao:budget:day', $this->dailyBudget, 86400],
         ];
@@ -175,7 +181,7 @@ class KakaoLocal
     /**
      * 가게별 지금 영업 상태. 공식 로컬 API엔 영업시간이 없어서 카카오맵 웹이 쓰는 장소 상세(비공식)를 읽는다.
      * 문서가 없는 API라 언제든 막히거나 형식이 바뀔 수 있다: 실패한 가게는 'unknown' 으로 두고 예외를 던지지 않는다.
-     * 상태가 시각에 따라 바뀌므로 짧게(10분) 캐시하고, 실패는 캐시하지 않는다.
+     * 상태가 시각에 따라 바뀌므로 짧게(10분) 캐시하고, 실패는 2분만 기억한다.
      *
      * @param  list<string>  $ids  카카오 장소 id
      * @return array<string, Hours>
@@ -199,7 +205,7 @@ class KakaoLocal
         }
 
         if ($missing !== []) {
-            $this->reserve(count($missing));
+            $this->reserve(count($missing), detail: true);
             $responses = Http::pool(fn (Pool $pool) => array_map(
                 fn (string $id) => $pool->as($id)
                     ->accept('application/json')
@@ -211,6 +217,8 @@ class KakaoLocal
             foreach ($missing as $id) {
                 $response = $responses[$id] ?? null;
                 if (! $response instanceof Response || ! $response->successful() || ! is_array($response->json())) {
+                    // 실패도 잠깐(2분) 기억: 막힌 동안 후보를 바꿀 때마다 같은 가게를 다시 두드리지 않게
+                    Cache::put('kakao:hours:'.$id, self::UNKNOWN_HOURS, now()->addMinutes(2));
                     $result[$id] = self::UNKNOWN_HOURS;
 
                     continue;
@@ -233,7 +241,8 @@ class KakaoLocal
 
     /**
      * 장소 상세의 open_hours → 우리 모양. headline.code 를 네 가지로 줄인다.
-     *   OPEN → open, BREAK_TIME → break, BEFORE_OPEN·CLOSED·휴무 → closed, 정보 없음·모르는 코드 → unknown
+     *   OPEN·CLOSING_SOON(곧 마감, 아직 영업 중) → open, BREAK_TIME → break,
+     *   BEFORE_OPEN·CLOSED·휴무 → closed, 정보 없음·모르는 코드 → unknown
      *
      * @return Hours
      */
@@ -246,7 +255,7 @@ class KakaoLocal
         $headline = $openHours['headline'];
         $code = (string) ($headline['code'] ?? '');
         $status = match (true) {
-            $code === 'OPEN' => 'open',
+            in_array($code, ['OPEN', 'CLOSING_SOON'], true) => 'open',
             $code === 'BREAK_TIME' => 'break',
             in_array($code, ['BEFORE_OPEN', 'CLOSED'], true), str_contains($code, 'HOLIDAY'), str_contains($code, 'OFF') => 'closed',
             default => 'unknown',

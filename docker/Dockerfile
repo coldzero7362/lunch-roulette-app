@@ -6,7 +6,7 @@ FROM php:8.5-apache
 RUN apt-get update \
  && apt-get install -y --no-install-recommends libicu-dev libzip-dev unzip git \
  && docker-php-ext-install intl zip bcmath pcntl \
- && a2enmod rewrite \
+ && a2enmod rewrite headers \
  && rm -rf /var/lib/apt/lists/*
 
 # Laravel은 public/ 이 웹 루트
