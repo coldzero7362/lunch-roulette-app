@@ -4,6 +4,8 @@
     @include('partials.head', ['title' => '점심 룰렛'])
     {{-- 링크 미리보기 (카카오톡·슬랙·디스코드 등 Open Graph, X 카드) --}}
     @php($description = '지금 위치 근처 식당을 룰렛으로 골라 드립니다. 영업 중인 곳만 추리고, 메뉴로 찾아 후보에 직접 넣을 수 있어요.')
+    {{-- 이미지를 바꾸면 주소도 바뀌게 (?v=내용 해시): 미리보기를 캐시한 앱들이 새 이미지를 받아 가도록 --}}
+    @php($ogImage = url('/og-image.jpg').'?v='.substr((string) md5_file(public_path('og-image.jpg')), 0, 8))
     <meta name="description" content="{{ $description }}">
     <meta name="theme-color" content="#3f382f">
     <meta property="og:type" content="website">
@@ -12,7 +14,7 @@
     <meta property="og:url" content="{{ url('/') }}">
     <meta property="og:title" content="점심 룰렛 — 근처 식당 돌림판">
     <meta property="og:description" content="{{ $description }}">
-    <meta property="og:image" content="{{ url('/og-image.jpg') }}">
+    <meta property="og:image" content="{{ $ogImage }}">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -20,7 +22,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="점심 룰렛 — 근처 식당 돌림판">
     <meta name="twitter:description" content="{{ $description }}">
-    <meta name="twitter:image" content="{{ url('/og-image.jpg') }}">
+    <meta name="twitter:image" content="{{ $ogImage }}">
     @vite(['resources/css/roulette.css', 'resources/js/roulette.js'])
     <script nonce="{{ Vite::cspNonce() }}" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ config('services.kakao.js_key') }}&autoload=false&libraries=clusterer"></script>
 </head>
