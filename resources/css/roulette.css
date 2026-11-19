@@ -7,7 +7,7 @@
 
 @font-face {
     font-family: 'Mulmaru';
-    src: url('/fonts/mulmaru.otf') format('opentype');
+    src: url('/fonts/mulmaru.woff2') format('woff2');
     font-display: swap;
 }
 
@@ -26,7 +26,7 @@
 
 @font-face {
     font-family: 'Mulmaru Mono';
-    src: url('/fonts/mulmaru-mono.otf') format('opentype');
+    src: url('/fonts/mulmaru-mono.woff2') format('woff2');
     font-display: swap;
 }
 
