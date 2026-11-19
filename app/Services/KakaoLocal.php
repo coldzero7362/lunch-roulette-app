@@ -241,7 +241,8 @@ class KakaoLocal
 
     /**
      * 장소 상세의 open_hours → 우리 모양. headline.code 를 네 가지로 줄인다.
-     *   OPEN → open, BREAK_TIME → break, BEFORE_OPEN·CLOSED·휴무 → closed, 정보 없음·모르는 코드 → unknown
+     *   OPEN·CLOSING_SOON(곧 마감, 아직 영업 중) → open, BREAK_TIME → break,
+     *   BEFORE_OPEN·CLOSED·휴무 → closed, 정보 없음·모르는 코드 → unknown
      *
      * @return Hours
      */
@@ -254,7 +255,7 @@ class KakaoLocal
         $headline = $openHours['headline'];
         $code = (string) ($headline['code'] ?? '');
         $status = match (true) {
-            $code === 'OPEN' => 'open',
+            in_array($code, ['OPEN', 'CLOSING_SOON'], true) => 'open',
             $code === 'BREAK_TIME' => 'break',
             in_array($code, ['BEFORE_OPEN', 'CLOSED'], true), str_contains($code, 'HOLIDAY'), str_contains($code, 'OFF') => 'closed',
             default => 'unknown',

@@ -1,0 +1,51 @@
+/** 페이지 요소 참조와 브라우저 환경값 */
+
+export const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const SPIN_MS = REDUCED_MOTION ? 600 : 4500;
+
+export const root = document.getElementById('roulette-app');
+export const $ = (id) => document.getElementById(id);
+
+export const el = {
+    status: $('status'),
+    locate: $('locate'),
+    spin: $('spin'),
+    shuffle: $('shuffle'),
+    auto: $('auto'),
+    clear: $('clear'),
+    slots: $('slots'),
+    slotsDown: $('slots-down'),
+    slotsUp: $('slots-up'),
+    rotor: $('wheel-rotor'),
+    candidates: $('candidates'),
+    count: $('candidate-count'),
+    result: $('result'),
+    resultName: $('result-name'),
+    resultMeta: $('result-meta'),
+    resultAddress: $('result-address'),
+    resultHours: $('result-hours'),
+    openToggle: $('open-toggle'),
+    resultLink: $('result-link'),
+    resultRoute: $('result-route'),
+    resultExclude: $('result-exclude'),
+    resultAgain: $('result-again'),
+    resultNo: $('result-no'),
+    resultKicker: $('result-kicker'),
+    resultTime: $('result-time'),
+    log: $('result-log'),
+    steps: [...document.querySelectorAll('#steps [data-step]')],
+    fields: { loc: $('f-loc'), coord: $('f-coord'), range: $('f-range'), type: $('f-type'), found: $('f-found'), wheel: $('f-wheel') },
+    tabs: [$('tab-a'), $('tab-b')],
+    radiusButtons: [...document.querySelectorAll('[data-radius]')],
+    typeButtons: [...document.querySelectorAll('[data-type]')],
+    searchForm: $('search-form'),
+    searchInput: $('search-input'),
+    searchStatus: $('search-status'),
+    searchResults: $('search-results'),
+    locForm: $('loc-form'),
+    locInput: $('loc-input'),
+    locResults: $('loc-results'),
+    locPop: $('loc-pop'),
+    locHead: $('loc-head'),
+    locClose: $('loc-close'),
+};
