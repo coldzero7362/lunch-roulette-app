@@ -802,8 +802,8 @@
     padding: 8px 12px;
     overflow: hidden;
     font-family: var(--font-pixel);
-    font-size: 15px;
-    line-height: 22px;
+    font-size: 20px;
+    line-height: 28px;
     white-space: nowrap;
 }
 
@@ -813,8 +813,8 @@
 /* LOC 아래 좌표 한 줄 */
 .rl-lcd__sub {
     font-family: var(--font-pixel-mono);
-    font-size: 10px;
-    line-height: 14px;
+    font-size: 11px;
+    line-height: 15px;
     letter-spacing: .06em;
     color: #3d4334;
 }
@@ -823,7 +823,8 @@
 .rl-seg {
     position: relative;
     font-family: 'DSEG7', var(--font-pixel-mono);
-    font-size: 17px;
+    font-size: 26px;
+    line-height: 30px;
     letter-spacing: .04em;
 }
 
@@ -836,7 +837,7 @@
     text-shadow: none;
 }
 
-.rl-unit { margin-left: 5px; font-family: var(--font-pixel-mono); font-size: 11px; letter-spacing: .08em; }
+.rl-unit { margin-left: 6px; font-family: var(--font-pixel-mono); font-size: 13px; letter-spacing: .08em; }
 
 .rl-readout__foot {
     display: grid;
@@ -1478,6 +1479,11 @@
     .rl-readout__foot { grid-template-columns: minmax(0, 1fr); gap: 10px; }
     .rl-lamps { justify-content: flex-end; gap: 14px; }
     .rl-lamps li { flex-direction: row; gap: 6px; }
+    /* 좁은 창: 글자를 화면 폭에 맞춰 줄임 (320px 에서도 0500 M·좌표가 안 잘리게) */
+    .rl-readout__fields dd { padding: 8px; font-size: clamp(16px, 5vw, 20px); }
+    .rl-seg { font-size: clamp(19px, 6vw, 26px); }
+    .rl-unit { margin-left: 4px; }
+    .rl-lcd__sub { font-size: clamp(9px, 2.8vw, 11px); letter-spacing: 0; }
     /* 좁은 화면: 영수증 정보 줄은 자르지 않고 줄바꿈 (영업시간·주소가 길어도 다 보이게) */
     .rl-ticket__meta,
     .rl-ticket__sub { white-space: normal; overflow-wrap: anywhere; }
