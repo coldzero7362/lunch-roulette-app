@@ -261,7 +261,8 @@ function createClusterer() {
         minLevel: 4,
         gridSize: 56,
         calculator: [10, 40],
-        styles: [style(34, '#f2b632', 13), style(42, '#e0662a', 14), style(50, '#c8442a', 15)],
+        // 바탕만 10% 투명 (숫자·테두리는 그대로 선명하게): 아래 지도 글자가 살짝 비침
+        styles: [style(34, 'rgb(242 182 50 / .9)', 13), style(42, 'rgb(224 102 42 / .9)', 14), style(50, 'rgb(200 68 42 / .9)', 15)],
     });
 }
 
