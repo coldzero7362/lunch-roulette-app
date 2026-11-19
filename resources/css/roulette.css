@@ -1640,6 +1640,144 @@
 .rl-tabs__tab[aria-selected='true'] { background: var(--c-paper); color: var(--c-carbon); box-shadow: inset 0 -3px 0 var(--c-signal); }
 .rl-tabs__tab:focus-visible { outline: 3px solid var(--c-stripe-1); outline-offset: -3px; }
 
+/* ---------- 상아색 모듈 (후보 · 메뉴 검색) ----------
+   상아색 플라스틱 판 + 귀퉁이 나사. 탭은 LED 달린 선택 키, 목록은 판에 파인 창(투명 덮개) */
+.rl-ivory {
+    --ivory: #ebe3cb;
+    position: relative;
+    box-sizing: border-box;
+    padding: 0 16px 18px;
+    border-radius: 10px;
+    background-color: var(--ivory);
+    background-image: var(--grain-light);
+    box-shadow:
+        inset 0 2px 0 rgb(255 255 255 / .55),
+        inset 0 -3px 0 rgb(0 0 0 / .12),
+        0 3px 0 rgb(0 0 0 / .3);
+}
+
+.rl-ivory > .rl-screw { width: 9px; height: 9px; }
+.rl-ivory > .rl-screw.tl, .rl-ivory > .rl-screw.tr { top: 16px; }
+.rl-ivory > .rl-screw.bl, .rl-ivory > .rl-screw.br { bottom: 6px; }
+.rl-ivory > .rl-screw.tl, .rl-ivory > .rl-screw.bl { left: 5px; }
+.rl-ivory > .rl-screw.tr, .rl-ivory > .rl-screw.br { right: 5px; }
+
+/* 맨 위 색 띠: 판 끝까지 */
+.rl-ivory__stripe { height: 8px; margin: 0 -16px 12px; border-top: 0; }
+
+/* 탭: 홈 안에 나란히 박힌 선택 키 두 개 */
+.rl-ivory .rl-tabs {
+    gap: 3px;
+    padding: 3px;
+    border: 0;
+    border-radius: 6px;
+    border-top: 2px solid #a69d86;
+    border-left: 2px solid #ada48d;
+    border-bottom: 2px solid #fbf6ea;
+    border-right: 2px solid #f6f0e2;
+    background: #c9c0a8;
+    box-shadow: inset 0 2px 5px rgb(0 0 0 / .3);
+}
+
+.rl-ivory .rl-tabs__tab {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-height: 46px;
+    margin-bottom: 2px;
+    padding: 16px 14px 8px;
+    border: 1px solid #8f8670;
+    border-top-color: #fffaf0;
+    border-radius: 3px;
+    background-color: #f1eadb;
+    background-image: var(--grain-light);
+    color: #4d473d;
+    box-shadow: 0 2px 0 #9e957e, inset 0 1px 0 rgb(255 255 255 / .6);
+    transition: transform 50ms, box-shadow 50ms, background-color 50ms;
+}
+
+.rl-ivory .rl-tabs__tab + .rl-tabs__tab { border-left: 1px solid #8f8670; }
+
+/* 키 위 LED 띠: 선택된 면만 주황으로 켜짐 */
+.rl-ivory .rl-tabs__tab::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 14px;
+    width: 16px;
+    height: 4px;
+    border-radius: 1px;
+    background: #a59c86;
+    box-shadow: inset 0 1px 0 rgb(0 0 0 / .35);
+}
+
+.rl-ivory .rl-tabs__tab[aria-selected='true'] {
+    transform: translateY(2px);
+    border-top-color: #8f8670;
+    background-color: #ddd4bf;
+    color: var(--c-carbon);
+    box-shadow: inset 0 2px 4px rgb(0 0 0 / .3);
+}
+
+.rl-ivory .rl-tabs__tab[aria-selected='true']::before {
+    background: var(--c-stripe-2);
+    box-shadow: 0 0 6px var(--c-stripe-2), inset 0 1px 0 rgb(255 255 255 / .4);
+}
+
+/* SIDE A / SIDE B: SPIN 과 같은 글꼴로 음각 */
+.rl-tabs__side {
+    font-family: 'Orbitron', var(--font-pixel-mono);
+    font-weight: 900;
+    font-size: 12px;
+    letter-spacing: .16em;
+    color: #8a8170;
+    text-shadow: 0 -1px 0 rgb(0 0 0 / .35), 0 1px 0 rgb(255 255 255 / .7);
+}
+
+.rl-tabs__tab[aria-selected='true'] .rl-tabs__side { color: #6e6656; }
+
+.rl-tabs__side,
+.rl-tabs__name { white-space: nowrap; }
+
+.rl-tabs__name { font-size: 14px; }
+
+/* 좁은 화면: 키 안에서 SIDE 각인 위, 이름 아래 */
+@media (max-width: 640px) {
+    .rl-ivory { padding-inline: 14px; }
+    .rl-ivory__stripe { margin-inline: -14px; }
+    .rl-ivory .rl-tabs__tab { flex-direction: column; align-items: flex-start; gap: 3px; padding: 15px 10px 7px; }
+    .rl-ivory .rl-tabs__tab::before { left: 10px; }
+    .rl-tabs__side { font-size: 10px; }
+}
+
+/* 도구 줄: 가운데 선 대신 판에 새긴 홈 */
+.rl-ivory .rl-jcard__tools { padding: 12px 0 10px; border-bottom: 0; }
+.rl-ivory .rl-search { padding: 12px 0 10px; border-bottom: 0; }
+
+/* 목록 창: 판에 파인 홈 + 밝은 종이 + 투명 덮개 */
+.rl-ivory__window {
+    position: relative;
+    overflow: hidden;
+    border-radius: 6px;
+    border-top: 2px solid #9d9480;
+    border-left: 2px solid #a59c86;
+    border-bottom: 2px solid #fbf6ea;
+    border-right: 2px solid #f6f0e2;
+    background: #f7f2e6;
+    box-shadow: inset 0 3px 6px rgb(0 0 0 / .22);
+}
+
+.rl-ivory__window::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background: linear-gradient(118deg, rgb(255 255 255 / .35) 0 10%, rgb(255 255 255 / .08) 22%, transparent 30% 72%, rgb(255 255 255 / .12) 78% 82%, transparent 88%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .6);
+}
+
 /* ---------- 단계 표시등 ---------- */
 
 /*
@@ -1716,7 +1854,7 @@
     background: radial-gradient(circle, var(--c-carbon) 1.4px, transparent 1.7px) 0 0 / 7px 7px;
 }
 
-.rl-plate__licenses { display: flex; gap: 10px; font-family: var(--font-pixel-mono); font-size: 10px; letter-spacing: .08em; }
+.rl-plate__licenses { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px 10px; min-width: 0; font-family: var(--font-pixel-mono); font-size: 10px; letter-spacing: .08em; }
 .rl-plate__licenses a { color: var(--c-panel-2); text-decoration: none; }
 .rl-plate__licenses a:hover { color: var(--c-carbon); text-decoration: underline; }
 
@@ -1779,6 +1917,9 @@
     .rl-bank--wide .rl-bank__slot { width: 100%; box-sizing: border-box; }
     .rl-bank--wide .rl-bank__key { flex: 1 1 0; min-width: 0; padding-inline: 2px; }
     .rl-plate { padding: 12px 18px 16px; }
+    /* 좁은 화면: 눈금 장식을 빼서 라이선스 링크 자리 확보 */
+    .rl-ticks { display: none; }
+    .rl-plate__licenses { flex: 1; }
     .rl-grille { width: 70px; }
 }
 
