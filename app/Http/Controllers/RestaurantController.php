@@ -16,6 +16,9 @@ class RestaurantController extends Controller
 {
     public const RADII = [300, 500, 1000];
 
+    /** 영업시간은 가게마다 따로 불러야 해서 한 번에 이만큼까지 (후보 슬롯 최대치와 맞춤) */
+    public const MAX_HOURS_IDS = 12;
+
     /**
      * 좌표 반경 안의 식당 목록 (룰렛 후보). types[] 로 종류를 고를 수 있다.
      */
@@ -65,6 +68,25 @@ class RestaurantController extends Controller
         }
 
         return response()->json(['locations' => $locations]);
+    }
+
+    /**
+     * 후보 가게들의 지금 영업 상태 (룰렛 후보 수만큼만 조회).
+     */
+    public function hours(Request $request, KakaoLocal $kakao): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:'.self::MAX_HOURS_IDS],
+            'ids.*' => ['required', 'string', 'regex:/^\d{1,15}$/'],
+        ]);
+
+        try {
+            $hours = $kakao->openHours(array_values($data['ids']));
+        } catch (KakaoBudgetExceeded) {
+            return $this->busy();
+        }
+
+        return response()->json(['hours' => $hours]);
     }
 
     /** 카카오 호출 예산을 다 씀: 잠깐 쉬었다 오라고 알림 */

@@ -6,7 +6,7 @@
     <script nonce="{{ Vite::cspNonce() }}" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ config('services.kakao.js_key') }}&autoload=false&libraries=clusterer"></script>
 </head>
 <body class="rl-body">
-    <div id="roulette-app" data-restaurants-url="{{ route('restaurants.index') }}" data-search-url="{{ route('restaurants.search') }}" data-locations-url="{{ route('locations.search') }}" class="rl-device">
+    <div id="roulette-app" data-restaurants-url="{{ route('restaurants.index') }}" data-search-url="{{ route('restaurants.search') }}" data-locations-url="{{ route('locations.search') }}" data-hours-url="{{ route('restaurants.hours') }}" class="rl-device">
 
         {{-- 머리 패널: 단계 표시등 --}}
         <header class="rl-head rl-ribs">
@@ -85,6 +85,12 @@
                             @foreach (\App\Services\KakaoLocal::TYPES as $type)
                                 <button type="button" class="rl-bank__key" data-type="{{ $type }}" aria-pressed="false">{{ $type === '술집' ? '주점' : $type }}</button>
                             @endforeach
+                        </div>
+                    </div>
+                    <div class="rl-bank" role="group" aria-labelledby="lbl-hours">
+                        <span id="lbl-hours" class="rl-console__label">HOURS</span>
+                        <div class="rl-bank__slot">
+                            <button id="open-toggle" type="button" class="rl-bank__key" aria-pressed="false" title="켜면 지금 영업 중인 후보만 돌림판 추첨 대상">영업중</button>
                         </div>
                     </div>
                     <div class="rl-bank" role="group" aria-labelledby="lbl-fx">
@@ -172,6 +178,7 @@
                         <p id="result-kicker" class="rl-ticket__kicker">STANDBY</p>
                         <p id="result-name" class="rl-ticket__name">—</p>
                         <p id="result-meta" class="rl-ticket__meta">후보 2곳 이상 → ▶ 돌리기</p>
+                        <p id="result-hours" class="rl-ticket__sub">&nbsp;</p>
                         <p id="result-address" class="rl-ticket__sub">&nbsp;</p>
                         <div class="rl-ticket__cut" aria-hidden="true"></div>
                         <div class="rl-ticket__actions rl-well">

@@ -664,6 +664,17 @@
 .rl-tag--pin { border-color: var(--c-signal); background: var(--c-signal); color: var(--c-paper); }
 .rl-tag--dim { border-style: dashed; color: var(--c-panel-2); }
 
+/* 영업 상태 배지: 작은 표시창 (검은 바탕 + 형광 글자) */
+.rl-tag--hours { border-color: var(--c-carbon); background: var(--c-screen); color: var(--c-phosphor); }
+.rl-tag--break { color: var(--c-phosphor-amber); }
+.rl-tag--closed { color: var(--c-crt-alert); }
+.rl-tag--unknown { border-style: dashed; border-color: var(--c-panel-2); background: transparent; color: var(--c-panel-2); }
+.rl-tag--wait { border-color: var(--c-panel-2); background: transparent; color: var(--c-panel-2); letter-spacing: .1em; }
+
+/* 영업중 필터에 걸린 후보: 흐리게, 이름에 줄 */
+.rl-track--shut .rl-track__name { color: var(--c-panel-2); text-decoration: line-through; text-decoration-thickness: 1px; }
+.rl-track--shut .rl-track__meta { opacity: .75; }
+
 /* 메뉴 검색: 부분 일치 구분줄과 흐린 줄 */
 .rl-search__sep {
     padding: 6px 12px;
@@ -1087,6 +1098,13 @@
 
 .rl-ticket__meta { margin: 6px 0 0; font-size: 14px; color: var(--c-panel); }
 .rl-ticket__sub { margin: 2px 0 0; font-size: 13px; color: var(--c-panel-2); }
+#result-hours[data-status="open"] { color: var(--c-panel); }
+#result-hours[data-status="open"]::before,
+#result-hours[data-status="break"]::before,
+#result-hours[data-status="closed"]::before { content: "■ "; }
+#result-hours[data-status="open"]::before { color: #2f8a4a; }
+#result-hours[data-status="break"]::before { color: var(--c-amber); }
+#result-hours[data-status="closed"]::before { color: var(--c-stripe-3); }
 
 /* 절취선 */
 .rl-ticket__cut { margin: 12px -18px 10px; border-top: 2px dashed var(--c-periwinkle); }
@@ -1198,6 +1216,11 @@
     height: 8px;
     background: repeating-linear-gradient(90deg, var(--c-carbon) 0 2px, transparent 2px 6px);
     opacity: .7;
+}
+
+/* 넓은 화면: RANGE · HOURS · FX 를 윗줄에, 종류 키는 아랫줄 전체 폭 (키 7개가 잘리지 않게) */
+@media (min-width: 641px) {
+    .rl-console__controls .rl-bank--wide { order: 1; flex-basis: 100%; }
 }
 
 @media (max-width: 640px) {

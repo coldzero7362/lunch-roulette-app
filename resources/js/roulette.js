@@ -13,6 +13,9 @@ const SLOTS_KEY = 'lunch-roulette:slots';
 const PLACE_KEY = 'lunch-roulette:place'; // 직접 고른 위치 (검색·지도 클릭)
 const ACCURACY_WARN_M = 1000;             // 기기 위치 오차가 이보다 크면 안내
 const LOG_KEY = 'lunch-roulette:log';     // 오늘 결과 기록 (날짜별)
+const OPEN_KEY = 'lunch-roulette:open-only'; // 영업중 토글
+const HOURS_TTL_MS = 10 * 60 * 1000;       // 영업 상태 재조회 간격 (서버 캐시와 같음)
+const HOURS_BATCH = 12;                    // 서버가 한 번에 받는 가게 수
 const WALK_M_PER_MIN = 67;                 // 도보 약 4km/h
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }; // 위치를 못 받을 때: 서울시청
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -51,6 +54,8 @@ const el = {
     resultName: $('result-name'),
     resultMeta: $('result-meta'),
     resultAddress: $('result-address'),
+    resultHours: $('result-hours'),
+    openToggle: $('open-toggle'),
     resultLink: $('result-link'),
     resultRoute: $('result-route'),
     resultExclude: $('result-exclude'),
@@ -92,6 +97,9 @@ const state = {
     spinning: false,
     winner: null,
     requestId: 0,
+    hours: new Map(),    // 가게 id → { status, label, info, today, at } 지금 영업 상태
+    openOnly: false,     // 켜면 영업 중(또는 정보 없음)인 후보만 추첨
+    checking: false,     // 자동 채움·돌리기 전에 영업 상태 확인 중
 };
 
 let map, centerOverlay, radiusCircle, winnerOverlay, winnerMarker, clusterer;
@@ -434,22 +442,58 @@ function weightedPick(pool, n, chosen = []) {
     return picked;
 }
 
+/**
+ * pool 에서 need 곳을 뽑음. 영업중 필터가 켜져 있으면 뽑은 곳의 영업 상태를 확인하고
+ * 못 가는 곳은 버린 뒤 모자란 만큼 다시 뽑는다 (가게마다 조회가 필요해 전체를 미리 거를 수 없음).
+ */
+async function pickFrom(pool, need, chosen) {
+    if (!state.openOnly) return weightedPick(pool, need, chosen);
+
+    const picked = [];
+    const tried = new Set();
+    for (let round = 0; round < 4 && picked.length < need; round++) {
+        const left = pool.filter((p) => !tried.has(p.id) && !isShut(p));
+        const batch = weightedPick(left, Math.min(HOURS_BATCH, need - picked.length), [...chosen, ...picked]);
+        if (!batch.length) break;
+        batch.forEach((p) => tried.add(p.id));
+        await ensureHours(batch);
+        picked.push(...batch.filter((p) => !isShut(p)));
+    }
+    return picked;
+}
+
+/** 확인 중엔 키를 잠금 (영업 상태 조회 동안 두 번 누르기 방지) */
+async function checking(task) {
+    state.checking = true;
+    setBusy(true);
+    try {
+        return await task();
+    } finally {
+        state.checking = false;
+        setBusy(false);
+    }
+}
+
 /** 자동: 빈 칸을 반경 안 식당으로 채움 (보정된 무작위) */
-function autoFill() {
+async function autoFill() {
     const need = state.slots - state.candidates.length;
-    if (need <= 0) return;
-    const picks = weightedPick(spare(), need, state.candidates);
+    if (need <= 0 || state.checking) return;
+    if (state.openOnly) setStatus('영업 상태 확인 중');
+    const picks = await checking(() => pickFrom(spare(), need, state.candidates));
     state.candidates.push(...picks);
     clearResult();
     render();
-    if (picks.length < need) setStatus(picks.length ? `잔여 ${picks.length}곳만 추가` : '추가 가능 식당 없음 — 반경·종류 변경');
+    const what = state.openOnly ? '영업 중인 식당' : '식당';
+    if (picks.length < need) setStatus(picks.length ? `잔여 ${picks.length}곳만 추가` : `추가 가능 ${what} 없음 — 반경·종류 변경`);
+    else if (state.openOnly) setStatus(`자동 채움 ${picks.length}곳 · 영업 중`);
 }
 
 /** 섞기: 직접 넣은 곳은 두고, 자동으로 들어간 곳만 새로 뽑아 순서도 섞음 */
-function reshuffle() {
+async function reshuffle() {
+    if (state.checking) return;
     const pins = state.candidates.filter((p) => state.pinned.has(p.id));
     const autoCount = state.candidates.length - pins.length;
-    const rest = weightedPick(available(), autoCount, pins);
+    const rest = await checking(() => pickFrom(available(), autoCount, pins));
     state.candidates = shuffle([...pins, ...rest]);
     clearResult();
     render();
@@ -686,6 +730,111 @@ async function searchLocation(query) {
     }
 }
 
+/* ---------- 영업 상태 ---------- */
+
+const hoursInFlight = new Set();
+
+function hoursOf(place) {
+    const h = state.hours.get(place.id);
+    return h && Date.now() - h.at < HOURS_TTL_MS ? h : null;
+}
+
+/** 지금 못 가는 곳: 영업 전·마감·휴무·브레이크타임. 정보 없음은 거르지 않음 (가 보면 열려 있을 수도) */
+function isShut(place) {
+    const st = hoursOf(place)?.status;
+    return st === 'closed' || st === 'break';
+}
+
+/** 영업중 토글이 켜졌을 때 추첨에서 빠지는 곳 */
+const blocked = (place) => state.openOnly && isShut(place);
+
+/**
+ * 가게들의 영업 상태를 서버에서 받아 둠 (이미 받은 지 10분 안 된 곳은 건너뜀).
+ * 비공식 API 를 쓰므로 실패해도 막지 않는다: 그 가게는 정보 없음으로 둠.
+ */
+async function ensureHours(places) {
+    const ids = [...new Set(places.filter((p) => !hoursOf(p) && !hoursInFlight.has(p.id)).map((p) => p.id))];
+    if (!ids.length) return;
+    ids.forEach((id) => hoursInFlight.add(id));
+
+    const batches = [];
+    for (let i = 0; i < ids.length; i += HOURS_BATCH) batches.push(ids.slice(i, i + HOURS_BATCH));
+
+    await Promise.all(batches.map(async (batch) => {
+        const url = new URL(root.dataset.hoursUrl);
+        batch.forEach((id) => url.searchParams.append('ids[]', id));
+        try {
+            const res = await fetch(url, { headers: { Accept: 'application/json' } });
+            const body = res.ok ? await res.json() : {};
+            const at = Date.now();
+            batch.forEach((id) => {
+                const h = body.hours?.[id];
+                state.hours.set(id, { status: 'unknown', label: '', info: '', today: '', ...(h ?? {}), at: h ? at : at - HOURS_TTL_MS + 60000 });
+            });
+        } catch {
+            // 네트워크 실패: 1분 뒤 다시 시도할 수 있게 짧게 기록
+            batch.forEach((id) => state.hours.set(id, { status: 'unknown', label: '', info: '', today: '', at: Date.now() - HOURS_TTL_MS + 60000 }));
+        } finally {
+            batch.forEach((id) => hoursInFlight.delete(id));
+        }
+    }));
+}
+
+/** 후보가 바뀌면 배지용으로 영업 상태를 뒤에서 받아 옴 */
+let hoursTimer;
+function queueHours() {
+    clearTimeout(hoursTimer);
+    hoursTimer = setTimeout(async () => {
+        const missing = state.candidates.filter((p) => !hoursOf(p));
+        if (!missing.length) return;
+        await ensureHours(missing);
+        if (!state.spinning && !state.checking) render();
+    }, 250);
+}
+
+/** 후보 줄 배지: 영업중 / 브레이크 / 영업전·영업마감 / 정보없음 */
+function hoursTag(place) {
+    const h = hoursOf(place);
+    const tag = document.createElement('span');
+    const kind = !h ? 'wait' : h.status;
+    tag.className = `rl-tag rl-tag--hours rl-tag--${kind}`;
+    tag.textContent = !h ? '···'
+        : h.status === 'open' ? '영업중'
+        : h.status === 'break' ? '브레이크'
+        : h.status === 'closed' ? (h.label.replace(/\s+/g, '') || '마감')
+        : '정보없음';
+    tag.title = !h ? '영업 상태 확인 중' : hoursText(h) || '영업시간 정보 없음';
+    return tag;
+}
+
+/** "영업 중 · 22:00 까지 · 오늘 11:30 ~ 22:00" */
+function hoursText(h) {
+    if (!h || h.status === 'unknown') return '';
+    return [[h.label, h.info].filter(Boolean).join(' · '), h.today ? `오늘 ${h.today}` : ''].filter(Boolean).join(' · ');
+}
+
+function setOpenOnly(on, save = true) {
+    state.openOnly = on;
+    el.openToggle.setAttribute('aria-pressed', String(on));
+    if (save) {
+        try { localStorage.setItem(OPEN_KEY, on ? 'on' : 'off'); } catch { /* 저장 못 해도 동작 */ }
+    }
+    render();
+    if (on && state.candidates.length) {
+        const shut = state.candidates.filter(isShut).length;
+        setStatus(shut ? `영업중 필터 ON — 후보 ${shut}곳 추첨 제외` : '영업중 필터 ON');
+    } else if (!on) {
+        setStatus('영업중 필터 OFF');
+    }
+}
+
+function initOpenOnly() {
+    let saved = null;
+    try { saved = localStorage.getItem(OPEN_KEY); } catch { /* 비공개 모드 등 */ }
+    setOpenOnly(saved === 'on', false);
+    el.openToggle.addEventListener('click', () => setOpenOnly(!state.openOnly));
+}
+
 /* ---------- 메뉴 찾기 ---------- */
 
 async function searchMenu(query) {
@@ -867,7 +1016,9 @@ function renderWheel() {
             const [x2, y2] = point((i + 1) * slice, 98);
             shape.setAttribute('d', `M0 0 L${x1} ${y1} A98 98 0 ${slice > 180 ? 1 : 0} 1 ${x2} ${y2} Z`);
         }
-        const tone = SLICES[i % SLICES.length];
+        // 영업중 필터에 걸린 칸은 꺼진 색 (번호 자리는 그대로: 목록 번호와 맞춤)
+        const off = blocked(place);
+        const tone = off ? { fill: '#5a5247', ink: '#aba38f' } : SLICES[i % SLICES.length];
         shape.setAttribute('fill', tone.fill);
         shape.setAttribute('stroke', INK);
         shape.setAttribute('stroke-width', '1.2');
@@ -926,9 +1077,22 @@ function reelHub() {
     return g;
 }
 
-function spin() {
+async function spin() {
     const n = state.candidates.length;
-    if (state.spinning || n === 0) return;
+    if (state.spinning || state.checking || n === 0) return;
+
+    if (state.openOnly) {
+        setStatus('영업 상태 확인 중');
+        await checking(() => ensureHours(state.candidates));
+        renderWheel();
+        renderCandidates();
+    }
+    // 영업중 필터가 켜져 있으면 못 가는 칸은 추첨에서 뺌
+    const eligible = state.candidates.map((p, i) => i).filter((i) => !blocked(state.candidates[i]));
+    if (!eligible.length) {
+        setStatus('영업 중 후보 0 — 자동 채움 또는 HOURS 해제');
+        return;
+    }
 
     state.spinning = true;
     clearResult();
@@ -936,7 +1100,7 @@ function spin() {
     setStatus('SPIN');
 
     const slice = 360 / n;
-    const index = Math.floor(Math.random() * n);
+    const index = eligible[Math.floor(Math.random() * eligible.length)];
     const jitter = (Math.random() - 0.5) * slice * 0.7;
     // 조각 index 의 가운데가 12시(바늘)에 오도록
     const target = -((index + 0.5) * slice) + jitter;
@@ -972,6 +1136,7 @@ function showResult(place) {
     el.resultName.title = place.name;
     el.resultMeta.textContent = [typeLabel(place.type), place.category !== place.type ? place.category : '', `${place.distance}m`, `도보 약 ${walk}분`].filter(Boolean).join(' · ');
     el.resultAddress.textContent = [place.address, place.phone].filter(Boolean).join(' · ');
+    setTicketHours(place);
     el.resultRoute.href = `https://map.kakao.com/link/to/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
     el.resultLink.href = placeUrl(place);
     setTicketActions(true);
@@ -981,6 +1146,21 @@ function showResult(place) {
     updateSteps();
     // 영수증(프린터 칸)으로 스크롤
     el.result.scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'center' });
+}
+
+/** 영수증의 영업 줄. 아직 모르면 받아 와서 채움 */
+function setTicketHours(place) {
+    const h = hoursOf(place);
+    if (h) {
+        el.resultHours.textContent = h.status === 'unknown' ? '영업시간 정보 없음' : hoursText(h);
+        el.resultHours.dataset.status = h.status;
+        return;
+    }
+    el.resultHours.textContent = '영업 상태 확인 중';
+    el.resultHours.dataset.status = 'wait';
+    ensureHours([place]).then(() => {
+        if (state.winner?.id === place.id) setTicketHours(place);
+    });
 }
 
 /* ---------- 오늘 기록 ---------- */
@@ -1062,6 +1242,8 @@ function setTicketIdle() {
     el.resultName.removeAttribute('title');
     el.resultMeta.textContent = state.candidates.length >= 1 ? '▶ 돌리기 대기' : '후보 추가 → ▶ 돌리기';
     el.resultAddress.textContent = '\u00a0';
+    el.resultHours.textContent = '\u00a0';
+    delete el.resultHours.dataset.status;
     setTicketActions(false);
 }
 
@@ -1087,21 +1269,23 @@ function renderCandidates() {
     el.candidates.replaceChildren(...state.candidates.map((place, i) => {
         const tone = SLICES[i % SLICES.length];
         const li = document.createElement('li');
-        li.className = 'rl-track';
+        li.className = blocked(place) ? 'rl-track rl-track--shut' : 'rl-track';
 
         // 트랙 번호: 돌림판 조각과 같은 색
         const no = document.createElement('span');
         no.className = 'rl-track__no';
         no.textContent = String(i + 1);
-        no.style.background = tone.fill;
-        no.style.color = tone.ink;
+        no.style.background = blocked(place) ? '#5a5247' : tone.fill;
+        no.style.color = blocked(place) ? '#aba38f' : tone.ink;
 
         const info = document.createElement('div');
         info.className = 'min-w-0 flex-1';
         const name = document.createElement('p');
         name.className = 'rl-track__name truncate';
         name.textContent = place.name;
-        info.append(name, metaLine(place, state.pinned.has(place.id)));
+        const meta = metaLine(place, state.pinned.has(place.id));
+        meta.prepend(hoursTag(place));
+        info.append(name, meta);
 
         const remove = iconKey('button', 'close', `${place.name} 후보에서 제외`, '제외');
         remove.disabled = state.spinning;
@@ -1113,6 +1297,7 @@ function renderCandidates() {
 }
 
 function render() {
+    queueHours();
     renderWheel();
     renderCandidates();
     if (state.searchResults.length) renderSearchResults();
@@ -1149,6 +1334,7 @@ function updateSteps() {
 }
 
 function setBusy(busy) {
+    busy = busy || state.checking || state.spinning;
     const empty = state.candidates.length === 0;
     const autoOnWheel = state.candidates.some((p) => !state.pinned.has(p.id));
     const hasSpare = spare().length > 0;
@@ -1295,6 +1481,7 @@ terminalInput(el.locInput);
 terminalInput(el.searchInput);
 initSlots();
 initCrt();
+initOpenOnly();
 setTicketIdle();
 renderLog();
 initMap();
