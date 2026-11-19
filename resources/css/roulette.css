@@ -896,6 +896,8 @@
 
 .rl-main {
     display: grid;
+    /* 한 칸일 때도 폭 고정: 기본(auto)이면 줄바꿈 없는 긴 글(영수증 주소 등)만큼 칸이 넓어져 화면 밖으로 밀림 */
+    grid-template-columns: minmax(0, 1fr);
     gap: 24px;
     padding: 20px 32px 28px;
 }
@@ -1476,6 +1478,9 @@
     .rl-readout__foot { grid-template-columns: minmax(0, 1fr); gap: 10px; }
     .rl-lamps { justify-content: flex-end; gap: 14px; }
     .rl-lamps li { flex-direction: row; gap: 6px; }
+    /* 좁은 화면: 영수증 정보 줄은 자르지 않고 줄바꿈 (영업시간·주소가 길어도 다 보이게) */
+    .rl-ticket__meta,
+    .rl-ticket__sub { white-space: normal; overflow-wrap: anywhere; }
     .rl-steps { display: none; }
     /* 종류 키 7개를 한 줄에 */
     .rl-console__controls .rl-bank--wide { flex-basis: 100%; }
