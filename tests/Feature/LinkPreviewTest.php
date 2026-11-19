@@ -13,7 +13,7 @@ class LinkPreviewTest extends TestCase
         foreach ([
             '<meta property="og:title" content="점심 룰렛 — 근처 식당 돌림판">',
             '<meta property="og:type" content="website">',
-            '<meta property="og:image" content="'.url('/og-image.jpg').'">',
+            '<meta property="og:image" content="'.url('/og-image.jpg').'?v='.substr((string) md5_file(public_path('og-image.jpg')), 0, 8).'">',
             '<meta property="og:image:width" content="1200">',
             '<meta property="og:image:height" content="630">',
             '<meta property="og:url" content="'.url('/').'">',
