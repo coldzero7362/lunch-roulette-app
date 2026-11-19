@@ -14,8 +14,10 @@ use Illuminate\Support\Facades\RateLimiter;
  * 카카오 로컬 API로 좌표 반경 안의 음식점(카테고리 FD6)을 찾는다.
  * https://developers.kakao.com/docs/latest/ko/local/dev-guide
  *
- * @phpstan-type Place array{id: string, name: string, type: string, category: string, distance: int, address: string, phone: string, url: string, lat: float, lng: float}
+ * @phpstan-type Place array{id: string, name: string, type: string, category: string, tags: list<string>, distance: int, address: string, phone: string, url: string, lat: float, lng: float}
+ * @phpstan-type RankedPlace array{id: string, name: string, type: string, category: string, tags: list<string>, distance: int, address: string, phone: string, url: string, lat: float, lng: float, match: string}
  * @phpstan-type Location array{name: string, address: string, kind: string, lat: float, lng: float}
+ * @phpstan-type Hours array{status: 'open'|'break'|'closed'|'unknown', label: string, info: string, today: string}
  */
 class KakaoLocal
 {
@@ -30,6 +32,12 @@ class KakaoLocal
     private const KEYWORD_ENDPOINT = 'https://dapi.kakao.com/v2/local/search/keyword.json';
 
     private const ADDRESS_ENDPOINT = 'https://dapi.kakao.com/v2/local/search/address.json';
+
+    /** 카카오맵 웹의 장소 상세 (비공식, 키 없음). 영업시간이 여기에만 있다 */
+    private const PLACE_DETAIL_ENDPOINT = 'https://place-api.map.kakao.com/places/panel3/';
+
+    /** @var Hours */
+    private const UNKNOWN_HOURS = ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => ''];
 
     private const CATEGORY_RESTAURANT = 'FD6';
 
@@ -113,13 +121,162 @@ class KakaoLocal
     /**
      * 메뉴·가게 이름으로 반경 안 식당 검색 (예: "짬뽕", "쌀국수").
      *
-     * @return list<Place>
+     * 카카오 키워드 검색은 메뉴 일부로만 걸린 곳(술집의 피자 안주 등)도 섞어 주므로
+     * 분류 태그 기준으로 일치 등급을 매겨 정렬한다. 같은 등급 안에선 가까운 순.
+     *   tag  : 분류 태그에 검색어가 있음 ("음식점 > 양식 > 피자")
+     *   name : 가게 이름에 검색어가 있음
+     *   menu : 메뉴 일부로만 걸림
+     *   pub  : 주점이면서 태그·이름이 안 맞음 (안주로 파는 경우) → 맨 뒤
+     *
+     * @return list<RankedPlace>
      *
      * @throws RequestException
      */
     public function searchRestaurants(string $query, float $lat, float $lng, int $radius): array
     {
-        return $this->fetchAll(self::KEYWORD_ENDPOINT, $this->area($lat, $lng, $radius) + ['query' => $query]);
+        $places = $this->fetchAll(self::KEYWORD_ENDPOINT, $this->area($lat, $lng, $radius) + ['query' => $query]);
+
+        $q = $this->normalize($query);
+        $order = ['tag' => 0, 'name' => 1, 'menu' => 2, 'pub' => 3];
+
+        $ranked = array_map(fn (array $p) => $p + ['match' => $this->matchOf($p, $q)], $places);
+        usort($ranked, fn (array $a, array $b) => [$order[$a['match']], $a['distance']] <=> [$order[$b['match']], $b['distance']]);
+
+        return $ranked;
+    }
+
+    /** @param  Place  $place */
+    private function matchOf(array $place, string $q): string
+    {
+        if ($q === '') {
+            return 'menu';
+        }
+
+        foreach ($place['tags'] as $tag) {
+            $t = $this->normalize($tag);
+            // "피자" ↔ 태그 "피자", "수제피자" ↔ 태그 "피자" (두 글자 이상 태그만 거꾸로 포함 검사)
+            if ($t !== '' && (str_contains($t, $q) || (mb_strlen($t) >= 2 && str_contains($q, $t)))) {
+                return 'tag';
+            }
+        }
+
+        if (str_contains($this->normalize($place['name']), $q)) {
+            return 'name';
+        }
+
+        return $place['type'] === '술집' ? 'pub' : 'menu';
+    }
+
+    private function normalize(string $text): string
+    {
+        return mb_strtolower((string) preg_replace('/\s+/u', '', $text));
+    }
+
+    /**
+     * 가게별 지금 영업 상태. 공식 로컬 API엔 영업시간이 없어서 카카오맵 웹이 쓰는 장소 상세(비공식)를 읽는다.
+     * 문서가 없는 API라 언제든 막히거나 형식이 바뀔 수 있다: 실패한 가게는 'unknown' 으로 두고 예외를 던지지 않는다.
+     * 상태가 시각에 따라 바뀌므로 짧게(10분) 캐시하고, 실패는 캐시하지 않는다.
+     *
+     * @param  list<string>  $ids  카카오 장소 id
+     * @return array<string, Hours>
+     *
+     * @throws KakaoBudgetExceeded
+     */
+    public function openHours(array $ids): array
+    {
+        $ids = array_values(array_unique($ids));
+        $result = [];
+        $missing = [];
+
+        foreach ($ids as $id) {
+            $cached = Cache::get('kakao:hours:'.$id);
+            if (is_array($cached)) {
+                /** @var Hours $cached */
+                $result[$id] = $cached;
+            } else {
+                $missing[] = $id;
+            }
+        }
+
+        if ($missing !== []) {
+            $this->reserve(count($missing));
+            $responses = Http::pool(fn (Pool $pool) => array_map(
+                fn (string $id) => $pool->as($id)
+                    ->accept('application/json')
+                    ->timeout(5)
+                    ->get(self::PLACE_DETAIL_ENDPOINT.$id),
+                $missing,
+            ));
+
+            foreach ($missing as $id) {
+                $response = $responses[$id] ?? null;
+                if (! $response instanceof Response || ! $response->successful() || ! is_array($response->json())) {
+                    $result[$id] = self::UNKNOWN_HOURS;
+
+                    continue;
+                }
+
+                $hours = $this->toHours($response->json('open_hours'));
+                Cache::put('kakao:hours:'.$id, $hours, now()->addMinutes(10));
+                $result[$id] = $hours;
+            }
+        }
+
+        // 요청한 순서대로
+        $ordered = [];
+        foreach ($ids as $id) {
+            $ordered[$id] = $result[$id];
+        }
+
+        return $ordered;
+    }
+
+    /**
+     * 장소 상세의 open_hours → 우리 모양. headline.code 를 네 가지로 줄인다.
+     *   OPEN → open, BREAK_TIME → break, BEFORE_OPEN·CLOSED·휴무 → closed, 정보 없음·모르는 코드 → unknown
+     *
+     * @return Hours
+     */
+    private function toHours(mixed $openHours): array
+    {
+        if (! is_array($openHours) || ! is_array($openHours['headline'] ?? null)) {
+            return self::UNKNOWN_HOURS;
+        }
+
+        $headline = $openHours['headline'];
+        $code = (string) ($headline['code'] ?? '');
+        $status = match (true) {
+            $code === 'OPEN' => 'open',
+            $code === 'BREAK_TIME' => 'break',
+            in_array($code, ['BEFORE_OPEN', 'CLOSED'], true), str_contains($code, 'HOLIDAY'), str_contains($code, 'OFF') => 'closed',
+            default => 'unknown',
+        };
+
+        // 오늘(is_highlight) 영업시간 한 줄: "11:00 ~ 20:30 (브레이크 14:30 ~ 16:30)" 또는 "휴무일"
+        $today = '';
+        foreach ((array) ($openHours['week_from_today']['week_periods'] ?? []) as $period) {
+            foreach ((array) ($period['days'] ?? []) as $day) {
+                if (! ($day['is_highlight'] ?? false)) {
+                    continue;
+                }
+                $today = (string) ($day['on_days']['start_end_time_desc'] ?? $day['off_days_desc'] ?? '');
+                $breaks = array_map(
+                    fn ($b) => trim(str_replace('브레이크타임', '', (string) $b)),
+                    (array) ($day['on_days']['break_times_desc'] ?? []),
+                );
+                if ($breaks !== []) {
+                    $today .= ' (브레이크 '.implode(', ', $breaks).')';
+                }
+                break 2;
+            }
+        }
+
+        return [
+            'status' => $status,
+            'label' => mb_substr((string) ($headline['display_text'] ?? ''), 0, 20),
+            'info' => mb_substr((string) ($headline['display_text_info'] ?? ''), 0, 30),
+            'today' => mb_substr($today, 0, 60),
+        ];
     }
 
     /**
@@ -332,12 +489,22 @@ class KakaoLocal
     {
         // "음식점 > 한식 > 해장국" → type 한식, category 해장국
         $parts = array_map('trim', explode('>', (string) ($doc['category_name'] ?? '')));
+        // 태그: "음식점" 다음 칸들, 쉼표로 묶인 것도 낱개로 ("술집 > 호프,요리주점" → 술집, 호프, 요리주점)
+        $tags = [];
+        foreach (array_slice($parts, 1) as $part) {
+            foreach (explode(',', $part) as $tag) {
+                if (($tag = trim($tag)) !== '') {
+                    $tags[] = $tag;
+                }
+            }
+        }
 
         return [
             'id' => (string) $doc['id'],
             'name' => (string) $doc['place_name'],
             'type' => $parts[1] ?? '',
             'category' => (string) end($parts),
+            'tags' => array_values(array_unique($tags)),
             'distance' => (int) ($doc['distance'] ?? 0),
             'address' => (string) (($doc['road_address_name'] ?? '') ?: ($doc['address_name'] ?? '')),
             'phone' => (string) ($doc['phone'] ?? ''),
