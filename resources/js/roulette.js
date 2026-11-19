@@ -482,13 +482,29 @@ function setSlots(n, save = true) {
         const [removed] = state.candidates.splice(index, 1);
         state.pinned.delete(removed.id);
     }
-    el.slots.textContent = String(state.slots).padStart(2, '0');
+    setCounter(el.slots, state.slots);
     if (save) {
         try { localStorage.setItem(SLOTS_KEY, String(state.slots)); } catch { /* 저장 못 해도 동작 */ }
     }
     clearResult();
     drawMarkers();
     render();
+}
+
+/** 만보기식 카운터: 바뀐 자리의 드럼만 굴림 */
+function setCounter(counter, value) {
+    const text = String(value).padStart(2, '0');
+    const prev = Number(counter.dataset.value ?? value);
+    const dir = value > prev ? 'is-up' : 'is-down';
+    counter.querySelectorAll('.rl-drum__digit').forEach((digit, i) => {
+        if (digit.textContent === text[i]) return;
+        digit.textContent = text[i];
+        digit.classList.remove('is-up', 'is-down');
+        void digit.offsetWidth; // 애니메이션 다시 시작
+        digit.classList.add(dir);
+    });
+    counter.dataset.value = String(value);
+    counter.setAttribute('aria-label', `후보 수 ${text}`);
 }
 
 function initSlots() {

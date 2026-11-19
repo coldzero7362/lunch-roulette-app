@@ -133,7 +133,7 @@
                             </div>
                             <div class="rl-well rl-stepper" role="group" aria-label="후보 수">
                                 <button id="slots-down" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="minus" aria-label="후보 수 감소" title="후보 수 −"></button>
-                                <output id="slots" class="rl-counter" aria-live="polite">08</output>
+                                <output id="slots" class="rl-counter" aria-live="polite" aria-label="후보 수 08"><span class="rl-drum"><span class="rl-drum__digit">0</span></span><span class="rl-drum"><span class="rl-drum__digit">8</span></span></output>
                                 <button id="slots-up" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="plus" aria-label="후보 수 증가" title="후보 수 +"></button>
                             </div>
                         </div>
