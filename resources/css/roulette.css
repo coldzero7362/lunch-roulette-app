@@ -1779,6 +1779,44 @@
     box-shadow: inset 0 3px 6px rgb(0 0 0 / .22);
 }
 
+/*
+ * 검색 상태 줄: 결과 창 윗부분을 덮은 플라스틱 덮개 판. 글자는 판에 음각
+ * (위 모서리 그늘 + 아래 모서리 빛). 양 끝엔 성형 리벳, 아래 목록으로 그림자를 드리움
+ */
+.rl-ivory #search-status {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    padding: 10px 26px;
+    border-bottom: 1px solid #8f8670;
+    background-color: #ddd4bc;
+    background-image:
+        linear-gradient(rgb(255 255 255 / .35), transparent 45%, rgb(0 0 0 / .06)),
+        var(--grain-light);
+    box-shadow: 0 3px 4px -1px rgb(0 0 0 / .25), inset 0 1px 0 rgb(255 255 255 / .65);
+    font-family: var(--font-pixel);
+    font-size: 14px;
+    letter-spacing: .04em;
+    color: #8b826d;
+    text-shadow: 0 -1px 0 rgb(0 0 0 / .4), 0 1px 0 rgb(255 255 255 / .7);
+}
+
+.rl-ivory #search-status::before,
+.rl-ivory #search-status::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    margin-top: -3.5px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #f3ecdc, #b9af96 70%);
+    box-shadow: 0 0 0 1px #8f8670, 0 1px 1px rgb(0 0 0 / .3);
+}
+
+.rl-ivory #search-status::before { left: 10px; }
+.rl-ivory #search-status::after { right: 10px; }
+
 /* 판 실크 인쇄 표기: 짙은 잉크, 오른쪽으로 가는 선 (── TRACK LIST ──────) */
 .rl-ivory__legend {
     display: flex;
