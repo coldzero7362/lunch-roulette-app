@@ -502,7 +502,11 @@
 }
 
 @media (min-width: 1024px) {
-    .rl-main { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
+    .rl-main { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-rows: auto 1fr; align-items: start; }
+    /* 데스크톱: 왼쪽 = 콘솔 + 영수증, 오른쪽 = 돌림판 + 후보 (모바일은 HTML 순서대로 영수증이 맨 아래) */
+    .rl-main > .rl-console { grid-column: 1; grid-row: 1; }
+    .rl-main > .rl-side { grid-column: 2; grid-row: 1 / span 2; }
+    .rl-main > .rl-printer { grid-column: 1; grid-row: 2; }
 }
 
 .rl-console {
