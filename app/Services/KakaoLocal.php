@@ -39,6 +39,12 @@ class KakaoLocal
     /** @var Hours */
     private const UNKNOWN_HOURS = ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => ''];
 
+    /** 장소 상세 headline.code 중 지금 못 가는 것 */
+    private const CLOSED_CODES = ['BEFORE_OPEN', 'CLOSED', 'DAY_OFF'];
+
+    /** 상태가 아니라 '정보 없음'을 뜻하는 코드 */
+    private const INFO_ONLY_CODES = ['NO_DAY_OFF_INFO'];
+
     private const CATEGORY_RESTAURANT = 'FD6';
 
     private const PAGE_SIZE = 15; // API 최대값
@@ -242,7 +248,9 @@ class KakaoLocal
     /**
      * 장소 상세의 open_hours → 우리 모양. headline.code 를 네 가지로 줄인다.
      *   OPEN·CLOSING_SOON(곧 마감, 아직 영업 중) → open, BREAK_TIME → break,
-     *   BEFORE_OPEN·CLOSED·휴무 → closed, 정보 없음·모르는 코드 → unknown
+     *   BEFORE_OPEN·CLOSED·DAY_OFF(휴무일) → closed, 정보 없음·모르는 코드 → unknown.
+     * 코드 이름에 OFF 가 들어가도 휴무가 아닐 수 있다 (NO_DAY_OFF_INFO = 휴무 정보 없음) → 코드는 정확히 비교하고,
+     * 처음 보는 코드는 표시 문구에 '휴무'가 있을 때만 휴무로 본다 (나머지는 unknown: 추첨에서 빼지 않음)
      *
      * @return Hours
      */
@@ -257,7 +265,9 @@ class KakaoLocal
         $status = match (true) {
             in_array($code, ['OPEN', 'CLOSING_SOON'], true) => 'open',
             $code === 'BREAK_TIME' => 'break',
-            in_array($code, ['BEFORE_OPEN', 'CLOSED'], true), str_contains($code, 'HOLIDAY'), str_contains($code, 'OFF') => 'closed',
+            in_array($code, self::CLOSED_CODES, true) => 'closed',
+            in_array($code, self::INFO_ONLY_CODES, true) => 'unknown',
+            str_contains((string) ($headline['display_text'] ?? ''), '휴무') => 'closed',
             default => 'unknown',
         };
 
