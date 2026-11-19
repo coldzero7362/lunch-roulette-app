@@ -224,18 +224,19 @@
 /* 목록 줄 안의 링크 키: 줄 높이에 맞춰 조금 작게, 옆 키와 간격 */
 /* 목록 줄의 정사각 아이콘 키 (픽셀 아이콘 24px 를 그대로) */
 .rl-key--sq {
-    --depth: 4px;
+    --depth: 3px;
     flex: none;
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
     padding: 0;
     gap: 0;
 }
 
-.rl-key--sq svg { display: block; flex: none; }
+/* 24칸 격자 아이콘을 18px 로 (선 굵기 2칸 → 1.5px, crispEdges 로 칸 경계를 맞춤) */
+.rl-key--sq svg { display: block; flex: none; width: 18px; height: 18px; }
 
 /* 검색 결과의 #번호 칸도 키와 같은 폭 → 줄마다 세로로 맞음 */
-.rl-search__results .rl-track__on { flex: none; width: 40px; text-align: center; }
+.rl-search__results .rl-track__on { flex: none; width: 30px; text-align: center; }
 .rl-track { gap: 8px 10px; }
 
 /* ---------- 키 묶음 (KeyBank) ---------- */
