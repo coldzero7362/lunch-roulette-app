@@ -719,12 +719,13 @@
 }
 
 /*
- * 상태 표시창: 반사형 LCD (워크맨·계산기). 갈색 베젤 안에 회녹색 유리, 글자는 먹색.
- * 글자 뒤 옅은 그림자 = 액정 층 아래로 비치는 세그먼트 그림자
+ * 상태 표시창: 산업용 계기판.
+ * 갈색 베젤에 라벨을 실크 인쇄하고, 액정 창(탁한 회녹색 반사형 LCD)에는 값만.
+ * 창마다 검은 고무 패킹 + 덮개 유리, 귀퉁이 나사, 왼쪽 아래 표시등.
  */
 .rl-lcd {
     position: relative;
-    padding: 10px;
+    padding: 10px 26px 12px;
     border: 2px solid var(--c-carbon);
     border-radius: 10px;
     background-color: var(--c-panel);
@@ -732,96 +733,161 @@
     box-shadow: 0 3px 0 rgb(0 0 0 / .3);
 }
 
-/*
- * 액정 위 덮개 유리(아크릴) 한 장: 칸막이까지 통째로 덮음.
- * 비스듬한 반사광 두 줄 + 위쪽 모서리 하이라이트 + 테두리 두께감. 클릭은 통과
- */
-.rl-lcd::after {
-    content: '';
-    position: absolute;
-    inset: 4px;
-    border-radius: 7px;
-    pointer-events: none;
-    background:
-        linear-gradient(112deg,
-            rgb(255 255 255 / .16) 0 16%,
-            rgb(255 255 255 / .04) 26%,
-            transparent 34% 66%,
-            rgb(255 255 255 / .06) 72% 76%,
-            transparent 82%),
-        linear-gradient(180deg, rgb(255 255 255 / .07), transparent 40%, rgb(0 0 0 / .06));
-    box-shadow:
-        inset 0 1px 0 rgb(255 255 255 / .28),
-        inset 0 0 0 1px rgb(255 255 255 / .08),
-        inset 0 -1px 0 rgb(0 0 0 / .25),
-        0 0 0 1px rgb(0 0 0 / .18);
-}
+.rl-lcd > .rl-screw { width: 9px; height: 9px; }
+.rl-lcd > .rl-screw::after { inset: 3.8px 1.6px; }
+.rl-lcd > .rl-screw.tl, .rl-lcd > .rl-screw.bl { left: 8px; }
+.rl-lcd > .rl-screw.tr, .rl-lcd > .rl-screw.br { right: 8px; }
+.rl-lcd > .rl-screw.tl, .rl-lcd > .rl-screw.tr { top: 8px; }
+.rl-lcd > .rl-screw.bl, .rl-lcd > .rl-screw.br { bottom: 8px; }
 
 .rl-readout {
     margin: 20px 32px 0;
     font-family: var(--font-pixel-mono);
-    color: #1f2519;
 }
 
 .rl-readout__fields {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 6px; /* 칸 사이 = 베젤이 그대로 이어진 칸막이 */
+    gap: 8px 14px;
     margin: 0;
 }
 
-/* 칸마다 따로 박힌 액정 창: 탁한 회녹색, 위쪽 안쪽 그림자로 베젤 아래 묻힌 느낌 */
-.rl-readout__fields > div,
+.rl-readout__fields > div { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+
+/* 베젤 실크 인쇄 라벨 */
+.rl-readout__fields dt {
+    padding-left: 2px;
+    font-size: 10px;
+    letter-spacing: .18em;
+    color: var(--c-platinum);
+    opacity: .85;
+}
+
+/* 액정 창: 고무 패킹(바깥 검은 테) 안에 묻힌 회녹색 유리 */
+.rl-readout__fields dd,
 .rl-readout__msg {
+    position: relative;
     min-width: 0;
+    margin: 0;
     border-radius: 3px;
     background: linear-gradient(180deg, #9ea38f, #8f9580);
+    color: #1f2519;
     text-shadow: 1.5px 1.5px 0 rgb(31 37 25 / .13);
-    /* 베젤 아래로 묻힌 깊이: 위·왼쪽은 진하게, 가장자리 전체에 옅게 한 번 더 */
     box-shadow:
         inset 0 4px 7px rgb(0 0 0 / .55),
         inset 3px 0 5px rgb(0 0 0 / .28),
         inset 0 0 12px rgb(0 0 0 / .22),
-        inset 0 0 0 1px rgb(0 0 0 / .35);
+        inset 0 0 0 1px rgb(0 0 0 / .35),
+        0 0 0 3px #161310,
+        0 0 0 4px rgb(255 255 255 / .07);
 }
 
-.rl-readout__fields > div { padding: 8px 14px; }
-
-.rl-readout__fields dt {
-    font-size: 10px;
-    letter-spacing: .14em;
-    color: #474c3c;
-    text-shadow: none;
+/* 덮개 유리: 비스듬한 반사광 + 위 모서리 하이라이트 */
+.rl-readout__fields dd::after,
+.rl-readout__msg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(115deg, rgb(255 255 255 / .16) 0 22%, rgb(255 255 255 / .03) 34%, transparent 42% 70%, rgb(255 255 255 / .06) 76% 80%, transparent 86%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .22);
 }
 
 .rl-readout__fields dd {
-    margin: 2px 0 0;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px 12px;
     overflow: hidden;
     font-family: var(--font-pixel);
     font-size: 15px;
     line-height: 22px;
     white-space: nowrap;
-    text-overflow: ellipsis;
 }
 
-/* 7세그먼트 숫자: 글자 높이를 한글과 맞춤 */
+.rl-readout__fields dd > * { display: block; overflow: hidden; text-overflow: ellipsis; }
+.rl-lcd__line { white-space: nowrap; }
+
+/* LOC 아래 좌표 한 줄 */
+.rl-lcd__sub {
+    font-family: var(--font-pixel-mono);
+    font-size: 10px;
+    line-height: 14px;
+    letter-spacing: .06em;
+    color: #3d4334;
+}
+
+/* 7세그먼트 숫자 + 꺼진 세그먼트 잔상(888) */
 .rl-seg {
-    margin-right: 2px;
+    position: relative;
     font-family: 'DSEG7', var(--font-pixel-mono);
     font-size: 17px;
     letter-spacing: .04em;
 }
 
+.rl-seg::before {
+    content: attr(data-ghost);
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: rgb(31 37 25 / .1);
+    text-shadow: none;
+}
+
+.rl-unit { margin-left: 5px; font-family: var(--font-pixel-mono); font-size: 11px; letter-spacing: .08em; }
+
+.rl-readout__foot {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    margin-top: 12px;
+}
+
 .rl-readout__msg {
     display: flex;
     gap: 8px;
-    margin: 6px 0 0;
     padding: 7px 14px;
     font-size: 13px;
     line-height: 1.5;
 }
 
 .rl-lcd__mark { flex: none; font-size: 10px; line-height: 19.5px; }
+
+/* 표시등: 홈에 박힌 둥근 LED + 실크 인쇄 이름 */
+.rl-lamps {
+    display: flex;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 9px;
+    letter-spacing: .14em;
+    color: var(--c-platinum);
+}
+
+.rl-lamps li { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+
+.rl-lamp {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #5a5347, #2a2620 70%);
+    box-shadow: 0 0 0 2px #161310, 0 0 0 3px rgb(255 255 255 / .08), inset 0 1px 1px rgb(0 0 0 / .6);
+}
+
+.rl-lamp[data-state="on"] {
+    background: radial-gradient(circle at 35% 30%, #d8ffd0, #5fd05a 45%, #2f7a2c);
+    box-shadow: 0 0 0 2px #161310, 0 0 0 3px rgb(255 255 255 / .08), 0 0 8px 1px rgb(110 230 100 / .55);
+}
+
+.rl-lamp[data-state="busy"] {
+    background: radial-gradient(circle at 35% 30%, #ffe8b8, #f2a42a 45%, #8a5a10);
+    box-shadow: 0 0 0 2px #161310, 0 0 0 3px rgb(255 255 255 / .08), 0 0 8px 1px rgb(242 164 42 / .6);
+    animation: rl-blink .5s steps(1) infinite;
+}
 
 .rl-crt .amber { color: var(--c-phosphor-amber); text-shadow: 0 0 8px rgb(255 178 63 / .6); }
 .rl-crt .dim { color: var(--c-phosphor-dim); text-shadow: none; }
@@ -1404,6 +1470,12 @@
     .rl-readout { margin: 14px 12px 0; }
     .rl-readout__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .rl-readout__fields > div:last-child { grid-column: span 2; }
+    .rl-lcd { padding-inline: 22px; }
+    .rl-readout__foot { gap: 12px; }
+    /* 좁은 화면: 표시등은 한 줄로 오른쪽에, 상태 줄은 그 아래 전체 폭 */
+    .rl-readout__foot { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+    .rl-lamps { justify-content: flex-end; gap: 14px; }
+    .rl-lamps li { flex-direction: row; gap: 6px; }
     .rl-steps { display: none; }
     /* 종류 키 7개를 한 줄에 */
     .rl-console__controls .rl-bank--wide { flex-basis: 100%; }
@@ -1414,6 +1486,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .rl-lamp,
     .rl-cursor,
     .rl-crt-fx,
     .rl-crt-fx::after,

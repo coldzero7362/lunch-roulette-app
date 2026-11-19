@@ -151,6 +151,7 @@ async function locate() {
     if (locating) return;
 
     locating = true;
+    updateReadout();
     el.locate.disabled = true;
     setStatus('위치 확인 중');
 
@@ -168,6 +169,7 @@ async function locate() {
         setStatus(locateErrorMessage(e));
     } finally {
         locating = false;
+        updateReadout();
         el.locate.disabled = false;
     }
 }
@@ -340,7 +342,7 @@ async function fetchPlaces() {
     state.types.forEach((t) => url.searchParams.append('types[]', t));
 
     try {
-        const res = await fetch(url, { headers: { Accept: 'application/json' } });
+        const res = await api(url);
         const body = await res.json().catch(() => ({}));
         if (requestId !== state.requestId) return; // 더 최신 요청이 있음
 
@@ -682,7 +684,7 @@ async function searchLocation(query) {
     url.searchParams.set('q', query);
 
     try {
-        const res = await fetch(url, { headers: { Accept: 'application/json' } });
+        const res = await api(url);
         const body = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(res.status === 429 ? '요청 초과 — 60초 후 재시도' : body.message ?? '위치 조회 실패 — 재시도');
 
@@ -764,7 +766,7 @@ async function ensureHours(places) {
         const url = new URL(root.dataset.hoursUrl);
         batch.forEach((id) => url.searchParams.append('ids[]', id));
         try {
-            const res = await fetch(url, { headers: { Accept: 'application/json' } });
+            const res = await api(url);
             const body = res.ok ? await res.json() : {};
             const at = Date.now();
             batch.forEach((id) => {
@@ -852,7 +854,7 @@ async function searchMenu(query) {
     url.searchParams.set('q', query);
 
     try {
-        const res = await fetch(url, { headers: { Accept: 'application/json' } });
+        const res = await api(url);
         const body = await res.json().catch(() => ({}));
         if (!res.ok) {
             throw new Error(res.status === 429 ? '요청 초과 — 60초 후 재시도' : body.message ?? '검색 실패 — 재시도');
@@ -1309,12 +1311,35 @@ function render() {
 /** 상태 CRT 칸: LOC / RANGE / TYPE / FOUND / WHEEL */
 function updateReadout() {
     el.fields.loc.textContent = state.place?.label ?? (state.center ? '좌표 지정' : '—');
-    segments(el.fields.range, state.radius >= 1000 ? [state.radius / 1000, 'km'] : [state.radius, 'm']);
+    $('f-coord').textContent = state.center
+        ? `${state.center.lat.toFixed(3)}N ${state.center.lng.toFixed(3)}E`
+        : '--.---N ---.---E';
+    // 계기판식 고정 자릿수: 0500 M / 238 EA / 08/08
+    segments(el.fields.range, [pad(state.radius, 4), unit('M')]);
     el.fields.type.textContent = state.types.size ? [...state.types].map(typeLabel).join(' · ') : '전체';
-    if (state.poolLoaded) segments(el.fields.found, [state.pool.length, '건']);
-    else el.fields.found.textContent = '—';
-    segments(el.fields.wheel, [state.candidates.length, '/', state.slots]);
+    segments(el.fields.found, [state.poolLoaded ? pad(state.pool.length, 3) : { seg: '---' }, unit('EA')]);
+    segments(el.fields.wheel, [pad(state.candidates.length, 2), '/', pad(state.slots, 2)]);
+    setLamp('gps', locating ? 'busy' : state.center ? 'on' : 'off');
     updateSteps();
+}
+
+const pad = (n, width) => ({ seg: String(n).padStart(width, '0') });
+const unit = (text) => ({ unit: text });
+
+function setLamp(name, lampState) {
+    $(`lamp-${name}`).dataset.state = lampState;
+}
+
+/** NET 표시등: 서버 조회가 하나라도 진행 중이면 깜빡임 */
+let netCount = 0;
+async function api(url) {
+    netCount++;
+    setLamp('net', 'busy');
+    try {
+        return await fetch(url, { headers: { Accept: 'application/json' } });
+    } finally {
+        if (--netCount === 0) setLamp('net', 'off');
+    }
 }
 
 /** 단계 표시등: 끝난 단계 녹색, 다음 할 단계 앰버 */
@@ -1334,12 +1359,26 @@ function updateSteps() {
     });
 }
 
-/** LCD 칸: 숫자는 7세그먼트 글꼴, 단위·기호는 일반 글꼴 ([220, '건'] → 220건) */
+/**
+ * LCD 칸 채우기. {seg:'0500'} → 7세그먼트 숫자 (뒤에 꺼진 세그먼트 '8888' 잔상), {unit:'M'} → 작은 단위, 문자열 → 그대로.
+ * '-' 는 7세그먼트의 가운데 획으로 그려짐
+ */
 function segments(target, parts) {
-    target.replaceChildren(...parts.map((part) => {
+    const line = document.createElement('span');
+    line.className = 'rl-lcd__line';
+    target.replaceChildren(line);
+    line.append(...parts.map((part) => {
         const span = document.createElement('span');
-        span.textContent = String(part);
-        if (typeof part === 'number') span.className = 'rl-seg';
+        if (part.seg !== undefined) {
+            span.className = 'rl-seg';
+            span.textContent = part.seg;
+            span.dataset.ghost = '8'.repeat(part.seg.length);
+        } else if (part.unit !== undefined) {
+            span.className = 'rl-unit';
+            span.textContent = part.unit;
+        } else {
+            span.textContent = String(part);
+        }
         return span;
     }));
 }

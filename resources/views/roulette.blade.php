@@ -23,16 +23,30 @@
         </header>
         <div class="rl-stripes" aria-hidden="true"></div>
 
-        {{-- 상태 표시창: 반사형 LCD (칸별 값 + 상태 한 줄). 숫자는 7세그먼트 --}}
+        {{--
+            상태 표시창: 산업용 계기판. 라벨은 베젤에 인쇄, 액정 창엔 값만 (숫자는 7세그먼트, 고정 자릿수).
+            창마다 고무 패킹 + 덮개 유리, 귀퉁이 나사, 왼쪽 아래 표시등 (PWR / GPS / NET)
+        --}}
         <div class="rl-readout rl-lcd">
+            <span class="rl-screw tl" aria-hidden="true"></span>
+            <span class="rl-screw tr" aria-hidden="true"></span>
+            <span class="rl-screw bl" aria-hidden="true"></span>
+            <span class="rl-screw br" aria-hidden="true"></span>
             <dl class="rl-readout__fields">
-                <div><dt>LOC</dt><dd id="f-loc">—</dd></div>
-                <div><dt>RANGE</dt><dd id="f-range">500m</dd></div>
+                <div><dt>LOC</dt><dd><span id="f-loc" class="rl-lcd__val">—</span><span id="f-coord" class="rl-lcd__sub">--.---N ---.---E</span></dd></div>
+                <div><dt>RANGE</dt><dd id="f-range">0500 M</dd></div>
                 <div><dt>TYPE</dt><dd id="f-type">전체</dd></div>
-                <div><dt>FOUND</dt><dd id="f-found">—</dd></div>
-                <div><dt>WHEEL</dt><dd id="f-wheel">0/8</dd></div>
+                <div><dt>FOUND</dt><dd id="f-found">--- EA</dd></div>
+                <div><dt>WHEEL</dt><dd id="f-wheel">00/08</dd></div>
             </dl>
-            <p class="rl-readout__msg"><span class="rl-lcd__mark" aria-hidden="true">▶</span><span id="status" role="status" aria-live="polite">BOOT</span></p>
+            <div class="rl-readout__foot">
+                <ul class="rl-lamps" aria-hidden="true">
+                    <li><span id="lamp-pwr" class="rl-lamp" data-state="on"></span>PWR</li>
+                    <li><span id="lamp-gps" class="rl-lamp" data-state="off" title="위치"></span>GPS</li>
+                    <li><span id="lamp-net" class="rl-lamp" data-state="off" title="조회"></span>NET</li>
+                </ul>
+                <p class="rl-readout__msg"><span class="rl-lcd__mark" aria-hidden="true">▶</span><span id="status" role="status" aria-live="polite">BOOT</span></p>
+            </div>
         </div>
 
         <main class="rl-main">
