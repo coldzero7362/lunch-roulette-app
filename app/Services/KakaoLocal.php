@@ -8,6 +8,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * 카카오 로컬 API로 좌표 반경 안의 음식점(카테고리 FD6)을 찾는다.
@@ -44,7 +45,35 @@ class KakaoLocal
 
     private const METERS_PER_DEGREE = 111_320;
 
-    public function __construct(private readonly string $restApiKey) {}
+    public function __construct(
+        private readonly string $restApiKey,
+        private readonly int $minuteBudget = 600,
+        private readonly int $dailyBudget = 50000,
+    ) {}
+
+    /**
+     * 카카오 호출 $calls 번을 예산에서 뺀다. 남은 예산이 모자라면 아예 부르지 않는다.
+     * (식당 검색 한 번이 칸·페이지·종류만큼 수십 번 호출하므로, 좌표를 바꿔 캐시를 피하는 폭주를 막는 마지막 둑)
+     *
+     * @throws KakaoBudgetExceeded
+     */
+    private function reserve(int $calls): void
+    {
+        $windows = [
+            ['kakao:budget:minute', $this->minuteBudget, 60],
+            ['kakao:budget:day', $this->dailyBudget, 86400],
+        ];
+
+        foreach ($windows as [$key, $max]) {
+            if (RateLimiter::attempts($key) + $calls > $max) {
+                throw new KakaoBudgetExceeded("Kakao {$key} exhausted");
+            }
+        }
+
+        foreach ($windows as [$key, , $decay]) {
+            RateLimiter::increment($key, $decay, $calls);
+        }
+    }
 
     /**
      * 반경 안 식당. 종류를 고르면 종류마다 따로 검색해 합친다 (한 번 검색은 45곳이 한도라서).
@@ -137,6 +166,8 @@ class KakaoLocal
      */
     private function get(string $endpoint, array $params): Response
     {
+        $this->reserve(1);
+
         return Http::withHeaders(['Authorization' => 'KakaoAK '.$this->restApiKey])
             ->timeout(5)
             ->get($endpoint, $params)
@@ -180,6 +211,7 @@ class KakaoLocal
             $places = [];
 
             for ($page = 1; $page <= self::MAX_PAGES && $pending !== []; $page++) {
+                $this->reserve(count($pending));
                 $responses = Http::pool(fn (Pool $pool) => array_map(
                     fn (string $rect) => $pool->as($rect)
                         ->withHeaders(['Authorization' => 'KakaoAK '.$this->restApiKey])

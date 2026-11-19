@@ -33,7 +33,7 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            'serve' => false, // 저장소 파일을 웹으로 내보내지 않음 (storage/{path} 경로 닫기)
             'throw' => false,
             'report' => false,
         ],
