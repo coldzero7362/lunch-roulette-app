@@ -2,11 +2,13 @@
 
 use App\Http\Middleware\BlockAuthPages;
 use App\Http\Middleware\RedirectToSecureUrl;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Env;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,8 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Caddy(HTTPS 리버스 프록시) 뒤에서 https 스킴/호스트를 올바르게 인식
-        $middleware->trustProxies(at: '*');
+        // Caddy(HTTPS 리버스 프록시) 뒤에서 https 스킴/호스트·실제 IP를 인식.
+        // 도커 내부망(Caddy)만 믿는다: 아무나 X-Forwarded-For 를 바꿔 IP를 속여 요청 제한을 피하지 못하게
+        $middleware->trustProxies(at: explode(',', (string) Env::get('TRUSTED_PROXIES', '172.16.0.0/12')));
+
+        // CSP(nonce)·클릭재킹·MIME 스니핑 방지 등 보안 헤더
+        $middleware->web(append: [SecurityHeaders::class]);
 
         // 계정 기능을 쓰지 않는 동안 로그인·대시보드 등 주소를 막음 (config/auth.php pages_enabled)
         $middleware->web(prepend: [BlockAuthPages::class]);
