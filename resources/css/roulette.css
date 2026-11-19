@@ -1321,7 +1321,8 @@
 
 .rl-pointer {
     position: absolute;
-    top: 0;
+    /* 회전축은 창 테 바깥(위)에, 날 끝은 원판 눈금 림 안쪽에 */
+    top: -19px;
     left: 50%;
     z-index: 10;
     transform: translateX(-50%);
