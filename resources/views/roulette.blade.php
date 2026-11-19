@@ -146,39 +146,15 @@
 
                     <div class="rl-window">
                         {{--
-                            바늘: 전축 톤암 같은 은색 금속. 원판 바깥(창 테 위)의 회전축 받침에서 시작해
-                            원판 눈금 림을 넘어 끝남. 날은 왼쪽 면 밝고 오른쪽 면 어두운 깎은 알루미늄, 끝에 빨간 지시선
+                            바늘: 전축 톤암 (위에서 본 모습). 원판 바깥 테 위의 회전축에서 시작.
+                            널링 링 + 돌려 깎은 알루미늄 캡 / 원통 파이프 암 / 헤드쉘 판 + 빨간 카트리지 (끝이 결과 지점)
                         --}}
-                        <svg class="rl-pointer" width="34" height="54" viewBox="0 0 34 54" aria-hidden="true">
-                            <defs>
-                                <radialGradient id="rl-pivot" cx="40%" cy="35%" r="70%">
-                                    <stop offset="0" stop-color="#ffffff"/>
-                                    <stop offset=".35" stop-color="#d9d9d4"/>
-                                    <stop offset=".75" stop-color="#8f8f8a"/>
-                                    <stop offset="1" stop-color="#5c5c58"/>
-                                </radialGradient>
-                                <linearGradient id="rl-blade-l" x1="0" x2="1">
-                                    <stop offset="0" stop-color="#b5b5b0"/>
-                                    <stop offset="1" stop-color="#f2f2ee"/>
-                                </linearGradient>
-                                <linearGradient id="rl-blade-r" x1="0" x2="1">
-                                    <stop offset="0" stop-color="#9a9a95"/>
-                                    <stop offset="1" stop-color="#5f5f5a"/>
-                                </linearGradient>
-                            </defs>
-                            <!-- 날: 받침 아래에서 끝까지, 두 면 + 능선 -->
-                            <path d="M17 51 L12.5 16 L17 16 Z" fill="url(#rl-blade-l)"/>
-                            <path d="M17 51 L21.5 16 L17 16 Z" fill="url(#rl-blade-r)"/>
-                            <path d="M17 51 L12.5 16 L21.5 16 Z" fill="none" stroke="#1d1a16" stroke-width="1.3" stroke-linejoin="round"/>
-                            <!-- 끝 지시선 -->
-                            <path d="M17 38 L17 49" stroke="#d2401c" stroke-width="1.4" stroke-linecap="round"/>
-                            <!-- 회전축 받침: 바깥 고리 + 깎은 금속 캡 + 가운데 축 -->
-                            <circle cx="17" cy="11" r="10" fill="#2b2620" stroke="#14110e" stroke-width="1"/>
-                            <circle cx="17" cy="11" r="8.2" fill="url(#rl-pivot)" stroke="#3a3833" stroke-width=".8"/>
-                            <circle cx="17" cy="11" r="5.6" fill="none" stroke="rgb(0 0 0 / .18)" stroke-width=".6"/>
-                            <circle cx="17" cy="11" r="3.8" fill="none" stroke="rgb(255 255 255 / .35)" stroke-width=".5"/>
-                            <circle cx="17" cy="11" r="1.8" fill="#3a3833"/>
-                        </svg>
+                        <div class="rl-pointer rl-arm" aria-hidden="true">
+                            <span class="rl-arm__tube"></span>
+                            <span class="rl-arm__head"></span>
+                            <span class="rl-arm__cart"></span>
+                            <span class="rl-arm__base"></span>
+                        </div>
                         <svg id="wheel" viewBox="-100 -100 200 200" class="rl-wheel" role="img" aria-label="돌림판. 칸 번호는 SIDE A 후보 번호와 같음">
                             <g id="wheel-rotor"></g>
                             <circle r="98.5" fill="none" stroke="#2b2620" stroke-width="3"/>
