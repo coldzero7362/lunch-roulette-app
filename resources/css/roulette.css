@@ -12,6 +12,19 @@
 }
 
 @font-face {
+    font-family: 'Orbitron';
+    src: url('/fonts/orbitron-900.woff2') format('woff2');
+    font-weight: 900;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'DSEG7';
+    src: url('/fonts/dseg7-classic-bold.woff2') format('woff2');
+    font-display: swap;
+}
+
+@font-face {
     font-family: 'Mulmaru Mono';
     src: url('/fonts/mulmaru-mono.otf') format('opentype');
     font-display: swap;
@@ -102,17 +115,27 @@
     width: 11px;
     height: 11px;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #d8d0bc, #8c846f 60%, #5b5444);
-    box-shadow: 0 1px 0 rgb(255 255 255 / .25), inset 0 0 0 1px rgb(0 0 0 / .45);
+    /* 둥근 머리: 무광 금속 (반사광 없이 가장자리만 살짝 어둡게) */
+    background: radial-gradient(circle at 45% 40%, #aaa28d 0 45%, #8a8270 80%, #6b6455);
+    box-shadow:
+        /* 판에 판 자리(카운터싱크): 어두운 홈 */
+        0 0 0 1.5px #1c1915,
+        0 1.5px 2px 1.5px rgb(0 0 0 / .4),
+        inset 0 -1px 1px rgb(0 0 0 / .35);
 }
 
+/* 십자 홈(+): 나사마다 돌아간 각도가 다름 */
+.rl-screw::before,
 .rl-screw::after {
     content: '';
     position: absolute;
-    inset: 4.5px 2px;
-    background: rgb(0 0 0 / .55);
+    inset: 42% 18%;
+    border-radius: .5px;
+    background: #1f1b16;
     transform: rotate(var(--slot, 35deg));
 }
+
+.rl-screw::after { transform: rotate(calc(var(--slot, 35deg) + 90deg)); }
 
 .rl-screw.tl { top: 8px; left: 8px; }
 .rl-screw.tr { top: 8px; right: 8px; --slot: -20deg; }
@@ -208,7 +231,18 @@
     box-shadow: 0 0 0 var(--lip), inset 0 2px 4px rgb(0 0 0 / .55);
 }
 
-.rl-key:disabled { opacity: .45; cursor: not-allowed; }
+.rl-key:disabled { cursor: not-allowed; }
+
+/* 비활성 키: 흐리게 하는 대신 눌린 채 걸려 있는 모습 (아래로 내려가 턱이 없어지고, 안쪽 그늘 + 어두운 바탕).
+   쓸 수 있게 되면 transition 으로 톡 올라옴 */
+.rl-key:disabled,
+.rl-key[aria-disabled='true'] {
+    transform: translateY(2px);
+    border-top-color: #5c564b;
+    background-color: color-mix(in srgb, var(--key) 62%, #2b2620);
+    color: color-mix(in srgb, var(--ink) 65%, var(--key));
+    box-shadow: 0 0 0 var(--lip), inset 0 2px 5px rgb(0 0 0 / .55);
+}
 
 .rl-key:focus-visible { outline: 3px solid var(--c-stripe-1); outline-offset: 2px; z-index: 1; }
 
@@ -217,6 +251,28 @@
 .rl-key--small { padding: 6px 12px; font-size: 13px; }
 /* 돌리기: 같은 구조, 번트 오렌지, 크게 */
 .rl-key--wide { --key: var(--c-signal); --ink: #1d1a16; width: 100%; padding: 13px 18px; font-size: 20px; }
+
+/* SPIN 키: 각진 SF 계기판 글꼴(Orbitron Black)로 각인, 앞에 재생 삼각형 */
+.rl-spin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-family: 'Orbitron', var(--font-pixel-mono);
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: .28em;
+}
+
+.rl-spin__tri {
+    width: 13px;
+    height: 15px;
+    background: currentColor;
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+/* 자간이 마지막 글자 뒤에도 붙어 오른쪽으로 쏠리는 것 보정 */
+.rl-spin__label { margin-right: -.28em; }
 
 /* ---------- 홈 (매립 베젤) ----------
    패널을 음각으로 판 홈: 위·왼쪽은 그늘, 아래·오른쪽은 빛. 키 묶음을 담는다. */
@@ -358,147 +414,6 @@
 .rl-bank--wide .rl-bank__slot { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .rl-bank--wide .rl-bank__key { min-width: 52px; padding-inline: 10px; flex: none; }
 
-/* ---------- 가격대 페이더 (이중 슬라이더) ----------
-   음각 홈 속 레일 + 상아색 페이더 캡 두 개. 두 캡 사이 구간은 앰버로 켜짐.
-   input[type=range] 두 개를 겹치고, 캡(thumb)만 손으로 잡히게 한다. */
-
-.rl-fader { flex: 1 1 100%; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-
-.rl-fader__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-
-.rl-fader__out {
-    padding: 2px 8px;
-    border: 2px solid #1a1713;
-    border-radius: 3px;
-    background: var(--c-screen);
-    color: var(--c-phosphor-amber);
-    font-family: var(--font-pixel-mono);
-    font-size: 12px;
-    text-shadow: 0 0 6px rgb(255 178 63 / .55);
-    white-space: nowrap;
-}
-
-.rl-fader__slot {
-    --pad: 14px; /* 캡 절반 폭: 레일 양 끝을 캡 중심에 맞춤 */
-    position: relative;
-    height: 40px;
-    border-radius: 5px;
-    border-top: 2px solid #1a1713;
-    border-left: 2px solid #1d1a16;
-    border-bottom: 2px solid #5e5649;
-    border-right: 2px solid #57503f;
-    background-color: #2b2620;
-    background-image: var(--texture);
-    box-shadow: inset 0 2px 5px rgb(0 0 0 / .5);
-}
-
-/* 레일: 가운데 좁은 홈 */
-.rl-fader__rail {
-    position: absolute;
-    left: var(--pad);
-    right: var(--pad);
-    top: 50%;
-    height: 6px;
-    margin-top: -3px;
-    border-radius: 1px;
-    background: #0e0c0a;
-    box-shadow: inset 0 1px 2px rgb(0 0 0 / .9), 0 1px 0 rgb(255 255 255 / .08);
-}
-
-.rl-fader__fill {
-    position: absolute;
-    top: 1px;
-    bottom: 1px;
-    left: 0;
-    width: 100%;
-    background: var(--c-stripe-1);
-    box-shadow: 0 0 6px rgb(242 182 50 / .6);
-}
-
-.rl-fader__input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0 calc(var(--pad) - 14px);
-    background: none;
-    pointer-events: none; /* 캡만 잡힘 */
-    -webkit-appearance: none;
-    appearance: none;
-}
-
-.rl-fader__input:focus { outline: none; }
-
-.rl-fader__input::-webkit-slider-runnable-track { height: 100%; background: none; }
-.rl-fader__input::-moz-range-track { background: none; }
-
-/* 상아색 페이더 캡: 단색 + 질감, 위쪽 밝은 베벨, 가운데 눈금선, 아래 턱 */
-.rl-fader__input::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 28px;
-    height: 32px;
-    margin-top: 2px;
-    border: 1px solid #5c564b;
-    border-top-color: #fffaf0;
-    border-radius: 3px;
-    background-color: #ece4cf;
-    background-image:
-        linear-gradient(transparent calc(50% - 1px), #2b2620 calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)),
-        repeating-linear-gradient(90deg, transparent 0 4px, rgb(0 0 0 / .09) 4px 5px),
-        var(--grain);
-    box-shadow: 0 3px 0 #8a8270, 0 4px 4px rgb(0 0 0 / .45), inset 0 1px 0 rgb(255 255 255 / .6);
-    cursor: grab;
-    pointer-events: auto;
-}
-
-.rl-fader__input::-moz-range-thumb {
-    width: 26px;
-    height: 30px;
-    border: 1px solid #5c564b;
-    border-top-color: #fffaf0;
-    border-radius: 3px;
-    background-color: #ece4cf;
-    background-image:
-        linear-gradient(transparent calc(50% - 1px), #2b2620 calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)),
-        repeating-linear-gradient(90deg, transparent 0 4px, rgb(0 0 0 / .09) 4px 5px);
-    box-shadow: 0 3px 0 #8a8270, 0 4px 4px rgb(0 0 0 / .45);
-    cursor: grab;
-    pointer-events: auto;
-}
-
-.rl-fader__input:active::-webkit-slider-thumb { cursor: grabbing; transform: translateY(1px); box-shadow: 0 2px 0 #8a8270, 0 2px 3px rgb(0 0 0 / .45); }
-.rl-fader__input:focus-visible::-webkit-slider-thumb { outline: 3px solid var(--c-stripe-1); outline-offset: 1px; }
-.rl-fader__input:focus-visible::-moz-range-thumb { outline: 3px solid var(--c-stripe-1); outline-offset: 1px; }
-
-/* 눈금 + 숫자 */
-.rl-fader__ticks {
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-    margin: 0 calc(14px - 1em) 0;
-    padding-top: 6px;
-    font-family: var(--font-pixel-mono);
-    font-size: 10px;
-    letter-spacing: .04em;
-    color: var(--c-sky);
-}
-
-.rl-fader__ticks::before {
-    content: '';
-    position: absolute;
-    left: 1em;
-    right: 1em;
-    top: 0;
-    height: 5px;
-    background: repeating-linear-gradient(90deg, var(--c-sky) 0 1px, transparent 1px calc(100% / 30));
-    opacity: .6;
-}
-
-.rl-fader__ticks span { width: 2em; text-align: center; white-space: nowrap; }
-.rl-fader__ticks span:last-child { text-align: right; }
-
 /* ---------- 후보 수 · 자동 ---------- */
 
 .rl-key--tiny { --depth: 3px; padding: 1px 9px; font-size: 15px; line-height: 1.4; }
@@ -572,9 +487,12 @@
 
 .rl-locate__bar {
     display: flex;
-    align-items: flex-start;
+    /* 입력칸 높이를 오른쪽 키 홈에 맞춰 위아래 끝을 맞춤 */
+    align-items: stretch;
     gap: 10px;
 }
+
+.rl-locate__bar .rl-search__input { height: auto; }
 
 .rl-locate__bar .rl-console__label { align-self: center; margin-top: -4px; }
 
@@ -756,6 +674,8 @@
 }
 
 .rl-search__input::placeholder { color: var(--c-phosphor-dim); opacity: .55; text-shadow: none; }
+/* 커서가 들어오면 안내 글은 숨김 (블록 커서만 남게) */
+.rl-search__input:focus::placeholder { color: transparent; }
 /* 포커스: 노란 테두리 대신 화면 안쪽이 녹색으로 은은하게 켜짐 */
 .rl-search__input:focus {
     outline: none;
@@ -805,6 +725,17 @@
 .rl-tag--pin { border-color: var(--c-signal); background: var(--c-signal); color: var(--c-paper); }
 .rl-tag--dim { border-style: dashed; color: var(--c-panel-2); }
 
+/* 영업 상태 배지: 작은 표시창 (검은 바탕 + 형광 글자) */
+.rl-tag--hours { border-color: var(--c-carbon); background: var(--c-screen); color: var(--c-phosphor); }
+.rl-tag--break { color: var(--c-phosphor-amber); }
+.rl-tag--closed { color: var(--c-crt-alert); }
+.rl-tag--unknown { border-style: dashed; border-color: var(--c-panel-2); background: transparent; color: var(--c-panel-2); }
+.rl-tag--wait { border-color: var(--c-panel-2); background: transparent; color: var(--c-panel-2); letter-spacing: .1em; }
+
+/* 영업중 필터에 걸린 후보: 흐리게, 이름에 줄 */
+.rl-track--shut .rl-track__name { color: var(--c-panel-2); text-decoration: line-through; text-decoration-thickness: 1px; }
+.rl-track--shut .rl-track__meta { opacity: .75; }
+
 /* 메뉴 검색: 부분 일치 구분줄과 흐린 줄 */
 .rl-search__sep {
     padding: 6px 12px;
@@ -842,7 +773,27 @@
     background: repeating-linear-gradient(rgb(0 0 0 / .28) 0 1px, transparent 1px 3px);
 }
 
-/* 상태 CRT: 칸별 값(LOC/RANGE/TYPE/FOUND/WHEEL) + 시스템 메시지 한 줄 */
+/*
+ * 상태 표시창: 산업용 계기판.
+ * 갈색 베젤에 라벨을 실크 인쇄하고, 액정 창(탁한 회녹색 반사형 LCD)에는 값만.
+ * 창마다 검은 고무 패킹 + 덮개 유리, 귀퉁이 나사, 왼쪽 아래 표시등.
+ */
+.rl-lcd {
+    position: relative;
+    padding: 10px 26px 12px;
+    border: 2px solid var(--c-carbon);
+    border-radius: 10px;
+    background-color: var(--c-panel);
+    background-image: var(--texture);
+    box-shadow: 0 3px 0 rgb(0 0 0 / .3);
+}
+
+.rl-lcd > .rl-screw { width: 9px; height: 9px; }
+.rl-lcd > .rl-screw.tl, .rl-lcd > .rl-screw.bl { left: 8px; }
+.rl-lcd > .rl-screw.tr, .rl-lcd > .rl-screw.br { right: 8px; }
+.rl-lcd > .rl-screw.tl, .rl-lcd > .rl-screw.tr { top: 8px; }
+.rl-lcd > .rl-screw.bl, .rl-lcd > .rl-screw.br { bottom: 8px; }
+
 .rl-readout {
     margin: 20px 32px 0;
     font-family: var(--font-pixel-mono);
@@ -851,40 +802,200 @@
 .rl-readout__fields {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px 14px;
     margin: 0;
-    border-bottom: 1px solid #1f2a22;
 }
 
-.rl-readout__fields > div { min-width: 0; padding: 8px 14px; border-right: 1px solid #1f2a22; }
-.rl-readout__fields > div:last-child { border-right: 0; }
+.rl-readout__fields > div { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 
+/* 베젤 실크 인쇄 라벨 */
 .rl-readout__fields dt {
+    padding-left: 2px;
     font-size: 10px;
-    letter-spacing: .14em;
-    color: var(--c-phosphor-dim);
-    text-shadow: none;
+    letter-spacing: .18em;
+    color: var(--c-platinum);
+    opacity: .85;
+}
+
+/* 액정 창: 고무 패킹(바깥 검은 테) 안에 묻힌 회녹색 유리 */
+.rl-readout__fields dd,
+.rl-readout__msg {
+    position: relative;
+    min-width: 0;
+    margin: 0;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #9ea38f, #8f9580);
+    color: #1f2519;
+    text-shadow: 1.5px 1.5px 0 rgb(31 37 25 / .13);
+    box-shadow:
+        inset 0 4px 7px rgb(0 0 0 / .55),
+        inset 3px 0 5px rgb(0 0 0 / .28),
+        inset 0 0 12px rgb(0 0 0 / .22),
+        inset 0 0 0 1px rgb(0 0 0 / .35),
+        0 0 0 3px #161310,
+        0 0 0 4px rgb(255 255 255 / .07);
+}
+
+/* 덮개 유리: 비스듬한 반사광 + 위 모서리 하이라이트 */
+.rl-readout__fields dd::after,
+.rl-readout__msg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(115deg, rgb(255 255 255 / .16) 0 22%, rgb(255 255 255 / .03) 34%, transparent 42% 70%, rgb(255 255 255 / .06) 76% 80%, transparent 86%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .22);
 }
 
 .rl-readout__fields dd {
-    margin: 2px 0 0;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    /* 7세그먼트 글꼴은 아래 여백이 커서 가운데 두면 위로 떠 보임: 위쪽을 조금 더 */
+    padding: 11px 12px 6px;
     overflow: hidden;
-    font-size: 15px;
+    font-family: var(--font-pixel);
+    font-size: 20px;
+    line-height: 28px;
     white-space: nowrap;
-    text-overflow: ellipsis;
+}
+
+.rl-readout__fields dd > * { display: block; overflow: hidden; text-overflow: ellipsis; }
+.rl-lcd__line { white-space: nowrap; }
+
+/* LOC 아래 좌표 한 줄 */
+.rl-lcd__sub {
+    font-family: var(--font-pixel-mono);
+    font-size: 11px;
+    line-height: 15px;
+    letter-spacing: .06em;
+    color: #3d4334;
+}
+
+/* 7세그먼트 숫자 + 꺼진 세그먼트 잔상(888) */
+.rl-seg {
+    position: relative;
+    font-family: 'DSEG7', var(--font-pixel-mono);
+    font-size: 26px;
+    line-height: 30px;
+    letter-spacing: .04em;
+}
+
+.rl-seg::before {
+    content: attr(data-ghost);
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: rgb(31 37 25 / .1);
+    text-shadow: none;
+}
+
+/* TYPE 표시자: 꺼진 글자는 액정에 비치는 잔상처럼, 켜진 글자는 먹색 */
+.rl-readout__fields dd.rl-annun {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: .5em;
+}
+
+.rl-annun__mark { flex: none; color: rgb(31 37 25 / .14); text-shadow: none; }
+.rl-annun__mark.is-on { color: inherit; text-shadow: 1.5px 1.5px 0 rgb(31 37 25 / .13); }
+
+.rl-unit { margin-left: 6px; font-family: var(--font-pixel-mono); font-size: 13px; letter-spacing: .08em; }
+
+.rl-readout__foot {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    margin-top: 12px;
 }
 
 .rl-readout__msg {
-    margin: 0;
+    display: flex;
+    gap: 8px;
     padding: 7px 14px;
     font-size: 13px;
     line-height: 1.5;
 }
 
-/* 깜빡이는 입력 커서 (::after 는 주사선이 쓰므로 따로 둔다) */
-.rl-caret {
-    margin-left: 4px;
-    animation: rl-blink 1s steps(1) infinite;
+.rl-lcd__mark { flex: none; font-size: 10px; line-height: 19.5px; }
+
+/* 표시등: 홈에 박힌 둥근 LED + 실크 인쇄 이름 */
+.rl-lamps {
+    display: flex;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 9px;
+    letter-spacing: .14em;
+    color: var(--c-platinum);
 }
+
+.rl-lamps li { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+
+.rl-lamp {
+    /* 렌즈 색: 켜짐 / 꺼짐(색 렌즈가 어둡게 비침) */
+    --lit: #7be36a;
+    --lit-core: #e4ffd8;
+    --dark: #24331f;
+    position: relative;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    /* 금속 베젤 링: 깎은 면이 빛을 받는 방향에 따라 밝고 어두움 */
+    background: conic-gradient(from 210deg, #5f584b, #cfc7b3 18%, #8a8270 35%, #4e483d 55%, #a59d89 75%, #5f584b);
+    box-shadow:
+        0 1px 0 rgb(255 255 255 / .12),
+        0 1px 2px rgb(0 0 0 / .7),
+        inset 0 0 0 1px rgb(0 0 0 / .45);
+}
+
+.rl-lamp[data-color="amber"] { --lit: #ffb43c; --lit-core: #fff0cc; --dark: #3a2a12; }
+
+/* 렌즈: 베젤 안쪽에 묻힌 색 유리 + 프레넬 동심원 무늬 */
+.rl-lamp::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background:
+        repeating-radial-gradient(circle at 50% 50%, rgb(255 255 255 / .09) 0 .6px, transparent .6px 1.6px),
+        var(--dark);
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / .8);
+}
+
+/* 반사점: 렌즈 왼쪽 위 작은 하이라이트 */
+.rl-lamp::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4.5px;
+    width: 3px;
+    height: 2px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / .45);
+    transform: rotate(-30deg);
+}
+
+/* 켜짐: 가운데가 하얗게 타고 가장자리는 렌즈 색, 빛은 렌즈 주변에만 살짝 */
+.rl-lamp[data-state="on"]::before,
+.rl-lamp[data-state="busy"]::before,
+.rl-steps li[data-state='done'] .rl-lamp::before,
+.rl-steps li[data-state='now'] .rl-lamp::before {
+    background:
+        repeating-radial-gradient(circle at 50% 50%, rgb(255 255 255 / .14) 0 .6px, transparent .6px 1.6px),
+        radial-gradient(circle at 50% 50%, var(--lit-core) 0 18%, var(--lit) 55%, color-mix(in srgb, var(--lit) 60%, #000) 100%);
+    box-shadow: inset 0 1px 1px rgb(0 0 0 / .35), 0 0 5px 1px color-mix(in srgb, var(--lit) 55%, transparent);
+}
+
+/* 깜빡임: 렌즈가 사라지지 않고 꺼진 색으로 어두워졌다 켜짐 */
+.rl-lamp[data-state="busy"]::before { animation: rl-lamp-blink .9s steps(1) infinite; }
+
+@keyframes rl-lamp-blink { 50% { filter: brightness(.32) saturate(.7); box-shadow: inset 0 1px 2px rgb(0 0 0 / .8); } }
 
 .rl-crt .amber { color: var(--c-phosphor-amber); text-shadow: 0 0 8px rgb(255 178 63 / .6); }
 .rl-crt .dim { color: var(--c-phosphor-dim); text-shadow: none; }
@@ -893,6 +1004,8 @@
 
 .rl-main {
     display: grid;
+    /* 한 칸일 때도 폭 고정: 기본(auto)이면 줄바꿈 없는 긴 글(영수증 주소 등)만큼 칸이 넓어져 화면 밖으로 밀림 */
+    grid-template-columns: minmax(0, 1fr);
     gap: 24px;
     padding: 20px 32px 28px;
 }
@@ -917,6 +1030,92 @@
     min-width: 0;
 }
 
+/*
+ * 장식 전선 묶음: 위 표시창 뒤 → 콘솔 뒤. 두 판보다 아래 층이라 양 끝이 판 밑으로 숨는다.
+ * 세 가닥을 곧게 붙여 나일론 타이로 묶고, 옆에 번호 꼬리표.
+ * --cable-gap = 두 판 사이 간격, --cable-x = 본문 왼쪽 끝에서 묶음까지
+ */
+.rl-readout { z-index: 2; }
+.rl-main { position: relative; --cable-gap: 20px; --cable-x: 76px; }
+.rl-main > .rl-console { z-index: 2; }
+
+.rl-cables {
+    position: absolute;
+    z-index: 1;
+    left: var(--cable-x);
+    top: -8px;
+    display: flex;
+    height: calc(var(--cable-gap) + 16px);
+    pointer-events: none;
+    filter: drop-shadow(2px 2px 1px rgb(0 0 0 / .35));
+}
+
+/* 판 그림자가 전선 양 끝에 드리움 */
+.rl-cables::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgb(0 0 0 / .55), transparent 40%, transparent 62%, rgb(0 0 0 / .5));
+}
+
+/* 피복 전선: 가장자리 어둡고 가운데 광택 줄 (원통 음영) */
+.rl-cables__wire {
+    --c: #c8442a;
+    width: 6px;
+    background: linear-gradient(90deg,
+        color-mix(in srgb, var(--c) 45%, #000) 0,
+        var(--c) 30%,
+        color-mix(in srgb, var(--c) 55%, #fff) 45%,
+        var(--c) 60%,
+        color-mix(in srgb, var(--c) 40%, #000) 100%);
+}
+
+.rl-cables__wire--black { --c: #3a342c; }
+.rl-cables__wire--amber { --c: #e0a42a; }
+
+/* 나일론 케이블 타이: 띠의 톱니 결 + 오른쪽 고정 머리 */
+.rl-cables__tie {
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: calc(50% - 2px);
+    height: 4px;
+    border-radius: 1px;
+    background:
+        repeating-linear-gradient(90deg, rgb(0 0 0 / .14) 0 1px, transparent 1px 2px),
+        linear-gradient(#f1ecdf, #c9c1ab);
+    box-shadow: 0 1px 1px rgb(0 0 0 / .5);
+}
+
+.rl-cables__tie::after {
+    content: '';
+    position: absolute;
+    right: -5px;
+    top: -2px;
+    width: 6px;
+    height: 8px;
+    border-radius: 1px;
+    background: linear-gradient(90deg, #e6e0d0, #b7af99);
+    box-shadow: 0 1px 1px rgb(0 0 0 / .5), inset 0 0 0 1px rgb(0 0 0 / .12);
+}
+
+/* 번호 꼬리표: 왼쪽으로 튀어나온 흰 라벨 */
+.rl-cables__tag {
+    position: absolute;
+    right: calc(100% + 4px);
+    top: calc(50% - 4.5px);
+    padding: 0 3px;
+    border-radius: 1px;
+    background: #ece6d6;
+    color: #2b2620;
+    font-family: var(--font-pixel-mono);
+    font-size: 7px;
+    line-height: 9px;
+    letter-spacing: .04em;
+    box-shadow: 0 1px 1px rgb(0 0 0 / .45);
+    transform: rotate(-4deg);
+}
+
 /* 실크스크린 각인 (패널 위 라벨) */
 .rl-console__label {
     flex: none;
@@ -932,6 +1131,62 @@
     align-items: flex-end;
     gap: 14px 18px;
 }
+
+/* 컨트롤 + 오른쪽 스피커 */
+.rl-console__row { display: flex; align-items: stretch; gap: 18px; min-width: 0; }
+.rl-console__row > .rl-console__controls { flex: 1 1 auto; min-width: 0; }
+
+/* 타공 스피커 그릴: 판에 파묻힌 철판에 구멍을 엇갈려 뚫은 모양 */
+.rl-speaker { display: none; }
+
+@media (min-width: 641px) {
+    .rl-console__row > .rl-console__controls { flex: none; }
+    .rl-speaker {
+        display: flex;
+        flex: 1 1 0;
+        flex-direction: column;
+        gap: 5px;
+        min-width: 0;
+    }
+}
+
+.rl-speaker__grille {
+    position: relative;
+    flex: 1;
+    min-height: 60px;
+    border-radius: 6px;
+    border-top: 2px solid #1a1713;
+    border-left: 2px solid #1d1a16;
+    border-bottom: 2px solid #5e5649;
+    border-right: 2px solid #57503f;
+    background-color: #5b5444;
+    /* 구멍 두 겹을 반 칸씩 엇갈림 + 철판 결 */
+    background-image:
+        radial-gradient(circle at 50% 45%, #0f0d0b 0 1.7px, rgb(255 255 255 / .12) 2.1px, transparent 2.5px),
+        radial-gradient(circle at 50% 45%, #0f0d0b 0 1.7px, rgb(255 255 255 / .12) 2.1px, transparent 2.5px),
+        var(--grain);
+    background-size: 8px 8px, 8px 8px, auto;
+    background-position: 2px 2px, 6px 6px, 0 0;
+    box-shadow:
+        inset 0 3px 7px rgb(0 0 0 / .55),
+        inset 0 -1px 0 rgb(255 255 255 / .06);
+}
+
+/* 가장자리는 구멍 없는 테 */
+.rl-speaker__grille::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 7px #5b5444, inset 0 0 0 8px rgb(0 0 0 / .35);
+    pointer-events: none;
+}
+
+.rl-speaker__grille .rl-screw { width: 8px; height: 8px; z-index: 1; }
+.rl-speaker__grille .rl-screw.tl { top: 2px; left: 2px; }
+.rl-speaker__grille .rl-screw.tr { top: 2px; right: 2px; }
+.rl-speaker__grille .rl-screw.bl { bottom: 2px; left: 2px; }
+.rl-speaker__grille .rl-screw.br { bottom: 2px; right: 2px; }
 
 .rl-console__controls .rl-bank { align-items: flex-start; gap: 5px; }
 .rl-console__controls .rl-bank--wide { flex: 1 1 320px; flex-direction: column; min-width: 0; }
@@ -1066,11 +1321,76 @@
 
 .rl-pointer {
     position: absolute;
-    top: -4px;
+    /* 회전축은 창 테 바깥(위)에, 카트리지 끝은 원판 눈금 림 안쪽에 */
+    top: -20px;
     left: 50%;
     z-index: 10;
     transform: translateX(-50%);
-    filter: drop-shadow(0 2px 0 rgb(0 0 0 / .5));
+}
+
+/* ---------- 톤암 (위에서 본 모습) ----------
+   작은 크기에서도 읽히게 면은 단순하게: 은색 받침 / 파이프 암 / 헤드쉘 / 빨간 카트리지 */
+.rl-arm {
+    width: 26px;
+    height: 56px;
+    filter: drop-shadow(1px 3px 2px rgb(0 0 0 / .55));
+}
+
+.rl-arm > span { position: absolute; left: 50%; transform: translateX(-50%); }
+
+/* 암: 왼쪽 빛, 오른쪽 그늘의 둥근 파이프 */
+.rl-arm__tube {
+    top: 14px;
+    width: 6px;
+    height: 30px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #8d8d88, #f2f2ee 35%, #b4b4af 60%, #6a6a65);
+    box-shadow: 0 0 0 1px #1d1a16;
+}
+
+/* 헤드쉘: 끝에서 넓어지는 은색 판 */
+.rl-arm__head {
+    top: 38px;
+    width: 12px;
+    height: 9px;
+    clip-path: polygon(22% 0, 78% 0, 100% 100%, 0 100%);
+    background: linear-gradient(90deg, #7a7a75, #e2e2de 45%, #8c8c87);
+}
+
+/* 카트리지: 빨간 몸체 (아래 끝이 결과 지점) */
+.rl-arm__cart {
+    top: 46px;
+    width: 9px;
+    height: 8px;
+    border-radius: 1px 1px 2px 2px;
+    background: linear-gradient(90deg, #9a2a10, #e2502a 40%, #b8381a);
+    box-shadow: 0 0 0 1px #1d1a16;
+}
+
+/* 회전축 받침: 은색 둥근 캡 + 가운데 축 */
+.rl-arm__base {
+    top: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    /* 무광 은색 면에 작고 부드러운 반사점 하나 + 반대쪽 가장자리에 옅은 반사광 (하얀 공처럼 보이지 않게) */
+    background:
+        radial-gradient(circle at 34% 30%, rgb(255 255 255 / .75) 0 9%, rgb(255 255 255 / .2) 22%, transparent 38%),
+        radial-gradient(circle at 70% 76%, rgb(255 255 255 / .22), transparent 30%),
+        radial-gradient(circle at 50% 50%, #c4c4bf 0 52%, #9a9a95 78%, #6d6d68);
+    box-shadow: 0 0 0 1.5px #1d1a16, inset 0 -1px 2px rgb(0 0 0 / .3), inset 0 1px 1px rgb(255 255 255 / .3);
+}
+
+.rl-arm__base::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 5px;
+    height: 5px;
+    margin: -2.5px 0 0 -2.5px;
+    border-radius: 50%;
+    background: #2b2620;
 }
 
 /* ---------- 카세트 라벨 (후보 목록) ---------- */
@@ -1170,7 +1490,7 @@
 
 /* 대기 중: 배출구만 보이고 종이는 안 나옴. 결과가 나오면 배출구에서 뽑혀 나옴 */
 .rl-ticket.is-idle .rl-ticket__paper { display: none; }
-.rl-key[aria-disabled='true'] { opacity: .45; pointer-events: none; }
+.rl-key[aria-disabled='true'] { pointer-events: none; }
 
 
 .rl-ticket { display: flex; flex-direction: column; align-items: center; }
@@ -1191,8 +1511,14 @@
     padding: 16px 18px 14px;
     border: 2px solid var(--c-carbon);
     border-top: 0;
-    background: #f5efe0;
-    box-shadow: 0 6px 0 rgb(0 0 0 / .22);
+    /* 감열지: 고운 입자 + 가로 섬유 + 고르지 않은 얼룩, 가장자리는 살짝 누렇게 */
+    background-color: #f5efe0;
+    background-image:
+        radial-gradient(ellipse at 50% 40%, transparent 55%, rgb(150 120 60 / .14) 100%),
+        url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27160%27 height=%27160%27%3E%3Cfilter id=%27p%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%27.95%27 numOctaves=%273%27 seed=%277%27 stitchTiles=%27stitch%27/%3E%3CfeColorMatrix values=%270 0 0 0 .42 0 0 0 0 .34 0 0 0 0 .22 0 0 0 .9 -.48%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url%28%23p%29%27/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27240%27 height=%27240%27%3E%3Cfilter id=%27p%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%27.03 .9%27 numOctaves=%272%27 seed=%2711%27 stitchTiles=%27stitch%27/%3E%3CfeColorMatrix values=%270 0 0 0 .45 0 0 0 0 .37 0 0 0 0 .25 0 0 0 .55 -.32%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url%28%23p%29%27/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27300%27 height=%27300%27%3E%3Cfilter id=%27p%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%27.018%27 numOctaves=%272%27 seed=%275%27 stitchTiles=%27stitch%27/%3E%3CfeColorMatrix values=%270 0 0 0 .55 0 0 0 0 .45 0 0 0 0 .28 0 0 0 .55 -.22%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url%28%23p%29%27/%3E%3C/svg%3E");
+    box-shadow: 0 6px 0 rgb(0 0 0 / .22), inset 0 8px 10px -8px rgb(60 45 20 / .35);
     animation: rl-ticket-out .7s steps(14, end);
 }
 
@@ -1228,6 +1554,13 @@
 
 .rl-ticket__meta { margin: 6px 0 0; font-size: 14px; color: var(--c-panel); }
 .rl-ticket__sub { margin: 2px 0 0; font-size: 13px; color: var(--c-panel-2); }
+#result-hours[data-status="open"] { color: var(--c-panel); }
+#result-hours[data-status="open"]::before,
+#result-hours[data-status="break"]::before,
+#result-hours[data-status="closed"]::before { content: "■ "; }
+#result-hours[data-status="open"]::before { color: #2f8a4a; }
+#result-hours[data-status="break"]::before { color: var(--c-amber); }
+#result-hours[data-status="closed"]::before { color: var(--c-stripe-3); }
 
 /* 절취선 */
 .rl-ticket__cut { margin: 12px -18px 10px; border-top: 2px dashed var(--c-periwinkle); }
@@ -1238,7 +1571,10 @@
 
 .rl-log { display: flex; flex-direction: column; gap: 6px; }
 
+.rl-log__screen { padding: 10px 14px 8px; }
+
 .rl-log__list {
+    position: relative;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -1247,15 +1583,40 @@
     gap: 3px;
     font-family: var(--font-pixel-mono);
     font-size: 13px;
-    color: var(--c-platinum);
+    color: var(--c-phosphor);
 }
 
 /* 5줄 고정 (빈 줄은 -- 로 채움) */
 .rl-log__list li { display: flex; gap: 10px; min-height: 20px; white-space: nowrap; }
+.rl-log__list li > span:first-child { color: var(--c-phosphor-dim); text-shadow: none; }
 .rl-log__list li > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; }
-.rl-log__list .rl-log__act { margin-left: auto; color: var(--c-periwinkle); }
-.rl-log__list .rl-log__act--win { color: var(--c-stripe-1); }
-.rl-log__list .rl-log__empty { color: var(--c-hairline); }
+.rl-log__list .rl-log__act { margin-left: auto; color: var(--c-phosphor-dim); text-shadow: none; }
+.rl-log__list .rl-log__act--win { color: var(--c-phosphor-amber); text-shadow: 0 0 8px rgb(255 178 63 / .6); }
+.rl-log__list .rl-log__empty { color: #2c5a3a; text-shadow: none; }
+
+.rl-log__prompt {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 6px 0 0;
+    padding-top: 6px;
+    border-top: 1px dashed rgb(125 255 158 / .25);
+    font-family: var(--font-pixel-mono);
+    font-size: 13px;
+    color: var(--c-phosphor-dim);
+}
+
+.rl-log__cursor {
+    width: 8px;
+    height: 14px;
+    background: var(--c-phosphor);
+    box-shadow: 0 0 6px rgb(125 255 158 / .7);
+    animation: rl-term-blink 1.05s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rl-log__cursor { animation: none; }
+}
 
 /* ---------- 카세트 A면 / B면 탭 ---------- */
 
@@ -1281,32 +1642,57 @@
 
 /* ---------- 단계 표시등 ---------- */
 
+/*
+ * 단계 표시등 스트립: 판에 판 어두운 홈 안에 네 단계.
+ * 표시등은 PWR/GPS/NET 과 같은 베젤 렌즈(두 색 LED: 끝난 단계 초록, 지금 할 단계 앰버).
+ * 단계 사이엔 진행 방향 화살표 실크 인쇄.
+ */
 .rl-steps {
     display: flex;
-    gap: 20px;
+    align-items: center;
     margin: 0;
-    padding: 0;
+    padding: 7px 14px;
     list-style: none;
-    font-family: var(--font-pixel-mono);
-    font-size: 13px;
-    letter-spacing: .06em;
-    color: var(--c-periwinkle);
+    border-radius: 6px;
+    border-top: 2px solid #14110e;
+    border-left: 2px solid #17140f;
+    border-bottom: 2px solid #5e5649;
+    border-right: 2px solid #57503f;
+    background-color: #221e19;
+    background-image: var(--texture);
+    box-shadow: inset 0 3px 6px rgb(0 0 0 / .6);
+    /* 글자는 SPIN 키와 같은 Orbitron 을 판에 음각: 위 모서리 그늘 + 아래 모서리 빛 */
+    font-family: 'Orbitron', var(--font-pixel-mono);
+    font-weight: 900;
+    font-size: 11px;
+    letter-spacing: .18em;
+    color: #4d473d;
+    text-shadow: 0 -1px 0 rgb(0 0 0 / .85), 0 1px 0 rgb(255 255 255 / .1);
 }
 
 .rl-steps li { display: flex; align-items: center; gap: 8px; }
 
-.rl-steps__lamp {
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-    background: var(--c-hairline);
-    box-shadow: inset 0 1px 0 rgb(0 0 0 / .4);
+/* 단계 사이 화살표: 가는 선 + 촉 */
+.rl-steps li + li::before {
+    content: '';
+    width: 22px;
+    height: 7px;
+    margin: 0 10px 0 4px;
+    background:
+        linear-gradient(currentColor, currentColor) left center / calc(100% - 5px) 1px no-repeat,
+        conic-gradient(from 225deg at 100% 50%, currentColor 90deg, transparent 0) right center / 5px 100% no-repeat;
+    opacity: .55;
 }
 
-.rl-steps li[data-state='done'] { color: var(--c-platinum); }
-.rl-steps li[data-state='done'] .rl-steps__lamp { background: var(--c-phosphor-dim); box-shadow: 0 0 6px var(--c-phosphor-dim); }
-.rl-steps li[data-state='now'] { color: var(--c-stripe-1); }
-.rl-steps li[data-state='now'] .rl-steps__lamp { background: var(--c-stripe-1); box-shadow: 0 0 8px var(--c-stripe-1); }
+.rl-steps__no { margin-right: .4em; opacity: .7; }
+
+/* 렌즈: 꺼지면 무채색 유리 */
+.rl-steps__lamp { --dark: #2a2823; flex: none; }
+
+/* 상태는 표시등이 알려 주고, 음각 글자는 판 색 안에서 조금만 밝아짐 */
+.rl-steps li[data-state='done'] { color: #8a8270; }
+.rl-steps li[data-state='now'] { color: #a8925e; }
+.rl-steps li[data-state='now'] .rl-lamp { --lit: #ffb43c; --lit-core: #fff0cc; }
 
 /* 깜빡이는 커서 */
 .rl-cursor { animation: rl-blink 1s steps(1) infinite; }
@@ -1341,6 +1727,26 @@
     opacity: .7;
 }
 
+/*
+ * 넓은 화면: 윗줄 RANGE · HOURS · FX, 아랫줄 종류 키 (키 7개가 잘리지 않게).
+ * 판 폭을 종류 키 줄에 맞추고 FX 를 오른쪽 끝에 붙여 두 줄의 끝을 맞춤
+ */
+@media (min-width: 641px) {
+    .rl-console__controls {
+        display: grid;
+        grid-template-columns: auto auto 1fr;
+        width: fit-content;
+        max-width: 100%;
+    }
+    .rl-console__controls > [aria-labelledby="lbl-range"] { grid-area: 1 / 1; }
+    .rl-console__controls > [aria-labelledby="lbl-hours"] { grid-area: 1 / 2; }
+    .rl-console__controls > [aria-labelledby="lbl-fx"] { grid-area: 1 / 3; justify-self: end; }
+    .rl-console__controls .rl-bank--wide { grid-row: 2; grid-column: 1 / -1; align-items: stretch; }
+    /* 윗줄이 더 넓을 때도 종류 키 줄이 판 끝까지 (남는 폭은 키가 나눠 가짐) */
+    .rl-console__controls .rl-bank--wide .rl-bank__slot { display: flex; box-sizing: border-box; width: 100%; }
+    .rl-console__controls .rl-bank--wide .rl-bank__key { flex: 1 0 auto; }
+}
+
 @media (max-width: 640px) {
     .rl-head { padding: 14px 18px; }
     .rl-title { font-size: 21px; }
@@ -1348,9 +1754,25 @@
     .rl-main { padding: 16px 12px 24px; }
     .rl-readout { margin: 14px 12px 0; }
     .rl-readout__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .rl-readout__fields > div:nth-child(2n) { border-right: 0; }
-    .rl-readout__fields > div { border-bottom: 1px solid #1f2a22; }
-    .rl-readout__fields > div:last-child { grid-column: span 2; border-bottom: 0; }
+    /* 좁은 화면 배치: LOC RANGE / WHEEL FOUND / TYPE(전체 폭: 종류를 여러 개 고르면 길어짐) */
+    .rl-readout__fields > div:nth-child(5) { order: 3; }
+    .rl-readout__fields > div:nth-child(4) { order: 4; }
+    .rl-readout__fields > div:nth-child(3) { order: 5; grid-column: span 2; }
+    .rl-lcd { padding-inline: 22px; }
+    .rl-readout__foot { gap: 12px; }
+    /* 좁은 화면: 표시등은 한 줄로 오른쪽에, 상태 줄은 그 아래 전체 폭 */
+    .rl-readout__foot { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+    .rl-lamps { justify-content: flex-end; gap: 14px; }
+    .rl-lamps li { flex-direction: row; gap: 6px; }
+    .rl-main { --cable-gap: 16px; --cable-x: 46px; }
+    /* 좁은 창: 글자를 화면 폭에 맞춰 줄임 (320px 에서도 0500 M·좌표가 안 잘리게) */
+    .rl-readout__fields dd { padding: 11px 8px 6px; font-size: clamp(16px, 5vw, 20px); }
+    .rl-seg { font-size: clamp(19px, 6vw, 26px); }
+    .rl-unit { margin-left: 4px; }
+    .rl-lcd__sub { font-size: clamp(9px, 2.8vw, 11px); letter-spacing: 0; }
+    /* 좁은 화면: 영수증 정보 줄은 자르지 않고 줄바꿈 (영업시간·주소가 길어도 다 보이게) */
+    .rl-ticket__meta,
+    .rl-ticket__sub { white-space: normal; overflow-wrap: anywhere; }
     .rl-steps { display: none; }
     /* 종류 키 7개를 한 줄에 */
     .rl-console__controls .rl-bank--wide { flex-basis: 100%; }
@@ -1361,8 +1783,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .rl-lamp::before,
     .rl-cursor,
-    .rl-caret,
     .rl-crt-fx,
     .rl-crt-fx::after,
     .rl-ticket__paper,

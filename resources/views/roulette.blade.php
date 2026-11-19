@@ -6,7 +6,7 @@
     <script nonce="{{ Vite::cspNonce() }}" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ config('services.kakao.js_key') }}&autoload=false&libraries=clusterer"></script>
 </head>
 <body class="rl-body">
-    <div id="roulette-app" data-restaurants-url="{{ route('restaurants.index') }}" data-search-url="{{ route('restaurants.search') }}" data-locations-url="{{ route('locations.search') }}" class="rl-device">
+    <div id="roulette-app" data-restaurants-url="{{ route('restaurants.index') }}" data-search-url="{{ route('restaurants.search') }}" data-locations-url="{{ route('locations.search') }}" data-hours-url="{{ route('restaurants.hours') }}" class="rl-device">
 
         {{-- 머리 패널: 단계 표시등 --}}
         <header class="rl-head rl-ribs">
@@ -15,27 +15,49 @@
                 <span class="rl-model">MODEL LR-01 · LUNCH ROULETTE</span>
             </div>
             <ol id="steps" class="rl-steps" aria-label="진행 단계">
-                <li data-step="loc"><span class="rl-steps__lamp" aria-hidden="true"></span>01 위치</li>
-                <li data-step="cond"><span class="rl-steps__lamp" aria-hidden="true"></span>02 조건</li>
-                <li data-step="cand"><span class="rl-steps__lamp" aria-hidden="true"></span>03 후보</li>
-                <li data-step="spin"><span class="rl-steps__lamp" aria-hidden="true"></span>04 돌리기</li>
+                <li data-step="loc"><span class="rl-lamp rl-steps__lamp" aria-hidden="true"></span><span class="rl-steps__no">01</span>LOCATE</li>
+                <li data-step="cond"><span class="rl-lamp rl-steps__lamp" aria-hidden="true"></span><span class="rl-steps__no">02</span>FILTER</li>
+                <li data-step="cand"><span class="rl-lamp rl-steps__lamp" aria-hidden="true"></span><span class="rl-steps__no">03</span>LOAD</li>
+                <li data-step="spin"><span class="rl-lamp rl-steps__lamp" aria-hidden="true"></span><span class="rl-steps__no">04</span>SPIN</li>
             </ol>
         </header>
         <div class="rl-stripes" aria-hidden="true"></div>
 
-        {{-- 상태 CRT: 칸별 값 + 시스템 메시지 --}}
-        <div class="rl-readout rl-crt">
+        {{--
+            상태 표시창: 산업용 계기판. 라벨은 베젤에 인쇄, 액정 창엔 값만 (숫자는 7세그먼트, 고정 자릿수).
+            창마다 고무 패킹 + 덮개 유리, 귀퉁이 나사, 왼쪽 아래 표시등 (PWR / GPS / NET)
+        --}}
+        <div class="rl-readout rl-lcd">
+            <span class="rl-screw tl" aria-hidden="true"></span>
+            <span class="rl-screw tr" aria-hidden="true"></span>
+            <span class="rl-screw bl" aria-hidden="true"></span>
+            <span class="rl-screw br" aria-hidden="true"></span>
             <dl class="rl-readout__fields">
-                <div><dt>LOC</dt><dd id="f-loc">—</dd></div>
-                <div><dt>RANGE</dt><dd id="f-range">500m</dd></div>
+                <div><dt>LOC</dt><dd><span id="f-loc" class="rl-lcd__val">—</span><span id="f-coord" class="rl-lcd__sub">--.---N ---.---E</span></dd></div>
+                <div><dt>RANGE</dt><dd id="f-range">0500 M</dd></div>
                 <div><dt>TYPE</dt><dd id="f-type">전체</dd></div>
-                <div><dt>FOUND</dt><dd id="f-found">—</dd></div>
-                <div><dt>WHEEL</dt><dd id="f-wheel" class="amber">0/8</dd></div>
+                <div><dt>FOUND</dt><dd id="f-found">--- EA</dd></div>
+                <div><dt>WHEEL</dt><dd id="f-wheel">00/08</dd></div>
             </dl>
-            <p class="rl-readout__msg"><span class="dim" aria-hidden="true">SYS&gt;</span> <span id="status" role="status" aria-live="polite">BOOT</span><span class="rl-caret" aria-hidden="true">_</span></p>
+            <div class="rl-readout__foot">
+                <ul class="rl-lamps" aria-hidden="true">
+                    <li><span id="lamp-pwr" class="rl-lamp" data-color="green" data-state="on"></span>PWR</li>
+                    <li><span id="lamp-gps" class="rl-lamp" data-color="green" data-state="off"></span>GPS</li>
+                    <li><span id="lamp-net" class="rl-lamp" data-color="amber" data-state="off"></span>NET</li>
+                </ul>
+                <p class="rl-readout__msg"><span class="rl-lcd__mark" aria-hidden="true">▶</span><span id="status" role="status" aria-live="polite">BOOT</span></p>
+            </div>
         </div>
 
         <main class="rl-main">
+            {{-- 장식: 위 표시창 뒤에서 나와 콘솔 뒤로 들어가는 전선 3가닥 (나일론 타이 + 번호 꼬리표) --}}
+            <div class="rl-cables" aria-hidden="true">
+                <span class="rl-cables__wire rl-cables__wire--red"></span>
+                <span class="rl-cables__wire rl-cables__wire--black"></span>
+                <span class="rl-cables__wire rl-cables__wire--amber"></span>
+                <span class="rl-cables__tie"></span>
+                <span class="rl-cables__tag">J1</span>
+            </div>
 
             {{-- 01 위치 · 02 조건: 한 장비 --}}
             <section class="rl-console rl-ribs" aria-label="위치와 조건">
@@ -69,6 +91,7 @@
                     <div class="rl-crt-fx" aria-hidden="true"></div>
                 </div>
 
+                <div class="rl-console__row">
                 <div class="rl-console__controls">
                     <div class="rl-bank" role="group" aria-labelledby="lbl-range">
                         <span id="lbl-range" class="rl-console__label">RANGE</span>
@@ -87,28 +110,29 @@
                             @endforeach
                         </div>
                     </div>
+                    <div class="rl-bank" role="group" aria-labelledby="lbl-hours">
+                        <span id="lbl-hours" class="rl-console__label">HOURS</span>
+                        <div class="rl-bank__slot">
+                            <button id="open-toggle" type="button" class="rl-bank__key" aria-pressed="false" title="켜면 지금 영업 중인 후보만 돌림판 추첨 대상">영업중</button>
+                        </div>
+                    </div>
                     <div class="rl-bank" role="group" aria-labelledby="lbl-fx">
                         <span id="lbl-fx" class="rl-console__label">FX</span>
                         <div class="rl-bank__slot">
                             <button id="crt-toggle" type="button" class="rl-bank__key" aria-pressed="true">CRT</button>
                         </div>
                     </div>
+                </div>
 
-                    {{-- 가격대: 상아색 페이더 캡 두 개 (최저 / 최고) --}}
-                    <div class="rl-fader" role="group" aria-labelledby="lbl-price">
-                        <div class="rl-fader__head">
-                            <span id="lbl-price" class="rl-console__label">PRICE · 1인</span>
-                            <output id="price-out" class="rl-fader__out" for="price-min price-max">전체</output>
-                        </div>
-                        <div class="rl-fader__slot">
-                            <div class="rl-fader__rail" aria-hidden="true"><span id="price-fill" class="rl-fader__fill"></span></div>
-                            <label for="price-min" class="sr-only">최저 가격</label>
-                            <input id="price-min" class="rl-fader__input" type="range" min="0" max="30000" step="1000" value="0">
-                            <label for="price-max" class="sr-only">최고 가격</label>
-                            <input id="price-max" class="rl-fader__input" type="range" min="0" max="30000" step="1000" value="30000">
-                        </div>
-                        <div class="rl-fader__ticks" aria-hidden="true"><span>0</span><span>1만</span><span>2만</span><span>3만+</span></div>
+                {{-- 장식: 타공 스피커 그릴 (넓은 화면에서 컨트롤 오른쪽 빈자리) --}}
+                <div class="rl-speaker" aria-hidden="true">
+                    <div class="rl-speaker__grille">
+                        <span class="rl-screw tl"></span>
+                        <span class="rl-screw tr"></span>
+                        <span class="rl-screw bl"></span>
+                        <span class="rl-screw br"></span>
                     </div>
+                </div>
                 </div>
             </section>
 
@@ -121,9 +145,16 @@
                     <span class="rl-screw br" aria-hidden="true"></span>
 
                     <div class="rl-window">
-                        <svg class="rl-pointer" width="30" height="36" viewBox="0 0 30 36" aria-hidden="true">
-                            <path d="M15 34 L3 8 L3 3 L27 3 L27 8 Z" fill="#d25a22" stroke="#2b2620" stroke-width="2.5" stroke-linejoin="round"/>
-                        </svg>
+                        {{--
+                            바늘: 전축 톤암 (위에서 본 모습). 원판 바깥 테 위의 회전축에서 시작.
+                            널링 링 + 돌려 깎은 알루미늄 캡 / 원통 파이프 암 / 헤드쉘 판 + 빨간 카트리지 (끝이 결과 지점)
+                        --}}
+                        <div class="rl-pointer rl-arm" aria-hidden="true">
+                            <span class="rl-arm__tube"></span>
+                            <span class="rl-arm__head"></span>
+                            <span class="rl-arm__cart"></span>
+                            <span class="rl-arm__base"></span>
+                        </div>
                         <svg id="wheel" viewBox="-100 -100 200 200" class="rl-wheel" role="img" aria-label="돌림판. 칸 번호는 SIDE A 후보 번호와 같음">
                             <g id="wheel-rotor"></g>
                             <circle r="98.5" fill="none" stroke="#2b2620" stroke-width="3"/>
@@ -133,9 +164,9 @@
                     <div class="rl-deck__controls">
                         <span class="rl-console__label">04 SPIN</span>
                         <div class="rl-well rl-well--dark rl-well--block">
-                            <button id="spin" type="button" disabled class="rl-key rl-key--wide">▶ 돌리기</button>
+                            <button id="spin" type="button" disabled class="rl-key rl-key--wide rl-spin" aria-label="돌리기"><span class="rl-spin__tri" aria-hidden="true"></span><span class="rl-spin__label">SPIN</span></button>
                         </div>
-                        <p class="rl-deck__hint">칸 번호 = 후보 번호. 바늘 위치 = 결과.</p>
+                        <p class="rl-deck__hint">SLOT NO. = TRACK NO. · NEEDLE = RESULT</p>
                     </div>
                 </div>
 
@@ -187,7 +218,8 @@
                         <div class="rl-ticket__head"><span id="result-time">LR-01 · --:--</span><span id="result-no">NO.--</span></div>
                         <p id="result-kicker" class="rl-ticket__kicker">STANDBY</p>
                         <p id="result-name" class="rl-ticket__name">—</p>
-                        <p id="result-meta" class="rl-ticket__meta">후보 2곳 이상 → ▶ 돌리기</p>
+                        <p id="result-meta" class="rl-ticket__meta">후보 추가 → ▶ SPIN</p>
+                        <p id="result-hours" class="rl-ticket__sub">&nbsp;</p>
                         <p id="result-address" class="rl-ticket__sub">&nbsp;</p>
                         <div class="rl-ticket__cut" aria-hidden="true"></div>
                         <div class="rl-ticket__actions rl-well">
@@ -200,8 +232,12 @@
                 </div>
 
                 <div class="rl-log" aria-labelledby="log-title">
-                    <span id="log-title" class="rl-console__label">LOG · 오늘</span>
-                    <ol id="result-log" class="rl-log__list"></ol>
+                    <span id="log-title" class="rl-console__label">LOG · TODAY</span>
+                    {{-- 작은 CRT 단말: 형광 글자 + 주사선, 맨 아래 깜빡이는 프롬프트 --}}
+                    <div class="rl-crt rl-log__screen">
+                        <ol id="result-log" class="rl-log__list"></ol>
+                        <p class="rl-log__prompt" aria-hidden="true">LOG&gt;<span class="rl-log__cursor"></span></p>
+                    </div>
                 </div>
             </div>
         </main>
@@ -210,9 +246,11 @@
         <footer class="rl-plate rl-ribs">
             <div class="rl-grille" aria-hidden="true"></div>
             <div class="rl-ticks" aria-hidden="true"></div>
-            <span class="rl-label" aria-hidden="true">LR-01 · 점심 룰렛</span>
+            <span class="rl-label" aria-hidden="true">LR-01 · LUNCH ROULETTE</span>
             <nav class="rl-plate__licenses" aria-label="라이선스">
                 <a href="/fonts/Mulmaru-OFL.txt">FONT OFL</a>
+                <a href="/fonts/DSEG-OFL.txt">DSEG OFL</a>
+                <a href="/fonts/Orbitron-OFL.txt">ORBITRON OFL</a>
                 <a href="/licenses/pixelarticons-LICENSE.txt">ICON MIT</a>
             </nav>
         </footer>
