@@ -772,9 +772,8 @@
 .rl-ticket__meta,
 .rl-ticket__sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* 대기 중: 흐린 빈 티켓, 키는 꺼짐 */
-.rl-ticket.is-idle .rl-ticket__paper { background: var(--c-paper); color: var(--c-panel-2); animation: none; }
-.rl-ticket.is-idle .rl-ticket__name { color: var(--c-periwinkle); }
+/* 대기 중: 배출구만 보이고 종이는 안 나옴. 결과가 나오면 배출구에서 뽑혀 나옴 */
+.rl-ticket.is-idle .rl-ticket__paper { display: none; }
 .rl-key[aria-disabled='true'] { opacity: .45; pointer-events: none; }
 
 
@@ -798,11 +797,12 @@
     border-top: 0;
     background: #f5efe0;
     box-shadow: 0 6px 0 rgb(0 0 0 / .22);
-    animation: rl-ticket-out .5s ease-out;
+    animation: rl-ticket-out .7s steps(14, end);
 }
 
+/* 배출구 아래로 한 줄씩 밀려 나오는 느낌 */
 @keyframes rl-ticket-out {
-    from { transform: translateY(-40px); clip-path: inset(40px 0 0 0); }
+    from { transform: translateY(-100%); clip-path: inset(100% 0 0 0); }
     to { transform: translateY(0); clip-path: inset(0 0 0 0); }
 }
 
