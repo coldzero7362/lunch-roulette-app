@@ -231,7 +231,18 @@
     box-shadow: 0 0 0 var(--lip), inset 0 2px 4px rgb(0 0 0 / .55);
 }
 
-.rl-key:disabled { opacity: .45; cursor: not-allowed; }
+.rl-key:disabled { cursor: not-allowed; }
+
+/* 비활성 키: 흐리게 하는 대신 눌린 채 걸려 있는 모습 (아래로 내려가 턱이 없어지고, 안쪽 그늘 + 어두운 바탕).
+   쓸 수 있게 되면 transition 으로 톡 올라옴 */
+.rl-key:disabled,
+.rl-key[aria-disabled='true'] {
+    transform: translateY(2px);
+    border-top-color: #5c564b;
+    background-color: color-mix(in srgb, var(--key) 62%, #2b2620);
+    color: color-mix(in srgb, var(--ink) 65%, var(--key));
+    box-shadow: 0 0 0 var(--lip), inset 0 2px 5px rgb(0 0 0 / .55);
+}
 
 .rl-key:focus-visible { outline: 3px solid var(--c-stripe-1); outline-offset: 2px; z-index: 1; }
 
@@ -1401,7 +1412,7 @@
 
 /* 대기 중: 배출구만 보이고 종이는 안 나옴. 결과가 나오면 배출구에서 뽑혀 나옴 */
 .rl-ticket.is-idle .rl-ticket__paper { display: none; }
-.rl-key[aria-disabled='true'] { opacity: .45; pointer-events: none; }
+.rl-key[aria-disabled='true'] { pointer-events: none; }
 
 
 .rl-ticket { display: flex; flex-direction: column; align-items: center; }
