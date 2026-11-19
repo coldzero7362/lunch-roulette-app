@@ -968,6 +968,55 @@
     min-width: 0;
 }
 
+/*
+ * 장식 전선 묶음: 위 표시창 아래 가장자리 → 콘솔 위 가장자리.
+ * --cable-gap = 두 판 사이 간격. 양 끝은 판 안쪽으로 조금 들어가 고무 부싱에 꽂힌 모습
+ */
+.rl-console { --cable-gap: 20px; --cable-x: 44px; }
+
+.rl-cables {
+    position: absolute;
+    left: var(--cable-x);
+    top: calc(-2px - var(--cable-gap) - 4px);
+    z-index: 2;
+    width: 40px;
+    height: calc(var(--cable-gap) + 12px);
+    overflow: visible;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 1px rgb(0 0 0 / .35));
+}
+
+.rl-cables__boot,
+.rl-cables__tie {
+    position: absolute;
+    z-index: 3;
+    pointer-events: none;
+}
+
+/* 고무 부싱: 판 가장자리에서 전선이 드나드는 검은 고무 */
+.rl-cables__boot {
+    left: calc(var(--cable-x) + 3px);
+    width: 34px;
+    height: 7px;
+    border-radius: 3px;
+    background: linear-gradient(#2a2622, #121010);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .12), 0 1px 1px rgb(0 0 0 / .5);
+}
+
+.rl-cables__boot--top { top: calc(-2px - var(--cable-gap) - 5px); }
+.rl-cables__boot--bottom { top: 1px; }
+
+/* 케이블 타이: 가운데 묶음 */
+.rl-cables__tie {
+    left: calc(var(--cable-x) + 6px);
+    top: calc(-2px - var(--cable-gap) / 2 - 2px);
+    width: 28px;
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(#efe9da, #bdb59f);
+    box-shadow: 0 1px 1px rgb(0 0 0 / .45);
+}
+
 /* 실크스크린 각인 (패널 위 라벨) */
 .rl-console__label {
     flex: none;
@@ -1527,6 +1576,7 @@
     .rl-readout__foot { grid-template-columns: minmax(0, 1fr); gap: 10px; }
     .rl-lamps { justify-content: flex-end; gap: 14px; }
     .rl-lamps li { flex-direction: row; gap: 6px; }
+    .rl-console { --cable-gap: 16px; --cable-x: 34px; }
     /* 좁은 창: 글자를 화면 폭에 맞춰 줄임 (320px 에서도 0500 M·좌표가 안 잘리게) */
     .rl-readout__fields dd { padding: 11px 8px 6px; font-size: clamp(16px, 5vw, 20px); }
     .rl-seg { font-size: clamp(19px, 6vw, 26px); }
