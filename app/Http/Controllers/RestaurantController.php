@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\KakaoBudgetExceeded;
 use App\Services\KakaoLocal;
 use Closure;
 use Illuminate\Http\Client\ConnectionException;
@@ -36,7 +37,7 @@ class RestaurantController extends Controller
     public function search(Request $request, KakaoLocal $kakao): JsonResponse
     {
         $data = $request->validate($this->areaRules() + [
-            'q' => ['required', 'string', 'min:1', 'max:30'],
+            'q' => ['required', 'string', 'min:1', 'max:30', 'not_regex:/[\x00-\x1F\x7F]/'],
         ]);
 
         return $this->respond(fn () => $kakao->searchRestaurants(
@@ -50,11 +51,13 @@ class RestaurantController extends Controller
     public function locations(Request $request, KakaoLocal $kakao): JsonResponse
     {
         $data = $request->validate([
-            'q' => ['required', 'string', 'min:1', 'max:50'],
+            'q' => ['required', 'string', 'min:1', 'max:50', 'not_regex:/[\x00-\x1F\x7F]/'],
         ]);
 
         try {
             $locations = $kakao->searchLocations(trim($data['q']));
+        } catch (KakaoBudgetExceeded) {
+            return $this->busy();
         } catch (RequestException|ConnectionException $e) {
             Log::warning('Kakao location search failed', ['message' => $e->getMessage()]);
 
@@ -62,6 +65,16 @@ class RestaurantController extends Controller
         }
 
         return response()->json(['locations' => $locations]);
+    }
+
+    /** 카카오 호출 예산을 다 씀: 잠깐 쉬었다 오라고 알림 */
+    private function busy(): JsonResponse
+    {
+        Log::warning('Kakao call budget exhausted');
+
+        return response()
+            ->json(['message' => '지금 찾는 사람이 많아요. 잠시 후 다시 시도해 주세요.'], 503)
+            ->header('Retry-After', '60');
     }
 
     /** @return array<string, list<mixed>> */
@@ -82,6 +95,8 @@ class RestaurantController extends Controller
     {
         try {
             $places = $fetch();
+        } catch (KakaoBudgetExceeded) {
+            return $this->busy();
         } catch (RequestException|ConnectionException $e) {
             Log::warning('Kakao local search failed', ['message' => $e->getMessage()]);
 
