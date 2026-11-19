@@ -798,10 +798,11 @@ function queueHours() {
 function hoursTag(place) {
     const h = hoursOf(place);
     const tag = document.createElement('span');
-    const kind = !h ? 'wait' : h.status;
+    // 곧 마감은 영업 중이지만 앰버로 구분
+    const kind = !h ? 'wait' : h.status === 'open' && h.label.includes('곧') ? 'break' : h.status;
     tag.className = `rl-tag rl-tag--hours rl-tag--${kind}`;
     tag.textContent = !h ? '···'
-        : h.status === 'open' ? '영업중'
+        : h.status === 'open' ? (h.label.includes('곧') ? '곧마감' : '영업중')
         : h.status === 'break' ? '브레이크'
         : h.status === 'closed' ? (h.label.replace(/\s+/g, '') || '마감')
         : '정보없음';

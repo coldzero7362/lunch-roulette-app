@@ -40,15 +40,17 @@ class OpenHoursTest extends TestCase
                 ['day_of_the_week_desc' => '토(11/21)', 'off_days_desc' => '휴무일', 'is_highlight' => true],
             ])),
             'place-api.map.kakao.com/places/panel3/104' => Http::response(['open_hours' => null]),
+            'place-api.map.kakao.com/places/panel3/105' => Http::response($this->detail('CLOSING_SOON', '곧 영업 마감', '22:00 까지', [])),
         ]);
 
-        $this->getJson(route('restaurants.hours', ['ids' => ['101', '102', '103', '104']]))
+        $this->getJson(route('restaurants.hours', ['ids' => ['101', '102', '103', '104', '105']]))
             ->assertOk()
             ->assertExactJson(['hours' => [
                 '101' => ['status' => 'open', 'label' => '영업 중', 'info' => '22:00 까지', 'today' => '11:30 ~ 22:00'],
                 '102' => ['status' => 'break', 'label' => '브레이크타임', 'info' => '16:30 오픈', 'today' => '11:00 ~ 20:30 (브레이크 14:30 ~ 16:30)'],
                 '103' => ['status' => 'closed', 'label' => '영업 마감', 'info' => '내일 10:00 오픈', 'today' => '휴무일'],
                 '104' => ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => ''],
+                '105' => ['status' => 'open', 'label' => '곧 영업 마감', 'info' => '22:00 까지', 'today' => ''],
             ]]);
     }
 
