@@ -41,9 +41,15 @@ class OpenHoursTest extends TestCase
             ])),
             'place-api.map.kakao.com/places/panel3/104' => Http::response(['open_hours' => null]),
             'place-api.map.kakao.com/places/panel3/105' => Http::response($this->detail('CLOSING_SOON', '곧 영업 마감', '22:00 까지', [])),
+            'place-api.map.kakao.com/places/panel3/106' => Http::response($this->detail('DAY_OFF', '휴무일', '', [])),
+            // 이름에 OFF 가 들어가지만 휴무가 아니라 '휴무 정보 없음'
+            'place-api.map.kakao.com/places/panel3/107' => Http::response($this->detail('NO_DAY_OFF_INFO', '영업 정보', '', [])),
+            // 처음 보는 코드: 문구에 휴무가 있으면 휴무, 아니면 정보 없음
+            'place-api.map.kakao.com/places/panel3/108' => Http::response($this->detail('TEMP_HOLIDAY', '임시 휴무', '', [])),
+            'place-api.map.kakao.com/places/panel3/109' => Http::response($this->detail('SOMETHING_NEW', '확인 필요', '', [])),
         ]);
 
-        $this->getJson(route('restaurants.hours', ['ids' => ['101', '102', '103', '104', '105']]))
+        $this->getJson(route('restaurants.hours', ['ids' => ['101', '102', '103', '104', '105', '106', '107', '108', '109']]))
             ->assertOk()
             ->assertExactJson(['hours' => [
                 '101' => ['status' => 'open', 'label' => '영업 중', 'info' => '22:00 까지', 'today' => '11:30 ~ 22:00'],
@@ -51,6 +57,10 @@ class OpenHoursTest extends TestCase
                 '103' => ['status' => 'closed', 'label' => '영업 마감', 'info' => '내일 10:00 오픈', 'today' => '휴무일'],
                 '104' => ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => ''],
                 '105' => ['status' => 'open', 'label' => '곧 영업 마감', 'info' => '22:00 까지', 'today' => ''],
+                '106' => ['status' => 'closed', 'label' => '휴무일', 'info' => '', 'today' => ''],
+                '107' => ['status' => 'unknown', 'label' => '영업 정보', 'info' => '', 'today' => ''],
+                '108' => ['status' => 'closed', 'label' => '임시 휴무', 'info' => '', 'today' => ''],
+                '109' => ['status' => 'unknown', 'label' => '확인 필요', 'info' => '', 'today' => ''],
             ]]);
     }
 
