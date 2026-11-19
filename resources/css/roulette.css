@@ -69,7 +69,7 @@
 
 @media (min-width: 1024px) {
     .rl-body { padding: 32px 24px; }
-    .rl-device { border-radius: 14px; overflow: hidden; }
+    .rl-device { border-radius: 14px; overflow: clip; } /* hidden 은 sticky 를 막음 */
 }
 
 /* 결 따라 깎은 금속판 (brushedRibs) */
@@ -503,6 +503,12 @@
 
 @media (min-width: 1024px) {
     .rl-main { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
+}
+
+/* 오른쪽(결과·후보)이 길어져도 왼쪽 콘솔(지도)이 화면에 붙어 따라옴.
+   콘솔보다 낮은 화면에선 아래 키가 가려지므로 높이가 충분할 때만 */
+@media (min-width: 1024px) and (min-height: 820px) {
+    .rl-main > .rl-console { position: sticky; top: 16px; z-index: 1; }
 }
 
 .rl-console {
