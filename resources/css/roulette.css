@@ -750,7 +750,29 @@
     text-align: center;
 }
 
-/* ---------- 결과 티켓 ---------- */
+/* ---------- 결과 프린터 (항상 같은 높이) ---------- */
+
+.rl-printer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 20px 16px;
+    border: 2px solid var(--c-carbon);
+    border-radius: 10px;
+    background-color: var(--c-panel);
+}
+
+/* 티켓 글줄은 한 줄 고정 (길면 말줄임) → 결과가 바뀌어도 높이 그대로 */
+.rl-ticket__name,
+.rl-ticket__meta,
+.rl-ticket__sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 대기 중: 흐린 빈 티켓, 키는 꺼짐 */
+.rl-ticket.is-idle .rl-ticket__paper { background: var(--c-paper); color: var(--c-panel-2); animation: none; }
+.rl-ticket.is-idle .rl-ticket__name { color: var(--c-periwinkle); }
+.rl-key[aria-disabled='true'] { opacity: .45; pointer-events: none; }
+
 
 .rl-ticket { display: flex; flex-direction: column; align-items: center; }
 
@@ -801,9 +823,7 @@
     margin: 2px 0 0;
     font-family: var(--font-pixel);
     font-size: 30px;
-    line-height: 1.15;
-    word-break: keep-all;
-    overflow-wrap: anywhere;
+    line-height: 1.2;
 }
 
 .rl-ticket__meta { margin: 6px 0 0; font-size: 14px; color: var(--c-panel); }
@@ -816,8 +836,7 @@
 
 /* ---------- 오늘 기록 ---------- */
 
-.rl-log { display: flex; flex-direction: column; gap: 6px; padding: 0 4px; }
-.rl-log[hidden] { display: none; }
+.rl-log { display: flex; flex-direction: column; gap: 6px; }
 
 .rl-log__list {
     margin: 0;
@@ -828,12 +847,15 @@
     gap: 3px;
     font-family: var(--font-pixel-mono);
     font-size: 13px;
-    color: var(--c-panel);
+    color: var(--c-platinum);
 }
 
-.rl-log__list li { display: flex; gap: 10px; }
-.rl-log__list .rl-log__act { margin-left: auto; color: var(--c-panel-2); }
-.rl-log__list .rl-log__act--win { color: var(--c-signal); }
+/* 5줄 고정 (빈 줄은 -- 로 채움) */
+.rl-log__list li { display: flex; gap: 10px; min-height: 20px; white-space: nowrap; }
+.rl-log__list li > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; }
+.rl-log__list .rl-log__act { margin-left: auto; color: var(--c-periwinkle); }
+.rl-log__list .rl-log__act--win { color: var(--c-stripe-1); }
+.rl-log__list .rl-log__empty { color: var(--c-hairline); }
 
 /* ---------- 카세트 A면 / B면 탭 ---------- */
 

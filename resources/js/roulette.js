@@ -53,9 +53,9 @@ const el = {
     resultExclude: $('result-exclude'),
     resultAgain: $('result-again'),
     resultNo: $('result-no'),
+    resultKicker: $('result-kicker'),
     resultTime: $('result-time'),
     log: $('result-log'),
-    logBox: document.querySelector('.rl-log'),
     steps: [...document.querySelectorAll('#steps [data-step]')],
     fields: { loc: $('f-loc'), range: $('f-range'), type: $('f-type'), found: $('f-found'), wheel: $('f-wheel') },
     tabs: [$('tab-a'), $('tab-b')],
@@ -800,12 +800,15 @@ function showResult(place) {
     const walk = Math.max(1, Math.round(place.distance / WALK_M_PER_MIN));
     el.resultTime.textContent = `LR-01 · ${hhmm(new Date())}`;
     el.resultNo.textContent = `NO.${String(log.filter((e) => e.act !== '-').length).padStart(2, '0')}`;
+    el.result.classList.remove('is-idle');
+    el.resultKicker.textContent = 'RESULT';
     el.resultName.textContent = place.name;
+    el.resultName.title = place.name;
     el.resultMeta.textContent = [typeLabel(place.type), place.category !== place.type ? place.category : '', `${place.distance}m`, `도보 약 ${walk}분`].filter(Boolean).join(' · ');
     el.resultAddress.textContent = [place.address, place.phone].filter(Boolean).join(' · ');
     el.resultRoute.href = `https://map.kakao.com/link/to/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
     el.resultLink.href = place.url || `https://map.kakao.com/link/map/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
-    el.result.hidden = false;
+    setTicketActions(true);
     setStatus(`RESULT — #${state.candidates.findIndex((p) => p.id === place.id) + 1} ${place.name}`);
     renderLog();
     highlightWinner(place);
@@ -846,9 +849,18 @@ function markLastResult(act) {
     }
 }
 
+const LOG_ROWS = 5;
+
+/** 최근 5건. 빈 줄도 채워서 칸 높이가 늘 같게 */
 function renderLog() {
-    const log = readLog().slice(0, 5);
-    el.logBox.hidden = log.length === 0;
+    const log = readLog().slice(0, LOG_ROWS);
+    const blanks = Array.from({ length: LOG_ROWS - log.length }, () => {
+        const li = document.createElement('li');
+        li.className = 'rl-log__empty';
+        li.textContent = '--:--  ------';
+        li.setAttribute('aria-hidden', 'true');
+        return li;
+    });
     el.log.replaceChildren(...log.map((e) => {
         const li = document.createElement('li');
         const t = document.createElement('span');
@@ -860,13 +872,36 @@ function renderLog() {
         act.textContent = e.act;
         li.append(t, name, act);
         return li;
-    }));
+    }), ...blanks);
+}
+
+/** 티켓 키 켜고 끄기 (링크는 aria-disabled 로) */
+function setTicketActions(on) {
+    [el.resultRoute, el.resultLink].forEach((a) => {
+        if (on) { a.removeAttribute('aria-disabled'); a.removeAttribute('tabindex'); }
+        else { a.setAttribute('aria-disabled', 'true'); a.setAttribute('tabindex', '-1'); a.removeAttribute('href'); }
+    });
+    el.resultExclude.disabled = !on;
+    el.resultAgain.disabled = !on;
+}
+
+/** 프린터 칸을 대기 티켓으로 (자리는 그대로 두어 아래가 밀리지 않게) */
+function setTicketIdle() {
+    el.result.classList.add('is-idle');
+    el.resultTime.textContent = 'LR-01 · --:--';
+    el.resultNo.textContent = 'NO.--';
+    el.resultKicker.textContent = state.spinning ? 'SPIN' : 'STANDBY';
+    el.resultName.textContent = '—';
+    el.resultName.removeAttribute('title');
+    el.resultMeta.textContent = state.candidates.length >= 1 ? '▶ 돌리기 대기' : '후보 추가 → ▶ 돌리기';
+    el.resultAddress.textContent = '\u00a0';
+    setTicketActions(false);
 }
 
 function clearResult() {
     if (state.winner) restoreView(); // 클로즈업 상태였으면 반경 전체로
     state.winner = null;
-    el.result.hidden = true;
+    setTicketIdle();
     winnerOverlay?.setMap(null);
     winnerMarker?.setMap(null);
 }
@@ -920,6 +955,7 @@ function render() {
     if (state.searchResults.length) renderSearchResults();
     setBusy(state.spinning);
     updateReadout();
+    if (!state.winner) setTicketIdle(); // 대기 문구를 후보 상태에 맞춤
 }
 
 /** 상태 CRT 칸: LOC / RANGE / TYPE / FOUND / WHEEL */
@@ -1076,6 +1112,7 @@ el.radiusButtons.forEach((button) => {
 
 initSlots();
 initCrt();
+setTicketIdle();
 renderLog();
 initMap();
 // 직접 고른 위치가 있으면 거기서 시작 (PC는 기기 위치가 부정확한 경우가 많음). 없으면 바로 현재 위치를 물음
