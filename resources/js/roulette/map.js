@@ -3,6 +3,7 @@
  */
 import { CLOSEUP_LEVEL, DEFAULT_CENTER, KEYS, SIGNAL } from './constants.js';
 import { $, el, REDUCED_MOTION } from './dom.js';
+import { blocked } from './hours.js';
 import { fetchPlaces } from './places.js';
 import { setStatus, updateReadout } from './readout.js';
 import { state } from './state.js';
@@ -187,7 +188,9 @@ export function drawMarkers() {
     const shown = new Map(state.pool.map((p) => [p.id, p]));
     state.pinned.forEach((p, id) => shown.set(id, p));
     const markers = [...shown.values()]
-        .filter((p) => !state.excluded.has(p.id))
+        // 뺀 곳, 그리고 영업중 필터가 켜졌을 때 지금 못 가는 곳(마감·영업 전·휴무·브레이크)은 핀을 숨김.
+        // 정보 없음·아직 모르는 곳은 보여 줌
+        .filter((p) => !state.excluded.has(p.id) && !blocked(p))
         .map((p) => new kakao.maps.Marker({
             position: new kakao.maps.LatLng(p.lat, p.lng),
             title: p.name,
@@ -195,6 +198,7 @@ export function drawMarkers() {
         }));
     clusterer.clear();
     clusterer.addMarkers(markers);
+    $('map').dataset.pins = String(markers.length); // 지금 지도에 뜬 핀 수 (점검용)
 }
 
 /** 카세트 스킨 핀: 번트 오렌지 몸통, 카본 테두리, 베이지 점 */

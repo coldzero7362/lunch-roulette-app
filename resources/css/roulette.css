@@ -1634,6 +1634,24 @@
 
 .rl-ticket__actions { display: inline-flex; flex-wrap: wrap; gap: 3px; max-width: 100%; }
 
+/* 천공 카드 느낌: 영수증 맨 아래 작은 직사각형 구멍 두 줄 (뚫린 자리만 뒤 프린터가 비쳐 어둡게) */
+.rl-ticket__punch {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 14px;
+}
+
+.rl-punch__row { display: flex; justify-content: space-between; }
+
+.rl-punch__hole { width: 4px; height: 8px; }
+
+.rl-punch__hole.is-on {
+    border-radius: .5px;
+    background: #2b2620;
+    box-shadow: inset 0 1px 1px rgb(0 0 0 / .7), 0 1px 0 rgb(255 255 255 / .5);
+}
+
 /* ---------- 오늘 기록 ---------- */
 
 .rl-log { display: flex; flex-direction: column; gap: 6px; }

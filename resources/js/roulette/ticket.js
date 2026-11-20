@@ -6,6 +6,7 @@ import { el, REDUCED_MOTION } from './dom.js';
 import { ensureHours, hoursOf } from './hours.js';
 import { hhmm, logKey, typeLabel, walkMinutes } from './logic/format.js';
 import { hoursText } from './logic/hours.js';
+import { punchColumns, punchDigits } from './logic/punch.js';
 import { clearWinnerMarker, highlightWinner, restoreView } from './map.js';
 import { setStatus, updateSteps } from './readout.js';
 import { placeUrl } from './rows.js';
@@ -26,6 +27,11 @@ export function showResult(place) {
     el.resultMeta.textContent = [typeLabel(place.type), place.category !== place.type ? place.category : '', `${place.distance}m`, `도보 약 ${walkMinutes(place.distance)}분`].filter(Boolean).join(' · ');
     el.resultAddress.textContent = [place.address, place.phone].filter(Boolean).join(' · ');
     setTicketHours(place);
+    // 당첨 가게는 저장해 둔 시간표가 있어도 새로 확인 (임시 휴무 같은 당일 변경)
+    ensureHours([place], { force: true }).then(() => {
+        if (state.winner?.id === place.id) setTicketHours(place);
+    });
+    renderPunch(place);
     el.resultRoute.href = `https://map.kakao.com/link/to/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
     el.resultLink.href = placeUrl(place);
     setTicketActions(true);
@@ -35,6 +41,27 @@ export function showResult(place) {
     updateSteps();
     // 영수증(프린터 칸)으로 스크롤
     el.result.scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'center' });
+}
+
+const PUNCH_COLUMNS = 28;
+
+/**
+ * 천공 카드 느낌만: 영수증 맨 아래 작은 직사각형 구멍 두 줄.
+ * 당첨 정보 숫자로 자리를 정함 (윗줄 = 5 이상, 아랫줄 = 홀수) → 영수증마다 무늬가 조금씩 다름
+ */
+function renderPunch(place) {
+    const holes = punchColumns(punchDigits(place), PUNCH_COLUMNS);
+    const row = (test) => {
+        const line = document.createElement('span');
+        line.className = 'rl-punch__row';
+        line.append(...holes.map((d) => {
+            const hole = document.createElement('span');
+            hole.className = d !== null && test(d) ? 'rl-punch__hole is-on' : 'rl-punch__hole';
+            return hole;
+        }));
+        return line;
+    };
+    el.resultPunch.replaceChildren(row((d) => d >= 5), row((d) => d % 2 === 1));
 }
 
 /** 영수증의 영업 줄. 아직 모르면 받아 와서 채움 */
