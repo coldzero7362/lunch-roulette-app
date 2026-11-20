@@ -42,7 +42,7 @@ return [
         'minute_budget' => (int) env('KAKAO_MINUTE_BUDGET', 600),
         'daily_budget' => (int) env('KAKAO_DAILY_BUDGET', 50000),
         // 영업시간(비공식 장소 상세) 호출은 따로 셈: 몰려도 식당 검색 예산을 먹지 않게
-        'detail_minute_budget' => (int) env('KAKAO_DETAIL_MINUTE_BUDGET', 300),
+        'detail_minute_budget' => (int) env('KAKAO_DETAIL_MINUTE_BUDGET', 600),
         'detail_daily_budget' => (int) env('KAKAO_DETAIL_DAILY_BUDGET', 20000),
     ],
 

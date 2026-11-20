@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\RequestException;
@@ -17,7 +19,8 @@ use Illuminate\Support\Facades\RateLimiter;
  * @phpstan-type Place array{id: string, name: string, type: string, category: string, tags: list<string>, distance: int, address: string, phone: string, url: string, lat: float, lng: float}
  * @phpstan-type RankedPlace array{id: string, name: string, type: string, category: string, tags: list<string>, distance: int, address: string, phone: string, url: string, lat: float, lng: float, match: string}
  * @phpstan-type Location array{name: string, address: string, kind: string, lat: float, lng: float}
- * @phpstan-type Hours array{status: 'open'|'break'|'closed'|'unknown', label: string, info: string, today: string}
+ * @phpstan-type Day array{date: string, off: bool, open: string|null, close: string|null, breaks: list<array{0: string, 1: string}>}
+ * @phpstan-type Hours array{status: 'open'|'break'|'closed'|'unknown', label: string, info: string, today: string, week: list<Day>}
  */
 class KakaoLocal
 {
@@ -37,7 +40,10 @@ class KakaoLocal
     private const PLACE_DETAIL_ENDPOINT = 'https://place-api.map.kakao.com/places/panel3/';
 
     /** @var Hours */
-    private const UNKNOWN_HOURS = ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => ''];
+    private const UNKNOWN_HOURS = ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => '', 'week' => []];
+
+    /** 장소 상세를 한 번에 동시에 부르는 수 */
+    private const DETAIL_CONCURRENCY = 10;
 
     /** 장소 상세 headline.code 중 지금 못 가는 것 */
     private const CLOSED_CODES = ['BEFORE_OPEN', 'CLOSED', 'DAY_OFF'];
@@ -63,7 +69,7 @@ class KakaoLocal
         private readonly string $restApiKey,
         private readonly int $minuteBudget = 600,
         private readonly int $dailyBudget = 50000,
-        private readonly int $detailMinuteBudget = 300,
+        private readonly int $detailMinuteBudget = 600,
         private readonly int $detailDailyBudget = 20000,
     ) {}
 
@@ -185,23 +191,27 @@ class KakaoLocal
     }
 
     /**
-     * 가게별 지금 영업 상태. 공식 로컬 API엔 영업시간이 없어서 카카오맵 웹이 쓰는 장소 상세(비공식)를 읽는다.
+     * 가게별 영업 상태 + 7일치 시간표. 공식 로컬 API엔 영업시간이 없어서 카카오맵 웹이 쓰는 장소 상세(비공식)를 읽는다.
      * 문서가 없는 API라 언제든 막히거나 형식이 바뀔 수 있다: 실패한 가게는 'unknown' 으로 두고 예외를 던지지 않는다.
-     * 상태가 시각에 따라 바뀌므로 짧게(10분) 캐시하고, 실패는 2분만 기억한다.
+     *
+     * 호출을 최대한 줄이려고 캐시를 길게 둔다 (모든 사용자 공용):
+     *   시간표가 있으면 시간표 마지막 날 자정까지 (최대 7일) — '지금 상태'는 브라우저가 시간표로 계산
+     *   시간표가 없으면 10분, 실패는 2분
+     * $fresh 면 캐시를 건너뛰고 다시 묻는다 (당첨 가게의 당일 변경 확인용).
      *
      * @param  list<string>  $ids  카카오 장소 id
      * @return array<string, Hours>
      *
      * @throws KakaoBudgetExceeded
      */
-    public function openHours(array $ids): array
+    public function openHours(array $ids, bool $fresh = false): array
     {
         $ids = array_values(array_unique($ids));
         $result = [];
         $missing = [];
 
         foreach ($ids as $id) {
-            $cached = Cache::get('kakao:hours:'.$id);
+            $cached = $fresh ? null : Cache::get('kakao:hours:'.$id);
             if (is_array($cached)) {
                 /** @var Hours $cached */
                 $result[$id] = $cached;
@@ -212,13 +222,17 @@ class KakaoLocal
 
         if ($missing !== []) {
             $this->reserve(count($missing), detail: true);
-            $responses = Http::pool(fn (Pool $pool) => array_map(
-                fn (string $id) => $pool->as($id)
-                    ->accept('application/json')
-                    ->timeout(5)
-                    ->get(self::PLACE_DETAIL_ENDPOINT.$id),
-                $missing,
-            ));
+            // 비공식 API 를 한꺼번에 수십 번 두드리지 않게 DETAIL_CONCURRENCY 곳씩 나눠 동시에
+            $responses = [];
+            foreach (array_chunk($missing, self::DETAIL_CONCURRENCY) as $chunk) {
+                $responses += Http::pool(fn (Pool $pool) => array_map(
+                    fn (string $id) => $pool->as($id)
+                        ->accept('application/json')
+                        ->timeout(5)
+                        ->get(self::PLACE_DETAIL_ENDPOINT.$id),
+                    $chunk,
+                ));
+            }
 
             foreach ($missing as $id) {
                 $response = $responses[$id] ?? null;
@@ -231,7 +245,7 @@ class KakaoLocal
                 }
 
                 $hours = $this->toHours($response->json('open_hours'));
-                Cache::put('kakao:hours:'.$id, $hours, now()->addMinutes(10));
+                Cache::put('kakao:hours:'.$id, $hours, $this->hoursTtl($hours));
                 $result[$id] = $hours;
             }
         }
@@ -243,6 +257,22 @@ class KakaoLocal
         }
 
         return $ordered;
+    }
+
+    /**
+     * 캐시 기한: 시간표가 있으면 그 마지막 날 자정(한국 시각)까지, 없으면 10분
+     *
+     * @param  Hours  $hours
+     */
+    private function hoursTtl(array $hours): CarbonInterface
+    {
+        $last = end($hours['week']);
+        if ($last === false) {
+            return now()->addMinutes(10);
+        }
+        $until = CarbonImmutable::parse($last['date'], 'Asia/Seoul')->endOfDay();
+
+        return $until->isFuture() ? $until : now()->addMinutes(10);
     }
 
     /**
@@ -295,7 +325,70 @@ class KakaoLocal
             'label' => mb_substr((string) ($headline['display_text'] ?? ''), 0, 20),
             'info' => mb_substr((string) ($headline['display_text_info'] ?? ''), 0, 30),
             'today' => mb_substr($today, 0, 60),
+            'week' => $this->toWeek($openHours['week_from_today'] ?? null),
         ];
+    }
+
+    /**
+     * 오늘부터 7일치 영업 시간표 (브라우저가 하루 동안 저장해 두고 '지금 영업 중인지'를 직접 계산).
+     * 카카오: days[].day_of_the_week_desc "목(11/19)", on_days.start_end_time_desc "11:30 ~ 22:00",
+     *        on_days.break_times_desc ["14:30 ~ 16:30 브레이크타임"], off_days_desc "휴무일"
+     * 형식이 다른 날은 빼고, 연도는 오늘(한국 시각) 기준으로 붙임 (12월에 받은 1월 날짜는 다음 해)
+     *
+     * @return list<Day>
+     */
+    private function toWeek(mixed $week): array
+    {
+        $today = now('Asia/Seoul')->startOfDay();
+        $days = [];
+
+        foreach ((array) (is_array($week) ? ($week['week_periods'] ?? []) : []) as $period) {
+            foreach ((array) ($period['days'] ?? []) as $day) {
+                if (! preg_match('/\((\d{1,2})\/(\d{1,2})\)/', (string) ($day['day_of_the_week_desc'] ?? ''), $m)) {
+                    continue;
+                }
+                $date = $today->setDate($today->year, (int) $m[1], (int) $m[2]);
+                if ($date->lt($today->subMonths(6))) {
+                    $date = $date->addYear();
+                }
+
+                if (! isset($day['on_days'])) {
+                    if (($day['off_days_desc'] ?? null) !== null) {
+                        $days[] = ['date' => $date->toDateString(), 'off' => true, 'open' => null, 'close' => null, 'breaks' => []];
+                    }
+
+                    continue;
+                }
+
+                $range = $this->timeRange((string) ($day['on_days']['start_end_time_desc'] ?? ''));
+                if ($range === null) {
+                    continue;
+                }
+                $breaks = [];
+                foreach ((array) ($day['on_days']['break_times_desc'] ?? []) as $desc) {
+                    if (($b = $this->timeRange((string) $desc)) !== null) {
+                        $breaks[] = $b;
+                    }
+                }
+                $days[] = ['date' => $date->toDateString(), 'off' => false, 'open' => $range[0], 'close' => $range[1], 'breaks' => $breaks];
+            }
+        }
+
+        return $days;
+    }
+
+    /**
+     * "11:30 ~ 22:00 ..." → ['11:30', '22:00']. 형식이 다르면 null
+     *
+     * @return array{0: string, 1: string}|null
+     */
+    private function timeRange(string $text): ?array
+    {
+        if (! preg_match('/(\d{1,2}):(\d{2})\s*~\s*(\d{1,2}):(\d{2})/', $text, $m)) {
+            return null;
+        }
+
+        return [sprintf('%02d:%s', (int) $m[1], $m[2]), sprintf('%02d:%s', (int) $m[3], $m[4])];
     }
 
     /**

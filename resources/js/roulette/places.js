@@ -3,7 +3,7 @@
  */
 import { ACCURACY_WARN_M, HOURS_BATCH, KEYS, SLOTS_DEFAULT, SLOTS_MAX, SLOTS_MIN } from './constants.js';
 import { el, root } from './dom.js';
-import { ensureHours, isShut } from './hours.js';
+import { ensureHours, isShut, loadMapHours } from './hours.js';
 import { shuffle, weightedPick } from './logic/pick.js';
 import { drawMarkers } from './map.js';
 import { setSearchStatus } from './menu-search.js';
@@ -41,6 +41,7 @@ export async function fetchPlaces() {
         clearResult();
         dropAutoCandidates();
         drawMarkers();
+        loadMapHours();
 
         let message = !state.pool.length ? '반경 내 결과 0건 — 반경 확대 또는 종류 변경'
             : state.candidates.length ? 'READY' : 'READY — 자동 채움 또는 메뉴 검색';
