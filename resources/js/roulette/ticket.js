@@ -26,6 +26,10 @@ export function showResult(place) {
     el.resultMeta.textContent = [typeLabel(place.type), place.category !== place.type ? place.category : '', `${place.distance}m`, `도보 약 ${walkMinutes(place.distance)}분`].filter(Boolean).join(' · ');
     el.resultAddress.textContent = [place.address, place.phone].filter(Boolean).join(' · ');
     setTicketHours(place);
+    // 당첨 가게는 저장해 둔 시간표가 있어도 새로 확인 (임시 휴무 같은 당일 변경)
+    ensureHours([place], { force: true }).then(() => {
+        if (state.winner?.id === place.id) setTicketHours(place);
+    });
     el.resultRoute.href = `https://map.kakao.com/link/to/${encodeURIComponent(place.name)},${place.lat},${place.lng}`;
     el.resultLink.href = placeUrl(place);
     setTicketActions(true);

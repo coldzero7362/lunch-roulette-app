@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\RateLimiter;
  * @phpstan-type Place array{id: string, name: string, type: string, category: string, tags: list<string>, distance: int, address: string, phone: string, url: string, lat: float, lng: float}
  * @phpstan-type RankedPlace array{id: string, name: string, type: string, category: string, tags: list<string>, distance: int, address: string, phone: string, url: string, lat: float, lng: float, match: string}
  * @phpstan-type Location array{name: string, address: string, kind: string, lat: float, lng: float}
- * @phpstan-type Hours array{status: 'open'|'break'|'closed'|'unknown', label: string, info: string, today: string}
+ * @phpstan-type Day array{date: string, off: bool, open: string|null, close: string|null, breaks: list<array{0: string, 1: string}>}
+ * @phpstan-type Hours array{status: 'open'|'break'|'closed'|'unknown', label: string, info: string, today: string, week: list<Day>}
  */
 class KakaoLocal
 {
@@ -37,7 +38,7 @@ class KakaoLocal
     private const PLACE_DETAIL_ENDPOINT = 'https://place-api.map.kakao.com/places/panel3/';
 
     /** @var Hours */
-    private const UNKNOWN_HOURS = ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => ''];
+    private const UNKNOWN_HOURS = ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => '', 'week' => []];
 
     /** 장소 상세를 한 번에 동시에 부르는 수 */
     private const DETAIL_CONCURRENCY = 10;
@@ -302,7 +303,70 @@ class KakaoLocal
             'label' => mb_substr((string) ($headline['display_text'] ?? ''), 0, 20),
             'info' => mb_substr((string) ($headline['display_text_info'] ?? ''), 0, 30),
             'today' => mb_substr($today, 0, 60),
+            'week' => $this->toWeek($openHours['week_from_today'] ?? null),
         ];
+    }
+
+    /**
+     * 오늘부터 7일치 영업 시간표 (브라우저가 하루 동안 저장해 두고 '지금 영업 중인지'를 직접 계산).
+     * 카카오: days[].day_of_the_week_desc "목(11/19)", on_days.start_end_time_desc "11:30 ~ 22:00",
+     *        on_days.break_times_desc ["14:30 ~ 16:30 브레이크타임"], off_days_desc "휴무일"
+     * 형식이 다른 날은 빼고, 연도는 오늘(한국 시각) 기준으로 붙임 (12월에 받은 1월 날짜는 다음 해)
+     *
+     * @return list<Day>
+     */
+    private function toWeek(mixed $week): array
+    {
+        $today = now('Asia/Seoul')->startOfDay();
+        $days = [];
+
+        foreach ((array) (is_array($week) ? ($week['week_periods'] ?? []) : []) as $period) {
+            foreach ((array) ($period['days'] ?? []) as $day) {
+                if (! preg_match('/\((\d{1,2})\/(\d{1,2})\)/', (string) ($day['day_of_the_week_desc'] ?? ''), $m)) {
+                    continue;
+                }
+                $date = $today->setDate($today->year, (int) $m[1], (int) $m[2]);
+                if ($date->lt($today->subMonths(6))) {
+                    $date = $date->addYear();
+                }
+
+                if (! isset($day['on_days'])) {
+                    if (($day['off_days_desc'] ?? null) !== null) {
+                        $days[] = ['date' => $date->toDateString(), 'off' => true, 'open' => null, 'close' => null, 'breaks' => []];
+                    }
+
+                    continue;
+                }
+
+                $range = $this->timeRange((string) ($day['on_days']['start_end_time_desc'] ?? ''));
+                if ($range === null) {
+                    continue;
+                }
+                $breaks = [];
+                foreach ((array) ($day['on_days']['break_times_desc'] ?? []) as $desc) {
+                    if (($b = $this->timeRange((string) $desc)) !== null) {
+                        $breaks[] = $b;
+                    }
+                }
+                $days[] = ['date' => $date->toDateString(), 'off' => false, 'open' => $range[0], 'close' => $range[1], 'breaks' => $breaks];
+            }
+        }
+
+        return $days;
+    }
+
+    /**
+     * "11:30 ~ 22:00 ..." → ['11:30', '22:00']. 형식이 다르면 null
+     *
+     * @return array{0: string, 1: string}|null
+     */
+    private function timeRange(string $text): ?array
+    {
+        if (! preg_match('/(\d{1,2}):(\d{2})\s*~\s*(\d{1,2}):(\d{2})/', $text, $m)) {
+            return null;
+        }
+
+        return [sprintf('%02d:%s', (int) $m[1], $m[2]), sprintf('%02d:%s', (int) $m[3], $m[4])];
     }
 
     /**

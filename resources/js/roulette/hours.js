@@ -1,20 +1,35 @@
 /**
- * 영업 상태: 후보 가게의 지금 영업 상태를 받아 두고, 배지·영업중 필터에 씀.
+ * 영업 상태: 가게별 영업 시간표를 받아 두고, 지금 상태(배지·영업중 필터·지도 핀)를 계산.
+ *
+ * 서버가 주는 7일치 시간표(week)를 브라우저에 하루 동안 저장해 두고, '지금 영업 중인지'는 시각마다 직접 계산한다.
+ * → 같은 날 다시 열어도 다시 묻지 않고, 문을 열고 닫는 것도 조회 없이 반영 (1분마다 다시 계산).
+ * 시간표가 없는 가게(정보 없음·형식이 다름)는 서버가 준 그 순간의 상태를 10분만 씀.
  */
 import { HOURS_BATCH, KEYS, MAP_HOURS_LIMIT } from './constants.js';
 import { el, root } from './dom.js';
 import { freshHours, hoursBadge, isShutStatus, unknownHours } from './logic/hours.js';
+import { dateKey, statusAt } from './logic/schedule.js';
 import { drawMarkers } from './map.js';
 import { api } from './net.js';
 import { setStatus } from './readout.js';
 import { render } from './render.js';
 import { state } from './state.js';
 
+const STORE_MAX = 1500; // 브라우저에 저장해 둘 가게 수 상한
 const inFlight = new Set();
 let queueTimer;
+let saveTimer;
 
+/** 가게의 지금 상태 { status, label, info, today } (모르면 null → 다시 물어봄) */
 export function hoursOf(place) {
-    return freshHours(state.hours.get(place.id));
+    const h = state.hours.get(place.id);
+    if (!h) return null;
+    // 오늘 받은 시간표가 있으면 지금 시각으로 계산
+    if (h.week?.length && h.day === dateKey(new Date())) {
+        const now = statusAt(h.week);
+        if (now) return { ...h, ...now };
+    }
+    return freshHours(h);
 }
 
 /** 지금 못 가는 곳 (영업 전·마감·휴무·브레이크) */
@@ -28,11 +43,12 @@ export function blocked(place) {
 }
 
 /**
- * 가게들의 영업 상태를 서버에서 받아 둠 (이미 받은 지 10분 안 된 곳은 건너뜀).
+ * 가게들의 영업 시간표를 서버에서 받아 둠 (오늘 받은 시간표가 있거나, 받은 지 10분 안 된 곳은 건너뜀).
+ * force 면 있어도 새로 받음 (당첨 가게: 임시 휴무 같은 당일 변경 확인용).
  * 비공식 API 를 쓰므로 실패해도 막지 않는다: 그 가게는 정보 없음으로 두고 1분 뒤 다시 물어봄.
  */
-export async function ensureHours(places) {
-    const ids = [...new Set(places.filter((p) => !hoursOf(p) && !inFlight.has(p.id)).map((p) => p.id))];
+export async function ensureHours(places, { force = false } = {}) {
+    const ids = [...new Set(places.filter((p) => (force || !hoursOf(p)) && !inFlight.has(p.id)).map((p) => p.id))];
     if (!ids.length) return;
     ids.forEach((id) => inFlight.add(id));
 
@@ -46,9 +62,10 @@ export async function ensureHours(places) {
             const res = await api(url);
             const body = res.ok ? await res.json() : {};
             const now = Date.now();
+            const day = dateKey(new Date());
             batch.forEach((id) => {
                 const h = body.hours?.[id];
-                state.hours.set(id, h ? { ...unknownHours(now), ...h, at: now } : unknownHours(now, true));
+                state.hours.set(id, h ? { ...unknownHours(now), week: [], ...h, at: now, day } : unknownHours(now, true));
             });
         } catch {
             batch.forEach((id) => state.hours.set(id, unknownHours(Date.now(), true)));
@@ -56,7 +73,36 @@ export async function ensureHours(places) {
             batch.forEach((id) => inFlight.delete(id));
         }
     }));
+    saveSoon();
 }
+
+/* ---------- 브라우저 저장 (하루) ---------- */
+
+/** 오늘 받은 시간표만 저장 (상태만 있는 가게는 10분짜리라 저장 안 함) */
+function saveSoon() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+        const today = dateKey(new Date());
+        const keep = [...state.hours]
+            .filter(([, h]) => h.week?.length && h.day === today)
+            .sort(([, a], [, b]) => b.at - a.at)
+            .slice(0, STORE_MAX);
+        try { localStorage.setItem(KEYS.hours, JSON.stringify(Object.fromEntries(keep))); } catch { /* 저장 못 해도 동작 */ }
+    }, 500);
+}
+
+/** 오늘 저장해 둔 시간표를 불러옴 (어제 것은 버림) */
+function loadSaved() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(KEYS.hours) ?? '{}');
+        const today = dateKey(new Date());
+        Object.entries(saved).forEach(([id, h]) => {
+            if (h?.day === today && Array.isArray(h.week) && h.week.length) state.hours.set(id, h);
+        });
+    } catch { /* 깨졌으면 새로 받음 */ }
+}
+
+/* ---------- 화면 반영 ---------- */
 
 /** 후보가 바뀌면 배지용으로 영업 상태를 뒤에서 받아 옴 */
 export function queueHours() {
@@ -84,6 +130,19 @@ export async function loadMapHours() {
         if (run !== mapHoursRun || pool !== state.pool || !state.openOnly) return;
         drawMarkers();
     }
+}
+
+/** 1분마다: 시간이 흘러 문을 열고 닫은 것을 배지·돌림판·지도에 반영 (조회 없이 다시 계산만) */
+function startClock() {
+    let minute = new Date().getMinutes();
+    setInterval(() => {
+        const now = new Date();
+        if (now.getMinutes() === minute) return;
+        minute = now.getMinutes();
+        if (state.spinning || state.checking || !state.hours.size) return;
+        render();
+        if (state.openOnly) drawMarkers();
+    }, 5000);
 }
 
 /** 후보 줄 배지: 영업중 / 곧마감 / 브레이크 / 영업전·영업마감 / 정보없음 */
@@ -114,6 +173,8 @@ function setOpenOnly(on, save = true) {
 }
 
 export function initOpenOnly() {
+    loadSaved();
+    startClock();
     let saved = null;
     try { saved = localStorage.getItem(KEYS.openOnly); } catch { /* 비공개 모드 등 */ }
     setOpenOnly(saved === 'on', false);

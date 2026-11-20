@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -28,6 +29,7 @@ class OpenHoursTest extends TestCase
 
     public function test_maps_headline_codes_and_today_hours(): void
     {
+        $this->travelTo(CarbonImmutable::parse('2026-11-19 12:00', 'Asia/Seoul'));
         Http::fake([
             'place-api.map.kakao.com/places/panel3/101' => Http::response($this->detail('OPEN', '영업 중', '22:00 까지', [
                 ['day_of_the_week_desc' => '목(11/19)', 'on_days' => ['start_end_time_desc' => '11:30 ~ 22:00'], 'is_highlight' => true],
@@ -52,15 +54,22 @@ class OpenHoursTest extends TestCase
         $this->getJson(route('restaurants.hours', ['ids' => ['101', '102', '103', '104', '105', '106', '107', '108', '109']]))
             ->assertOk()
             ->assertExactJson(['hours' => [
-                '101' => ['status' => 'open', 'label' => '영업 중', 'info' => '22:00 까지', 'today' => '11:30 ~ 22:00'],
-                '102' => ['status' => 'break', 'label' => '브레이크타임', 'info' => '16:30 오픈', 'today' => '11:00 ~ 20:30 (브레이크 14:30 ~ 16:30)'],
-                '103' => ['status' => 'closed', 'label' => '영업 마감', 'info' => '내일 10:00 오픈', 'today' => '휴무일'],
-                '104' => ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => ''],
-                '105' => ['status' => 'open', 'label' => '곧 영업 마감', 'info' => '22:00 까지', 'today' => ''],
-                '106' => ['status' => 'closed', 'label' => '휴무일', 'info' => '', 'today' => ''],
-                '107' => ['status' => 'unknown', 'label' => '영업 정보', 'info' => '', 'today' => ''],
-                '108' => ['status' => 'closed', 'label' => '임시 휴무', 'info' => '', 'today' => ''],
-                '109' => ['status' => 'unknown', 'label' => '확인 필요', 'info' => '', 'today' => ''],
+                '101' => ['status' => 'open', 'label' => '영업 중', 'info' => '22:00 까지', 'today' => '11:30 ~ 22:00', 'week' => [
+                    ['date' => '2026-11-19', 'off' => false, 'open' => '11:30', 'close' => '22:00', 'breaks' => []],
+                ]],
+                '102' => ['status' => 'break', 'label' => '브레이크타임', 'info' => '16:30 오픈', 'today' => '11:00 ~ 20:30 (브레이크 14:30 ~ 16:30)', 'week' => [
+                    ['date' => '2026-11-18', 'off' => false, 'open' => '10:00', 'close' => '21:00', 'breaks' => []],
+                    ['date' => '2026-11-19', 'off' => false, 'open' => '11:00', 'close' => '20:30', 'breaks' => [['14:30', '16:30']]],
+                ]],
+                '103' => ['status' => 'closed', 'label' => '영업 마감', 'info' => '내일 10:00 오픈', 'today' => '휴무일', 'week' => [
+                    ['date' => '2026-11-21', 'off' => true, 'open' => null, 'close' => null, 'breaks' => []],
+                ]],
+                '104' => ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => '', 'week' => []],
+                '105' => ['status' => 'open', 'label' => '곧 영업 마감', 'info' => '22:00 까지', 'today' => '', 'week' => []],
+                '106' => ['status' => 'closed', 'label' => '휴무일', 'info' => '', 'today' => '', 'week' => []],
+                '107' => ['status' => 'unknown', 'label' => '영업 정보', 'info' => '', 'today' => '', 'week' => []],
+                '108' => ['status' => 'closed', 'label' => '임시 휴무', 'info' => '', 'today' => '', 'week' => []],
+                '109' => ['status' => 'unknown', 'label' => '확인 필요', 'info' => '', 'today' => '', 'week' => []],
             ]]);
     }
 
@@ -131,6 +140,24 @@ class OpenHoursTest extends TestCase
             ->assertHeader('Retry-After', '60');
 
         Http::assertNothingSent();
+    }
+
+    public function test_week_dates_roll_into_next_year_and_odd_rows_are_skipped(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-12-30 12:00', 'Asia/Seoul'));
+        Http::fake(['place-api.map.kakao.com/*' => Http::response($this->detail('OPEN', '영업 중', '', [
+            ['day_of_the_week_desc' => '수(12/30)', 'on_days' => ['start_end_time_desc' => '19:00 ~ 03:00', 'break_times_desc' => ['22:00 ~ 22:30 브레이크타임']]],
+            ['day_of_the_week_desc' => '목(1/1)', 'off_days_desc' => '휴무일'],
+            ['day_of_the_week_desc' => '금(1/2)', 'on_days' => ['start_end_time_desc' => '예약 문의']],
+            ['day_of_the_week_desc' => '토요일', 'on_days' => ['start_end_time_desc' => '10:00 ~ 20:00']],
+        ]))]);
+
+        $this->getJson(route('restaurants.hours', ['ids' => ['801']]))
+            ->assertOk()
+            ->assertExactJson(['hours' => ['801' => ['status' => 'open', 'label' => '영업 중', 'info' => '', 'today' => '', 'week' => [
+                ['date' => '2026-12-30', 'off' => false, 'open' => '19:00', 'close' => '03:00', 'breaks' => [['22:00', '22:30']]],
+                ['date' => '2027-01-01', 'off' => true, 'open' => null, 'close' => null, 'breaks' => []],
+            ]]]]);
     }
 
     public function test_many_places_are_fetched_in_small_concurrent_chunks(): void

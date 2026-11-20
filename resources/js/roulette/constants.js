@@ -11,6 +11,7 @@ export const KEYS = {
     log: 'lunch-roulette:log', // 오늘 결과 기록 (날짜별)
     openOnly: 'lunch-roulette:open-only', // 영업중 토글
     crt: 'lunch-roulette:crt',
+    hours: 'lunch-roulette:hours', // 오늘 받은 가게별 영업 시간표
 };
 
 export const ACCURACY_WARN_M = 1000; // 기기 위치 오차가 이보다 크면 안내
