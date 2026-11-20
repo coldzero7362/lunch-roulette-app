@@ -44,7 +44,7 @@ export async function fetchPlaces() {
         loadMapHours();
 
         let message = !state.pool.length ? '반경 내 결과 0건 — 반경 확대 또는 종류 변경'
-            : state.candidates.length ? 'READY' : 'READY — 자동 채움 또는 메뉴 검색';
+            : state.candidates.length ? 'READY' : 'READY — ▶ SPIN (빈 후보는 자동으로 채움)';
         const accuracy = state.place?.accuracy;
         if (accuracy > ACCURACY_WARN_M) {
             message += ` · 위치 오차 ±${(accuracy / 1000).toFixed(1)}km — 위치 검색 권장`;
