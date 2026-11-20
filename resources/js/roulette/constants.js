@@ -11,12 +11,14 @@ export const KEYS = {
     log: 'lunch-roulette:log', // 오늘 결과 기록 (날짜별)
     openOnly: 'lunch-roulette:open-only', // 영업중 토글
     crt: 'lunch-roulette:crt',
+    hours: 'lunch-roulette:hours', // 오늘 받은 가게별 영업 시간표
 };
 
 export const ACCURACY_WARN_M = 1000; // 기기 위치 오차가 이보다 크면 안내
 export const HOURS_TTL_MS = 10 * 60 * 1000; // 영업 상태 재조회 간격 (서버 캐시와 같음)
 export const HOURS_RETRY_MS = 60 * 1000; // 영업 상태를 못 받았을 때 다시 물어보기까지
-export const HOURS_BATCH = 12; // 서버가 한 번에 받는 가게 수
+export const HOURS_BATCH = 40; // 서버가 한 번에 받는 가게 수
+export const MAP_HOURS_LIMIT = 300; // 영업중 필터일 때 지도 핀용으로 영업시간을 받아 둘 가까운 가게 수
 export const WALK_M_PER_MIN = 67; // 도보 약 4km/h
 export const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }; // 위치를 못 받을 때: 서울시청
 export const CLOSEUP_LEVEL = 2; // 당첨 가게 클로즈업 (약 30m 축척, 묶음이 풀려 골목까지 보임)
