@@ -39,6 +39,9 @@ class KakaoLocal
     /** @var Hours */
     private const UNKNOWN_HOURS = ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => ''];
 
+    /** 장소 상세를 한 번에 동시에 부르는 수 */
+    private const DETAIL_CONCURRENCY = 10;
+
     /** 장소 상세 headline.code 중 지금 못 가는 것 */
     private const CLOSED_CODES = ['BEFORE_OPEN', 'CLOSED', 'DAY_OFF'];
 
@@ -63,7 +66,7 @@ class KakaoLocal
         private readonly string $restApiKey,
         private readonly int $minuteBudget = 600,
         private readonly int $dailyBudget = 50000,
-        private readonly int $detailMinuteBudget = 300,
+        private readonly int $detailMinuteBudget = 600,
         private readonly int $detailDailyBudget = 20000,
     ) {}
 
@@ -212,13 +215,17 @@ class KakaoLocal
 
         if ($missing !== []) {
             $this->reserve(count($missing), detail: true);
-            $responses = Http::pool(fn (Pool $pool) => array_map(
-                fn (string $id) => $pool->as($id)
-                    ->accept('application/json')
-                    ->timeout(5)
-                    ->get(self::PLACE_DETAIL_ENDPOINT.$id),
-                $missing,
-            ));
+            // 비공식 API 를 한꺼번에 수십 번 두드리지 않게 DETAIL_CONCURRENCY 곳씩 나눠 동시에
+            $responses = [];
+            foreach (array_chunk($missing, self::DETAIL_CONCURRENCY) as $chunk) {
+                $responses += Http::pool(fn (Pool $pool) => array_map(
+                    fn (string $id) => $pool->as($id)
+                        ->accept('application/json')
+                        ->timeout(5)
+                        ->get(self::PLACE_DETAIL_ENDPOINT.$id),
+                    $chunk,
+                ));
+            }
 
             foreach ($missing as $id) {
                 $response = $responses[$id] ?? null;

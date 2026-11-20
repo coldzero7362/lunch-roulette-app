@@ -1,9 +1,10 @@
 /**
  * 영업 상태: 후보 가게의 지금 영업 상태를 받아 두고, 배지·영업중 필터에 씀.
  */
-import { HOURS_BATCH, KEYS } from './constants.js';
+import { HOURS_BATCH, KEYS, MAP_HOURS_LIMIT } from './constants.js';
 import { el, root } from './dom.js';
 import { freshHours, hoursBadge, isShutStatus, unknownHours } from './logic/hours.js';
+import { drawMarkers } from './map.js';
 import { api } from './net.js';
 import { setStatus } from './readout.js';
 import { render } from './render.js';
@@ -68,6 +69,23 @@ export function queueHours() {
     }, 250);
 }
 
+/**
+ * 영업중 필터가 켜져 있으면 지도에 뜬 가게들(가까운 MAP_HOURS_LIMIT 곳)의 영업시간을 받아 두고 핀을 다시 그림.
+ * 묶음마다 받는 대로 바로 반영 (다 받을 때까지 기다리지 않음). 조회 중 반경이 바뀌면 멈춤
+ */
+let mapHoursRun = 0;
+export async function loadMapHours() {
+    if (!state.openOnly || !state.pool.length) return;
+    const run = ++mapHoursRun;
+    const pool = state.pool;
+    const targets = pool.slice(0, MAP_HOURS_LIMIT).filter((p) => !hoursOf(p));
+    for (let i = 0; i < targets.length; i += HOURS_BATCH) {
+        await ensureHours(targets.slice(i, i + HOURS_BATCH));
+        if (run !== mapHoursRun || pool !== state.pool || !state.openOnly) return;
+        drawMarkers();
+    }
+}
+
 /** 후보 줄 배지: 영업중 / 곧마감 / 브레이크 / 영업전·영업마감 / 정보없음 */
 export function hoursTag(place) {
     const badge = hoursBadge(hoursOf(place));
@@ -85,6 +103,8 @@ function setOpenOnly(on, save = true) {
         try { localStorage.setItem(KEYS.openOnly, on ? 'on' : 'off'); } catch { /* 저장 못 해도 동작 */ }
     }
     render();
+    drawMarkers();
+    loadMapHours();
     if (on && state.candidates.length) {
         const shut = state.candidates.filter(isShut).length;
         setStatus(shut ? `영업중 필터 ON — 후보 ${shut}곳 추첨 제외` : '영업중 필터 ON');

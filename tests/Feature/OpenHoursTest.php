@@ -116,7 +116,7 @@ class OpenHoursTest extends TestCase
 
         $this->getJson(route('restaurants.hours'))->assertUnprocessable()->assertJsonValidationErrors(['ids']);
         $this->getJson(route('restaurants.hours', ['ids' => ['../etc']]))->assertUnprocessable()->assertJsonValidationErrors(['ids.0']);
-        $this->getJson(route('restaurants.hours', ['ids' => array_map('strval', range(1, 13))]))->assertUnprocessable()->assertJsonValidationErrors(['ids']);
+        $this->getJson(route('restaurants.hours', ['ids' => array_map('strval', range(1, 41))]))->assertUnprocessable()->assertJsonValidationErrors(['ids']);
 
         Http::assertNothingSent();
     }
@@ -131,6 +131,18 @@ class OpenHoursTest extends TestCase
             ->assertHeader('Retry-After', '60');
 
         Http::assertNothingSent();
+    }
+
+    public function test_many_places_are_fetched_in_small_concurrent_chunks(): void
+    {
+        Http::fake(['place-api.map.kakao.com/*' => Http::response($this->detail('OPEN', '영업 중', '', []))]);
+        $ids = array_map(fn (int $i) => (string) (900 + $i), range(1, 25));
+
+        $this->getJson(route('restaurants.hours', ['ids' => $ids]))
+            ->assertOk()
+            ->assertJsonCount(25, 'hours');
+
+        Http::assertSentCount(25);
     }
 
     public function test_hours_do_not_spend_the_search_budget(): void

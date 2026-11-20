@@ -16,8 +16,8 @@ class RestaurantController extends Controller
 {
     public const RADII = [300, 500, 1000];
 
-    /** 영업시간은 가게마다 따로 불러야 해서 한 번에 이만큼까지 (후보 슬롯 최대치와 맞춤) */
-    public const MAX_HOURS_IDS = 12;
+    /** 영업시간은 가게마다 따로 불러야 해서 한 번에 이만큼까지 (지도 핀 거르기용으로 여러 곳을 묶어 받음) */
+    public const MAX_HOURS_IDS = 40;
 
     /**
      * 좌표 반경 안의 식당 목록 (룰렛 후보). types[] 로 종류를 고를 수 있다.
