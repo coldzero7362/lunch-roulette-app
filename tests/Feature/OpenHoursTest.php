@@ -160,6 +160,40 @@ class OpenHoursTest extends TestCase
             ]]]]);
     }
 
+    public function test_schedules_stay_cached_until_their_last_day(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-19 09:00', 'Asia/Seoul'));
+        Http::fake(['place-api.map.kakao.com/*' => Http::response($this->detail('BEFORE_OPEN', '영업 전', '11:00 오픈', [
+            ['day_of_the_week_desc' => '목(11/19)', 'on_days' => ['start_end_time_desc' => '11:00 ~ 21:00']],
+            ['day_of_the_week_desc' => '수(11/25)', 'on_days' => ['start_end_time_desc' => '11:00 ~ 21:00']],
+        ]))]);
+
+        $this->getJson(route('restaurants.hours', ['ids' => ['701']]))->assertOk();
+        // 며칠 뒤에도 시간표 마지막 날(11/25) 안이면 다시 묻지 않음
+        $this->travelTo(CarbonImmutable::parse('2026-11-25 20:00', 'Asia/Seoul'));
+        $this->getJson(route('restaurants.hours', ['ids' => ['701']]))->assertOk();
+        Http::assertSentCount(1);
+
+        // 마지막 날이 지나면 다시 물음
+        $this->travelTo(CarbonImmutable::parse('2026-11-26 09:00', 'Asia/Seoul'));
+        $this->getJson(route('restaurants.hours', ['ids' => ['701']]))->assertOk();
+        Http::assertSentCount(2);
+    }
+
+    public function test_fresh_skips_the_cache_for_a_single_place(): void
+    {
+        Http::fake(['place-api.map.kakao.com/*' => Http::response($this->detail('OPEN', '영업 중', '', []))]);
+
+        $this->getJson(route('restaurants.hours', ['ids' => ['702']]))->assertOk();
+        $this->getJson(route('restaurants.hours', ['ids' => ['702'], 'fresh' => 1]))->assertOk();
+        Http::assertSentCount(2);
+
+        // 한 번에 여러 곳을 fresh 로 묻는 건 막음
+        $this->getJson(route('restaurants.hours', ['ids' => ['702', '703'], 'fresh' => 1]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['ids']);
+    }
+
     public function test_many_places_are_fetched_in_small_concurrent_chunks(): void
     {
         Http::fake(['place-api.map.kakao.com/*' => Http::response($this->detail('OPEN', '영업 중', '', []))]);

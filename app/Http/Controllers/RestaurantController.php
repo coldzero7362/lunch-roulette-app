@@ -75,13 +75,16 @@ class RestaurantController extends Controller
      */
     public function hours(Request $request, KakaoLocal $kakao): JsonResponse
     {
+        // fresh: 서버 캐시를 건너뛰고 카카오에 다시 물음 (당첨 가게 확인용). 남용 막으려 한 곳만
+        $fresh = $request->boolean('fresh');
         $data = $request->validate([
-            'ids' => ['required', 'array', 'min:1', 'max:'.self::MAX_HOURS_IDS],
+            'ids' => ['required', 'array', 'min:1', 'max:'.($fresh ? 1 : self::MAX_HOURS_IDS)],
             'ids.*' => ['required', 'string', 'regex:/^\d{1,15}$/'],
+            'fresh' => ['sometimes', 'boolean'],
         ]);
 
         try {
-            $hours = $kakao->openHours(array_values($data['ids']));
+            $hours = $kakao->openHours(array_values($data['ids']), $fresh);
         } catch (KakaoBudgetExceeded) {
             return $this->busy();
         }

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\RequestException;
@@ -189,23 +191,27 @@ class KakaoLocal
     }
 
     /**
-     * 가게별 지금 영업 상태. 공식 로컬 API엔 영업시간이 없어서 카카오맵 웹이 쓰는 장소 상세(비공식)를 읽는다.
+     * 가게별 영업 상태 + 7일치 시간표. 공식 로컬 API엔 영업시간이 없어서 카카오맵 웹이 쓰는 장소 상세(비공식)를 읽는다.
      * 문서가 없는 API라 언제든 막히거나 형식이 바뀔 수 있다: 실패한 가게는 'unknown' 으로 두고 예외를 던지지 않는다.
-     * 상태가 시각에 따라 바뀌므로 짧게(10분) 캐시하고, 실패는 2분만 기억한다.
+     *
+     * 호출을 최대한 줄이려고 캐시를 길게 둔다 (모든 사용자 공용):
+     *   시간표가 있으면 시간표 마지막 날 자정까지 (최대 7일) — '지금 상태'는 브라우저가 시간표로 계산
+     *   시간표가 없으면 10분, 실패는 2분
+     * $fresh 면 캐시를 건너뛰고 다시 묻는다 (당첨 가게의 당일 변경 확인용).
      *
      * @param  list<string>  $ids  카카오 장소 id
      * @return array<string, Hours>
      *
      * @throws KakaoBudgetExceeded
      */
-    public function openHours(array $ids): array
+    public function openHours(array $ids, bool $fresh = false): array
     {
         $ids = array_values(array_unique($ids));
         $result = [];
         $missing = [];
 
         foreach ($ids as $id) {
-            $cached = Cache::get('kakao:hours:'.$id);
+            $cached = $fresh ? null : Cache::get('kakao:hours:'.$id);
             if (is_array($cached)) {
                 /** @var Hours $cached */
                 $result[$id] = $cached;
@@ -239,7 +245,7 @@ class KakaoLocal
                 }
 
                 $hours = $this->toHours($response->json('open_hours'));
-                Cache::put('kakao:hours:'.$id, $hours, now()->addMinutes(10));
+                Cache::put('kakao:hours:'.$id, $hours, $this->hoursTtl($hours));
                 $result[$id] = $hours;
             }
         }
@@ -251,6 +257,22 @@ class KakaoLocal
         }
 
         return $ordered;
+    }
+
+    /**
+     * 캐시 기한: 시간표가 있으면 그 마지막 날 자정(한국 시각)까지, 없으면 10분
+     *
+     * @param  Hours  $hours
+     */
+    private function hoursTtl(array $hours): CarbonInterface
+    {
+        $last = end($hours['week']);
+        if ($last === false) {
+            return now()->addMinutes(10);
+        }
+        $until = CarbonImmutable::parse($last['date'], 'Asia/Seoul')->endOfDay();
+
+        return $until->isFuture() ? $until : now()->addMinutes(10);
     }
 
     /**

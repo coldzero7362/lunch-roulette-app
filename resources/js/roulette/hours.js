@@ -1,8 +1,9 @@
 /**
  * 영업 상태: 가게별 영업 시간표를 받아 두고, 지금 상태(배지·영업중 필터·지도 핀)를 계산.
  *
- * 서버가 주는 7일치 시간표(week)를 브라우저에 하루 동안 저장해 두고, '지금 영업 중인지'는 시각마다 직접 계산한다.
- * → 같은 날 다시 열어도 다시 묻지 않고, 문을 열고 닫는 것도 조회 없이 반영 (1분마다 다시 계산).
+ * 서버가 주는 7일치 시간표(week)를 브라우저에 저장해 두고(오늘이 시간표 안에 있는 동안, 최대 7일),
+ * '지금 영업 중인지'는 시각마다 직접 계산한다.
+ * → 다시 열어도 다시 묻지 않고, 문을 열고 닫는 것도 조회 없이 반영 (1분마다 다시 계산).
  * 시간표가 없는 가게(정보 없음·형식이 다름)는 서버가 준 그 순간의 상태를 10분만 씀.
  */
 import { HOURS_BATCH, KEYS, MAP_HOURS_LIMIT } from './constants.js';
@@ -24,8 +25,8 @@ let saveTimer;
 export function hoursOf(place) {
     const h = state.hours.get(place.id);
     if (!h) return null;
-    // 오늘 받은 시간표가 있으면 지금 시각으로 계산
-    if (h.week?.length && h.day === dateKey(new Date())) {
+    // 오늘이 들어 있는 시간표가 있으면 지금 시각으로 계산
+    if (h.week?.length) {
         const now = statusAt(h.week);
         if (now) return { ...h, ...now };
     }
@@ -44,7 +45,7 @@ export function blocked(place) {
 
 /**
  * 가게들의 영업 시간표를 서버에서 받아 둠 (오늘 받은 시간표가 있거나, 받은 지 10분 안 된 곳은 건너뜀).
- * force 면 있어도 새로 받음 (당첨 가게: 임시 휴무 같은 당일 변경 확인용).
+ * force 면 브라우저·서버 캐시를 모두 건너뛰고 새로 받음 (당첨 가게 한 곳: 임시 휴무 같은 당일 변경 확인용).
  * 비공식 API 를 쓰므로 실패해도 막지 않는다: 그 가게는 정보 없음으로 두고 1분 뒤 다시 물어봄.
  */
 export async function ensureHours(places, { force = false } = {}) {
@@ -58,6 +59,7 @@ export async function ensureHours(places, { force = false } = {}) {
     await Promise.all(batches.map(async (batch) => {
         const url = new URL(root.dataset.hoursUrl);
         batch.forEach((id) => url.searchParams.append('ids[]', id));
+        if (force && batch.length === 1) url.searchParams.set('fresh', '1');
         try {
             const res = await api(url);
             const body = res.ok ? await res.json() : {};
@@ -76,28 +78,29 @@ export async function ensureHours(places, { force = false } = {}) {
     saveSoon();
 }
 
-/* ---------- 브라우저 저장 (하루) ---------- */
+/* ---------- 브라우저 저장 (시간표가 오늘을 덮는 동안) ---------- */
 
-/** 오늘 받은 시간표만 저장 (상태만 있는 가게는 10분짜리라 저장 안 함) */
+/** 오늘이 들어 있는 시간표 */
+const coversToday = (h) => Array.isArray(h?.week) && h.week.some((d) => d.date === dateKey(new Date()));
+
+/** 오늘이 들어 있는 시간표만 저장 (상태만 있는 가게는 10분짜리라 저장 안 함) */
 function saveSoon() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
-        const today = dateKey(new Date());
         const keep = [...state.hours]
-            .filter(([, h]) => h.week?.length && h.day === today)
+            .filter(([, h]) => coversToday(h))
             .sort(([, a], [, b]) => b.at - a.at)
             .slice(0, STORE_MAX);
         try { localStorage.setItem(KEYS.hours, JSON.stringify(Object.fromEntries(keep))); } catch { /* 저장 못 해도 동작 */ }
     }, 500);
 }
 
-/** 오늘 저장해 둔 시간표를 불러옴 (어제 것은 버림) */
+/** 저장해 둔 시간표를 불러옴 (오늘이 지난 시간표는 버림) */
 function loadSaved() {
     try {
         const saved = JSON.parse(localStorage.getItem(KEYS.hours) ?? '{}');
-        const today = dateKey(new Date());
         Object.entries(saved).forEach(([id, h]) => {
-            if (h?.day === today && Array.isArray(h.week) && h.week.length) state.hours.set(id, h);
+            if (coversToday(h)) state.hours.set(id, h);
         });
     } catch { /* 깨졌으면 새로 받음 */ }
 }
