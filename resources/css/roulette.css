@@ -445,17 +445,18 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background:
-        linear-gradient(transparent calc(50% - .5px), rgb(0 0 0 / .7) calc(50% - .5px) calc(50% + .5px), transparent calc(50% + .5px)),
-        linear-gradient(rgb(0 0 0 / .75), transparent 32%, rgb(255 255 255 / .07) 46%, transparent 60%, rgb(0 0 0 / .75));
+    /* 드럼이 둥글게 말려 위아래가 어두워짐 (가운데 이음매 선은 0 을 8 처럼 보이게 해서 뺌) */
+    background: linear-gradient(rgb(0 0 0 / .75), transparent 32%, rgb(255 255 255 / .07) 46%, transparent 60%, rgb(0 0 0 / .75));
 }
 
 .rl-drum__digit {
     display: block;
     height: 100%;
     color: #f2ede2;
-    font-family: var(--font-pixel-mono);
-    font-size: 15px;
+    /* 0 과 8 이 확실히 갈리는 각진 글꼴 (SPIN 키와 같은 Orbitron) */
+    font-family: 'Orbitron', var(--font-pixel-mono);
+    font-weight: 900;
+    font-size: 13px;
     line-height: 24px;
     text-align: center;
 }
