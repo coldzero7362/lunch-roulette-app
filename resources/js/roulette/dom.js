@@ -24,6 +24,7 @@ export const el = {
     resultMeta: $('result-meta'),
     resultAddress: $('result-address'),
     resultHours: $('result-hours'),
+    resultPunch: $('result-punch'),
     openToggle: $('open-toggle'),
     resultLink: $('result-link'),
     resultRoute: $('result-route'),
