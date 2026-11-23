@@ -137,7 +137,7 @@
                         <span id="lbl-at" class="rl-console__label">TIME</span>
                         <div class="rl-fader__slot" style="--n: 4" title="영업 확인·날씨 기준 시각">
                             <input id="hours-at" type="range" class="rl-fader__input" min="0" max="4" step="1" value="0" aria-label="영업 확인 기준 시각">
-                            <div class="rl-fader__ticks" aria-hidden="true"><span style="--i: 0">지금</span><span style="--i: 1">11:30</span><span style="--i: 2">12:00</span><span style="--i: 3">12:30</span><span style="--i: 4">13:00</span></div>
+                            <div class="rl-fader__ticks" aria-hidden="true"><span style="--i: 0">NOW</span><span style="--i: 1">11:30</span><span style="--i: 2">12:00</span><span style="--i: 3">12:30</span><span style="--i: 4">13:00</span></div>
                         </div>
                     </div>
                     <div class="rl-fader" role="group" aria-labelledby="lbl-budget">
