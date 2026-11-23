@@ -22,8 +22,8 @@ const inFlight = new Set();
 let queueTimer;
 let saveTimer;
 
-/** 영업 확인 기준 시각 고르기: 지금 → 12:00 → 12:30 */
-const HOURS_AT = ['now', '12:00', '12:30'];
+/** 영업 확인 기준 시각 (TIME 페이더 눈금 순서) */
+const HOURS_AT = ['now', '11:30', '12:00', '12:30', '13:00'];
 
 /** 기준 시각의 Date (오늘 그 시각). 날씨 보정도 이 시각 예보를 씀 */
 export function referenceTime() {
@@ -216,12 +216,17 @@ function setOpenOnly(on, save = true) {
     }
 }
 
+/** 페이더 위치 맞추고 지금 눈금 글자만 켬 */
+function setFader(input, index, text) {
+    input.value = String(index);
+    input.setAttribute('aria-valuetext', text);
+    input.closest('.rl-fader__slot').querySelectorAll('.rl-fader__ticks span').forEach((t, i) => t.classList.toggle('is-on', i === index));
+}
+
 function setHoursAt(value, save = true) {
     state.hoursAt = HOURS_AT.includes(value) ? value : 'now';
     const label = state.hoursAt === 'now' ? '지금' : state.hoursAt;
-    el.hoursAt.textContent = label;
-    el.hoursAt.setAttribute('aria-pressed', String(state.hoursAt !== 'now')); // 시각을 고정하면 LED 켜짐
-    el.hoursAt.setAttribute('aria-label', `영업 확인 기준 ${label}`);
+    setFader(el.hoursAt, HOURS_AT.indexOf(state.hoursAt), label);
     updateLamp(); // 날씨도 기준 시각 예보로
     if (!save) return;
     try { localStorage.setItem(KEYS.hoursAt, state.hoursAt); } catch { /* 저장 못 해도 동작 */ }
@@ -230,15 +235,12 @@ function setHoursAt(value, save = true) {
     setStatus(state.hoursAt === 'now' ? '영업 확인 기준: 지금' : `영업 확인 기준: 오늘 ${state.hoursAt}`);
 }
 
-/** 예산 키: 누를 때마다 제한 없음(예산) → 1만 원 → 1.5만 원 */
-const BUDGETS = [0, 10000, 15000];
-const budgetLabel = (b) => (b ? `~${b / 10000}만` : '예산');
+/** 예산 (BUDGET 페이더 눈금 순서, 0 = 제한 없음이 맨 오른쪽) */
+const BUDGETS = [8000, 10000, 12000, 15000, 0];
 
 function setBudget(value, save = true) {
     state.budget = BUDGETS.includes(value) ? value : 0;
-    el.budgetKey.textContent = budgetLabel(state.budget);
-    el.budgetKey.setAttribute('aria-pressed', String(state.budget > 0));
-    el.budgetKey.setAttribute('aria-label', `예산 ${state.budget ? `${state.budget.toLocaleString('ko-KR')}원 이하` : '제한 없음'}`);
+    setFader(el.budgetKey, BUDGETS.indexOf(state.budget), state.budget ? `${state.budget.toLocaleString('ko-KR')}원 이하` : '제한 없음');
     if (!save) return;
     try { localStorage.setItem(KEYS.budget, String(state.budget)); } catch { /* 저장 못 해도 동작 */ }
     render();
@@ -253,12 +255,12 @@ export function initOpenOnly() {
     let budget = 0;
     try { budget = Number(localStorage.getItem(KEYS.budget) ?? 0); } catch { /* 비공개 모드 등 */ }
     setBudget(budget, false);
-    el.budgetKey.addEventListener('click', () => setBudget(BUDGETS[(BUDGETS.indexOf(state.budget) + 1) % BUDGETS.length]));
+    el.budgetKey.addEventListener('input', () => setBudget(BUDGETS[Number(el.budgetKey.value)]));
     loadSaved();
     let at = 'now';
     try { at = localStorage.getItem(KEYS.hoursAt) ?? 'now'; } catch { /* 비공개 모드 등 */ }
     setHoursAt(at, false);
-    el.hoursAt.addEventListener('click', () => setHoursAt(HOURS_AT[(HOURS_AT.indexOf(state.hoursAt) + 1) % HOURS_AT.length]));
+    el.hoursAt.addEventListener('input', () => setHoursAt(HOURS_AT[Number(el.hoursAt.value)]));
     startClock();
     let saved = null;
     try { saved = localStorage.getItem(KEYS.openOnly); } catch { /* 비공개 모드 등 */ }

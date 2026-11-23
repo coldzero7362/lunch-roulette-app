@@ -132,12 +132,26 @@
                             @endforeach
                         </div>
                     </div>
+                    <div class="rl-faders">
+                    <div class="rl-fader" role="group" aria-labelledby="lbl-at">
+                        <span id="lbl-at" class="rl-console__label">TIME</span>
+                        <div class="rl-fader__slot" style="--n: 4" title="영업 확인·날씨 기준 시각">
+                            <input id="hours-at" type="range" class="rl-fader__input" min="0" max="4" step="1" value="0" aria-label="영업 확인 기준 시각">
+                            <div class="rl-fader__ticks" aria-hidden="true"><span style="--i: 0">지금</span><span style="--i: 1">11:30</span><span style="--i: 2">12:00</span><span style="--i: 3">12:30</span><span style="--i: 4">13:00</span></div>
+                        </div>
+                    </div>
+                    <div class="rl-fader" role="group" aria-labelledby="lbl-budget">
+                        <span id="lbl-budget" class="rl-console__label">BUDGET</span>
+                        <div class="rl-fader__slot" style="--n: 4" title="보통 메뉴 가격(중간값)이 넘는 곳은 추첨 제외 (메뉴판 없는 곳은 포함)">
+                            <input id="budget-key" type="range" class="rl-fader__input" min="0" max="4" step="1" value="0" aria-label="예산 (보통 메뉴 가격)">
+                            <div class="rl-fader__ticks" aria-hidden="true"><span style="--i: 0">8천</span><span style="--i: 1">1만</span><span style="--i: 2">1.2만</span><span style="--i: 3">1.5만</span><span style="--i: 4">전체</span></div>
+                        </div>
+                    </div>
+                    </div>
                     <div class="rl-bank" role="group" aria-labelledby="lbl-hours">
                         <span id="lbl-hours" class="rl-console__label">HOURS</span>
                         <div class="rl-bank__slot">
-                            <button id="open-toggle" type="button" class="rl-bank__key" aria-pressed="false" title="켜면 영업 중인 후보만 추첨 (기준 시각은 옆 키)">영업중</button>
-                            <button id="hours-at" type="button" class="rl-bank__key rl-bank__key--at" aria-pressed="false" title="영업 확인 기준 시각: 누를 때마다 지금 → 12:00 → 12:30">지금</button>
-                            <button id="budget-key" type="button" class="rl-bank__key rl-bank__key--at rl-bank__key--gap" aria-pressed="false" title="예산: 누를 때마다 전체 → 1만 원 → 1.5만 원. 보통 메뉴 가격(중간값)이 넘는 곳은 추첨 제외 (메뉴판 없는 곳은 포함)">예산</button>
+                            <button id="open-toggle" type="button" class="rl-bank__key" aria-pressed="false" title="켜면 영업 중인 후보만 추첨 (기준 시각은 아래 TIME)">영업중</button>
                         </div>
                     </div>
                     <div class="rl-bank" role="group" aria-labelledby="lbl-fx">
