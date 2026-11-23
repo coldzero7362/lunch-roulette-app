@@ -18,7 +18,6 @@ export function shuffle(list, rand = Math.random) {
  * 자동 채움 보정: 가중치를 둔 무작위.
  * - 돌림판에 이미 있는 세부 분류(예: 육류,고기)와 같으면 확률을 크게 낮춤 → 한 종류로 쏠리지 않게
  * - '전체'(types 가 비었을 때) 같은 큰 분류(한식 등)가 많으면 조금 낮춤
- * - 주점은 점심 후보로 덜 맞아 낮춤 (종류에서 주점을 직접 고르면 보정 안 함)
  * - 단골(favorites)은 3배
  * - 최근 먹은 것과 같은 종류면 낮춤 (recent: recentInfo 결과)
  * - 날씨가 나쁘면(near = 보정 끝 거리, logic/weather.farEdge) 먼 곳일수록 낮춤 (distanceFactor, 최소 0.35)
@@ -27,7 +26,6 @@ export function shuffle(list, rand = Math.random) {
  */
 export function weightOf(place, chosen, { types = new Set(), favorites = new Set(), recent = null, near = null } = {}) {
     let w = 1;
-    if (place.type === '술집' && !types.has('술집')) w *= 0.15;
     const sameCategory = chosen.filter((p) => p.category === place.category).length;
     w /= 1 + 5 * sameCategory;
     if (!types.size) {

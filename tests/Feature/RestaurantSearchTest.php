@@ -220,7 +220,7 @@ class RestaurantSearchTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_menu_search_ranks_by_category_tags_and_pushes_pub_side_dishes_last(): void
+    public function test_menu_search_ranks_by_category_tags_and_leaves_out_pubs(): void
     {
         Http::fake(['dapi.kakao.com/*' => Http::response([
             'meta' => ['is_end' => true],
@@ -236,8 +236,8 @@ class RestaurantSearchTest extends TestCase
         $res = $this->getJson(route('restaurants.search', ['q' => '피자', 'lat' => 37.54, 'lng' => 127.04, 'radius' => 500]))
             ->assertOk();
 
-        $this->assertSame(['near', 'far', 'named', 'snack', 'pub'], array_column($res->json('places'), 'id'));
-        $this->assertSame(['tag', 'tag', 'name', 'menu', 'pub'], array_column($res->json('places'), 'match'));
-        $this->assertSame(['술집', '호프', '요리주점'], $res->json('places.4.tags'));
+        // 주점(맥주창고·동네피자펍)은 이름에 검색어가 있어도 뺌
+        $this->assertSame(['near', 'far', 'snack'], array_column($res->json('places'), 'id'));
+        $this->assertSame(['tag', 'tag', 'menu'], array_column($res->json('places'), 'match'));
     }
 }

@@ -26,10 +26,13 @@ use Illuminate\Support\Facades\RateLimiter;
 class KakaoLocal
 {
     /** 종류 필터로 고를 수 있는 값 = 카카오 분류의 두 번째 칸 ("음식점 > 한식 > 국밥") */
-    public const TYPES = ['한식', '중식', '일식', '양식', '분식', '술집'];
+    public const TYPES = ['한식', '중식', '일식', '양식', '분식'];
 
     /** '전체'에서 빼는 종류 (점심 후보로 맞지 않음) */
-    private const EXCLUDED_FROM_ALL = ['간식'];
+    private const EXCLUDED_FROM_ALL = ['간식', '술집'];
+
+    /** 메뉴 검색에서도 빼는 종류: 점심 룰렛이라 주점(안주로 파는 곳 포함)은 아예 안 보임 */
+    private const EXCLUDED_FROM_SEARCH = ['술집'];
 
     private const CATEGORY_ENDPOINT = 'https://dapi.kakao.com/v2/local/search/category.json';
 
@@ -149,12 +152,11 @@ class KakaoLocal
     /**
      * 메뉴·가게 이름으로 반경 안 식당 검색 (예: "짬뽕", "쌀국수").
      *
-     * 카카오 키워드 검색은 메뉴 일부로만 걸린 곳(술집의 피자 안주 등)도 섞어 주므로
-     * 분류 태그 기준으로 일치 등급을 매겨 정렬한다. 같은 등급 안에선 가까운 순.
+     * 카카오 키워드 검색은 메뉴 일부로만 걸린 곳도 섞어 주므로
+     * 분류 태그 기준으로 일치 등급을 매겨 정렬한다. 같은 등급 안에선 가까운 순. 주점은 빼고 보여 줌.
      *   tag  : 분류 태그에 검색어가 있음 ("음식점 > 양식 > 피자")
      *   name : 가게 이름에 검색어가 있음
      *   menu : 메뉴 일부로만 걸림
-     *   pub  : 주점이면서 태그·이름이 안 맞음 (안주로 파는 경우) → 맨 뒤
      *
      * @return list<RankedPlace>
      *
@@ -162,10 +164,13 @@ class KakaoLocal
      */
     public function searchRestaurants(string $query, float $lat, float $lng, int $radius): array
     {
-        $places = $this->fetchAll(self::KEYWORD_ENDPOINT, $this->area($lat, $lng, $radius) + ['query' => $query]);
+        $places = array_filter(
+            $this->fetchAll(self::KEYWORD_ENDPOINT, $this->area($lat, $lng, $radius) + ['query' => $query]),
+            fn (array $p) => ! in_array($p['type'], self::EXCLUDED_FROM_SEARCH, true),
+        );
 
         $q = $this->normalize($query);
-        $order = ['tag' => 0, 'name' => 1, 'menu' => 2, 'pub' => 3];
+        $order = ['tag' => 0, 'name' => 1, 'menu' => 2];
 
         $ranked = array_map(fn (array $p) => $p + ['match' => $this->matchOf($p, $q)], $places);
         usort($ranked, fn (array $a, array $b) => [$order[$a['match']], $a['distance']] <=> [$order[$b['match']], $b['distance']]);
@@ -192,7 +197,7 @@ class KakaoLocal
             return 'name';
         }
 
-        return $place['type'] === '술집' ? 'pub' : 'menu';
+        return 'menu';
     }
 
     private function normalize(string $text): string

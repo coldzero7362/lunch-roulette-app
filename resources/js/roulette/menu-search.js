@@ -42,7 +42,7 @@ export async function searchMenu(query) {
 }
 
 /** 메뉴 일부로만 걸린 곳 (서버 등급: menu / pub) */
-const isPartial = (place) => place.match === 'menu' || place.match === 'pub';
+const isPartial = (place) => place.match === 'menu';
 
 export function renderSearchResults() {
     const rows = [];

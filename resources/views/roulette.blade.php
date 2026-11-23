@@ -128,7 +128,7 @@
                         <div class="rl-bank__slot">
                             <button type="button" class="rl-bank__key" data-type="" aria-pressed="true">전체</button>
                             @foreach (\App\Services\KakaoLocal::TYPES as $type)
-                                <button type="button" class="rl-bank__key" data-type="{{ $type }}" aria-pressed="false">{{ $type === '술집' ? '주점' : $type }}</button>
+                                <button type="button" class="rl-bank__key" data-type="{{ $type }}" aria-pressed="false">{{ $type }}</button>
                             @endforeach
                         </div>
                     </div>

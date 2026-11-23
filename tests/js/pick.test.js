@@ -15,12 +15,6 @@ describe('weightOf', () => {
         assert.equal(weightOf(place('a', '한식', '국밥'), []), 1);
     });
 
-    it('cuts pubs to 15% unless 주점 was chosen as a type', () => {
-        const pub = place('p', '술집', '호프');
-        assert.equal(weightOf(pub, []), 0.15);
-        assert.equal(weightOf(pub, [], { types: new Set(['술집']) }), 1);
-    });
-
     it('strongly avoids a category already on the wheel', () => {
         const chosen = [place('x', '중식', '중국요리')];
         // 같은 세부 분류 1곳 → 1/(1+5), 같은 큰 분류 1곳 → 1/(1+0.6)

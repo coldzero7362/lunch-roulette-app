@@ -2070,7 +2070,7 @@
 }
 
 /*
- * 넓은 화면: 윗줄 RANGE · HOURS(+예산) · FX, 아랫줄 종류 키 (키 7개가 잘리지 않게).
+ * 넓은 화면: 윗줄 RANGE · HOURS(+예산) · FX, 아랫줄 종류 키 (키 6개가 잘리지 않게).
  * 판 폭을 종류 키 줄에 맞추고 FX 를 오른쪽 끝에 붙여 두 줄의 끝을 맞춤
  */
 @media (min-width: 641px) {
@@ -2119,7 +2119,7 @@
     .rl-ticket__meta,
     .rl-ticket__sub { white-space: normal; overflow-wrap: anywhere; }
     .rl-steps { display: none; }
-    /* 종류 키 7개를 한 줄에 */
+    /* 종류 키 6개를 한 줄에 */
     .rl-console__controls .rl-bank--wide { flex-basis: 100%; }
     .rl-bank--wide .rl-bank__slot { width: 100%; box-sizing: border-box; }
     .rl-bank--wide .rl-bank__key { flex: 1 1 0; min-width: 0; padding-inline: 2px; }
