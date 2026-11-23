@@ -144,7 +144,7 @@
                         <span id="lbl-budget" class="rl-console__label">BUDGET</span>
                         <div class="rl-fader__slot" style="--n: 4" title="보통 메뉴 가격(중간값)이 넘는 곳은 추첨 제외 (메뉴판 없는 곳은 포함)">
                             <input id="budget-key" type="range" class="rl-fader__input" min="0" max="4" step="1" value="0" aria-label="예산 (보통 메뉴 가격)">
-                            <div class="rl-fader__ticks" aria-hidden="true"><span style="--i: 0">8천</span><span style="--i: 1">1만</span><span style="--i: 2">1.2만</span><span style="--i: 3">1.5만</span><span style="--i: 4">전체</span></div>
+                            <div class="rl-fader__ticks" aria-hidden="true"><span style="--i: 0">8K</span><span style="--i: 1">10K</span><span style="--i: 2">12K</span><span style="--i: 3">15K</span><span style="--i: 4">ALL</span></div>
                         </div>
                     </div>
                     </div>
