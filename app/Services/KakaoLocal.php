@@ -20,7 +20,8 @@ use Illuminate\Support\Facades\RateLimiter;
  * @phpstan-type RankedPlace array{id: string, name: string, type: string, category: string, tags: list<string>, distance: int, address: string, phone: string, url: string, lat: float, lng: float, match: string}
  * @phpstan-type Location array{name: string, address: string, kind: string, lat: float, lng: float}
  * @phpstan-type Day array{date: string, off: bool, open: string|null, close: string|null, breaks: list<array{0: string, 1: string}>}
- * @phpstan-type Hours array{status: 'open'|'break'|'closed'|'unknown', label: string, info: string, today: string, week: list<Day>}
+ * @phpstan-type Menu array{name: string, price: int}
+ * @phpstan-type Hours array{status: 'open'|'break'|'closed'|'unknown', label: string, info: string, today: string, week: list<Day>, menus: list<Menu>, price: array{min: int, max: int}|null}
  */
 class KakaoLocal
 {
@@ -40,7 +41,13 @@ class KakaoLocal
     private const PLACE_DETAIL_ENDPOINT = 'https://place-api.map.kakao.com/places/panel3/';
 
     /** @var Hours */
-    private const UNKNOWN_HOURS = ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => '', 'week' => []];
+    private const UNKNOWN_HOURS = ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => '', 'week' => [], 'menus' => [], 'price' => null];
+
+    /** 영업시간·메뉴 캐시 키 (응답 모양이 바뀌면 숫자를 올려 예전 캐시를 버림) */
+    private const HOURS_CACHE = 'kakao:hours:v2:';
+
+    /** 가격대 계산에서 빼는 값 (반찬·음료·추가 메뉴) */
+    private const PRICE_FLOOR = 3000;
 
     /** 장소 상세를 한 번에 동시에 부르는 수 */
     private const DETAIL_CONCURRENCY = 10;
@@ -211,7 +218,7 @@ class KakaoLocal
         $missing = [];
 
         foreach ($ids as $id) {
-            $cached = $fresh ? null : Cache::get('kakao:hours:'.$id);
+            $cached = $fresh ? null : Cache::get(self::HOURS_CACHE.$id);
             if (is_array($cached)) {
                 /** @var Hours $cached */
                 $result[$id] = $cached;
@@ -238,14 +245,15 @@ class KakaoLocal
                 $response = $responses[$id] ?? null;
                 if (! $response instanceof Response || ! $response->successful() || ! is_array($response->json())) {
                     // 실패도 잠깐(2분) 기억: 막힌 동안 후보를 바꿀 때마다 같은 가게를 다시 두드리지 않게
-                    Cache::put('kakao:hours:'.$id, self::UNKNOWN_HOURS, now()->addMinutes(2));
+                    Cache::put(self::HOURS_CACHE.$id, self::UNKNOWN_HOURS, now()->addMinutes(2));
                     $result[$id] = self::UNKNOWN_HOURS;
 
                     continue;
                 }
 
-                $hours = $this->toHours($response->json('open_hours'));
-                Cache::put('kakao:hours:'.$id, $hours, $this->hoursTtl($hours));
+                // 같은 응답에 메뉴판도 있어서 추가 호출 없이 대표 메뉴·가격대도 함께 저장
+                $hours = $this->toMenu($response->json('menu.menus.items')) + $this->toHours($response->json('open_hours'));
+                Cache::put(self::HOURS_CACHE.$id, $hours, $this->hoursTtl($hours));
                 $result[$id] = $hours;
             }
         }
@@ -326,6 +334,37 @@ class KakaoLocal
             'info' => mb_substr((string) ($headline['display_text_info'] ?? ''), 0, 30),
             'today' => mb_substr($today, 0, 60),
             'week' => $this->toWeek($openHours['week_from_today'] ?? null),
+            'menus' => [],
+            'price' => null,
+        ];
+    }
+
+    /**
+     * 메뉴판 → 대표 메뉴 3개(가게 추천 먼저, 없으면 메뉴판 순서) + 가격대(3천원 미만 반찬·음료는 빼고).
+     *
+     * @return array{menus: list<Menu>, price: array{min: int, max: int}|null}
+     */
+    private function toMenu(mixed $items): array
+    {
+        $menus = [];
+        foreach ((array) (is_array($items) ? $items : []) as $item) {
+            $name = trim((string) ($item['name'] ?? ''));
+            $price = is_numeric($item['price'] ?? null) ? (int) $item['price'] : 0;
+            if ($name === '' || $price <= 0) {
+                continue;
+            }
+            $menus[] = ['name' => mb_substr($name, 0, 30), 'price' => $price, 'pick' => (bool) ($item['is_recommend'] ?? false)];
+        }
+
+        $prices = array_values(array_filter(array_column($menus, 'price'), fn (int $p) => $p >= self::PRICE_FLOOR));
+
+        // 추천 먼저, 그다음 메뉴판 순서 (usort 는 같은 값끼리 순서를 지킴)
+        usort($menus, fn (array $a, array $b) => $b['pick'] <=> $a['pick']);
+        $top = array_map(fn (array $m) => ['name' => $m['name'], 'price' => $m['price']], array_slice($menus, 0, 3));
+
+        return [
+            'menus' => $top,
+            'price' => $prices === [] ? null : ['min' => min($prices), 'max' => max($prices)],
         ];
     }
 

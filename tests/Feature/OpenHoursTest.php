@@ -56,20 +56,20 @@ class OpenHoursTest extends TestCase
             ->assertExactJson(['hours' => [
                 '101' => ['status' => 'open', 'label' => '영업 중', 'info' => '22:00 까지', 'today' => '11:30 ~ 22:00', 'week' => [
                     ['date' => '2026-11-19', 'off' => false, 'open' => '11:30', 'close' => '22:00', 'breaks' => []],
-                ]],
+                ], 'menus' => [], 'price' => null],
                 '102' => ['status' => 'break', 'label' => '브레이크타임', 'info' => '16:30 오픈', 'today' => '11:00 ~ 20:30 (브레이크 14:30 ~ 16:30)', 'week' => [
                     ['date' => '2026-11-18', 'off' => false, 'open' => '10:00', 'close' => '21:00', 'breaks' => []],
                     ['date' => '2026-11-19', 'off' => false, 'open' => '11:00', 'close' => '20:30', 'breaks' => [['14:30', '16:30']]],
-                ]],
+                ], 'menus' => [], 'price' => null],
                 '103' => ['status' => 'closed', 'label' => '영업 마감', 'info' => '내일 10:00 오픈', 'today' => '휴무일', 'week' => [
                     ['date' => '2026-11-21', 'off' => true, 'open' => null, 'close' => null, 'breaks' => []],
-                ]],
-                '104' => ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => '', 'week' => []],
-                '105' => ['status' => 'open', 'label' => '곧 영업 마감', 'info' => '22:00 까지', 'today' => '', 'week' => []],
-                '106' => ['status' => 'closed', 'label' => '휴무일', 'info' => '', 'today' => '', 'week' => []],
-                '107' => ['status' => 'unknown', 'label' => '영업 정보', 'info' => '', 'today' => '', 'week' => []],
-                '108' => ['status' => 'closed', 'label' => '임시 휴무', 'info' => '', 'today' => '', 'week' => []],
-                '109' => ['status' => 'unknown', 'label' => '확인 필요', 'info' => '', 'today' => '', 'week' => []],
+                ], 'menus' => [], 'price' => null],
+                '104' => ['status' => 'unknown', 'label' => '', 'info' => '', 'today' => '', 'week' => [], 'menus' => [], 'price' => null],
+                '105' => ['status' => 'open', 'label' => '곧 영업 마감', 'info' => '22:00 까지', 'today' => '', 'week' => [], 'menus' => [], 'price' => null],
+                '106' => ['status' => 'closed', 'label' => '휴무일', 'info' => '', 'today' => '', 'week' => [], 'menus' => [], 'price' => null],
+                '107' => ['status' => 'unknown', 'label' => '영업 정보', 'info' => '', 'today' => '', 'week' => [], 'menus' => [], 'price' => null],
+                '108' => ['status' => 'closed', 'label' => '임시 휴무', 'info' => '', 'today' => '', 'week' => [], 'menus' => [], 'price' => null],
+                '109' => ['status' => 'unknown', 'label' => '확인 필요', 'info' => '', 'today' => '', 'week' => [], 'menus' => [], 'price' => null],
             ]]);
     }
 
@@ -157,7 +157,7 @@ class OpenHoursTest extends TestCase
             ->assertExactJson(['hours' => ['801' => ['status' => 'open', 'label' => '영업 중', 'info' => '', 'today' => '', 'week' => [
                 ['date' => '2026-12-30', 'off' => false, 'open' => '19:00', 'close' => '03:00', 'breaks' => [['22:00', '22:30']]],
                 ['date' => '2027-01-01', 'off' => true, 'open' => null, 'close' => null, 'breaks' => []],
-            ]]]]);
+            ], 'menus' => [], 'price' => null]]]);
     }
 
     public function test_schedules_stay_cached_until_their_last_day(): void
@@ -192,6 +192,26 @@ class OpenHoursTest extends TestCase
         $this->getJson(route('restaurants.hours', ['ids' => ['702', '703'], 'fresh' => 1]))
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['ids']);
+    }
+
+    public function test_picks_top_menus_and_a_price_range_from_the_same_response(): void
+    {
+        Http::fake(['place-api.map.kakao.com/*' => Http::response($this->detail('OPEN', '영업 중', '', []) + ['menu' => ['menus' => ['items' => [
+            ['name' => '공기밥', 'price' => 1000, 'is_recommend' => false],
+            ['name' => '김치찌개', 'price' => 9000, 'is_recommend' => false],
+            ['name' => '제육볶음', 'price' => 11000, 'is_recommend' => true],
+            ['name' => '시가', 'price' => 0],
+            ['name' => '모듬전', 'price' => 22000, 'is_recommend' => false],
+        ]]]])]);
+
+        $this->getJson(route('restaurants.hours', ['ids' => ['601']]))
+            ->assertOk()
+            ->assertJsonPath('hours.601.menus', [
+                ['name' => '제육볶음', 'price' => 11000],
+                ['name' => '공기밥', 'price' => 1000],
+                ['name' => '김치찌개', 'price' => 9000],
+            ])
+            ->assertJsonPath('hours.601.price', ['min' => 9000, 'max' => 22000]);
     }
 
     public function test_many_places_are_fetched_in_small_concurrent_chunks(): void
