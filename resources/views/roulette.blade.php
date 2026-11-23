@@ -207,9 +207,9 @@
                     <div id="panel-a" role="tabpanel" aria-labelledby="tab-a">
                         <div class="rl-jcard__tools">
                             <div class="rl-well rl-legend" data-legend="LOAD" role="group" aria-label="후보 채우기">
-                                <button id="auto" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="sparkles" aria-label="자동 채움" title="자동 채움" disabled></button>
-                                <button id="shuffle" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="shuffle" aria-label="섞기" title="섞기" disabled></button>
-                                <button id="clear" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="trash" aria-label="비움" title="비움" disabled></button>
+                                <button id="auto" type="button" class="rl-key rl-key--beige rl-key--sq rl-key--cap" data-icon="sparkles" aria-label="자동 채움" title="빈 칸을 반경 안 식당으로 채움" disabled><span class="rl-key__cap" aria-hidden="true">채우기</span></button>
+                                <button id="shuffle" type="button" class="rl-key rl-key--beige rl-key--sq rl-key--cap" data-icon="shuffle" aria-label="섞기" title="자동으로 넣은 후보를 다시 뽑고 순서를 섞음" disabled><span class="rl-key__cap" aria-hidden="true">섞기</span></button>
+                                <button id="clear" type="button" class="rl-key rl-key--beige rl-key--sq rl-key--cap" data-icon="trash" aria-label="비움" title="후보를 모두 비움" disabled><span class="rl-key__cap" aria-hidden="true">비우기</span></button>
                             </div>
                             <div class="rl-well rl-stepper rl-legend" data-legend="QTY" role="group" aria-label="후보 수">
                                 <button id="slots-down" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="minus" aria-label="후보 수 감소" title="후보 수 −"></button>

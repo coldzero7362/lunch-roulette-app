@@ -3,6 +3,7 @@
  */
 import { CLOSEUP_LEVEL, DEFAULT_CENTER, KEYS, SIGNAL } from './constants.js';
 import { $, el, REDUCED_MOTION } from './dom.js';
+import { worthMoving } from './logic/geo.js';
 import { blocked } from './hours.js';
 import { fetchPlaces } from './places.js';
 import { setStatus, updateReadout } from './readout.js';
@@ -11,6 +12,11 @@ import { state } from './state.js';
 let map, centerOverlay, radiusCircle, winnerOverlay, winnerMarker, clusterer, pin;
 // 지도가 준비되기 전에 받은 위치는 여기 두었다가 지도가 뜨면 적용
 let pendingCenter = null;
+// 위치 보정 중에 사용자가 다른 곳(검색·지도 클릭)을 고르면 보정 결과로 덮어쓰지 않게
+let placeToken = 0;
+
+const REFINE_MS = 10000; // 첫 위치 뒤 더 정확한 위치를 기다리는 시간
+const REFINE_GOAL_M = 50; // 이만큼 정확해지면 바로 멈춤
 
 export function initMap() {
     if (!window.kakao?.maps) {
@@ -65,7 +71,15 @@ export async function locate() {
             setStatus('정밀 위치 실패 — 대략 위치로 재시도');
             pos = await getPosition({ enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
         }
-        applyCenter(pos.coords.latitude, pos.coords.longitude, { label: '현재 위치', accuracy: pos.coords.accuracy });
+        const first = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy };
+        const token = ++placeToken;
+        applyCenter(first.lat, first.lng, { label: '현재 위치', accuracy: first.accuracy });
+
+        // PC 는 첫 값이 IP 기반으로 거칠고, 몇 초 뒤 Wi-Fi 기반 값이 더 정확하게 오는 경우가 많다
+        const best = await refinePosition(first);
+        if (best && token === placeToken && worthMoving(first, best)) {
+            applyCenter(best.lat, best.lng, { label: '현재 위치', accuracy: best.accuracy });
+        }
     } catch (e) {
         setStatus(locateErrorMessage(e));
     } finally {
@@ -73,6 +87,35 @@ export async function locate() {
         updateReadout();
         el.locate.disabled = false;
     }
+}
+
+/**
+ * 첫 위치를 받은 뒤 최대 REFINE_MS 동안 위치를 계속 받아 가장 정확한 값을 돌려줌 (나아진 게 없으면 null).
+ * REFINE_GOAL_M 안으로 들어오면 바로 멈춤. 그동안 GPS 표시등은 깜빡임 (state.locating)
+ */
+function refinePosition(first) {
+    if (first.accuracy <= REFINE_GOAL_M || typeof navigator.geolocation.watchPosition !== 'function') {
+        return Promise.resolve(null);
+    }
+    return new Promise((resolve) => {
+        let best = first;
+        let done = false;
+        let watchId = null;
+        const finish = () => {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            resolve(best === first ? null : best);
+        };
+        const timer = setTimeout(finish, REFINE_MS);
+        watchId = navigator.geolocation.watchPosition((pos) => {
+            if (pos.coords.accuracy < best.accuracy) {
+                best = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy };
+            }
+            if (best.accuracy <= REFINE_GOAL_M) finish();
+        }, () => { /* 보정 실패는 무시: 첫 위치 그대로 */ }, { enableHighAccuracy: true, maximumAge: 0, timeout: REFINE_MS });
+    });
 }
 
 function locateErrorMessage(e) {
@@ -239,6 +282,7 @@ export function clearWinnerMarker() {
 
 /** 직접 고른 위치: 중심으로 쓰고 다음 방문 때도 여기서 시작 */
 export function choosePlace(lat, lng, label) {
+    placeToken++; // 진행 중인 위치 보정 결과는 버림
     try { localStorage.setItem(KEYS.place, JSON.stringify({ lat, lng, label })); } catch { /* 저장 못 해도 동작 */ }
     applyCenter(lat, lng, { label });
 }

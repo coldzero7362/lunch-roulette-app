@@ -7,7 +7,7 @@ import { el, SPIN_MS } from './dom.js';
 import { blocked, ensureHours } from './hours.js';
 import { renderCandidates } from './list.js';
 import { spinRotation } from './logic/format.js';
-import { checking } from './places.js';
+import { autoFill, checking, spare } from './places.js';
 import { setStatus } from './readout.js';
 import { setBusy } from './render.js';
 import { state } from './state.js';
@@ -186,8 +186,19 @@ function uprightNumbers() {
 }
 
 export async function spin() {
+    if (state.spinning || state.checking) return;
+
+    // 후보가 비어 있으면 반경 안 식당으로 채우고 바로 돌림 (위치 → SPIN 한 번으로 끝).
+    // 직접 몇 곳 넣어 둔 상태면 채우지 않음: 그 후보들끼리 고르려는 것일 수 있어서
+    if (!state.candidates.length) {
+        if (!spare().length) {
+            setStatus(state.poolLoaded ? '반경 내 식당 없음 — 반경·종류 변경' : '식당 조회 중 — 잠시 후 SPIN');
+            return;
+        }
+        await autoFill();
+        if (!state.candidates.length) return; // 채울 곳이 없었음 (autoFill 이 상태 줄에 이유를 씀)
+    }
     const n = state.candidates.length;
-    if (state.spinning || state.checking || n === 0) return;
 
     if (state.openOnly) {
         setStatus('영업 상태 확인 중');

@@ -324,6 +324,22 @@
 /* 도구 줄: 마법봉·섞기처럼 선이 복잡한 아이콘은 줄이면 뭉개지므로 원래 크기(24px), 키 34px */
 .rl-jcard__tools { align-items: center; }
 .rl-jcard__tools .rl-key--sq { width: 34px; height: 34px; }
+
+/* 이름이 새겨진 아이콘 키: 아이콘 위, 이름 아래 (도구 줄) */
+.rl-jcard__tools .rl-key--cap {
+    flex-direction: column;
+    gap: 2px;
+    width: 46px;
+    height: 44px;
+    padding: 3px 0 2px;
+}
+.rl-jcard__tools .rl-key--cap svg { order: -1; width: 20px; height: 20px; }
+.rl-key__cap { font-family: var(--font-pixel); font-size: 10px; line-height: 1; letter-spacing: 0; white-space: nowrap; }
+
+/* 빈 목록: 안내 한 줄 + 바로 누를 키 */
+.rl-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.rl-empty__msg { margin: 0; }
+.rl-empty .rl-well { flex-wrap: wrap; justify-content: center; }
 .rl-jcard__tools .rl-key--sq svg { width: 24px; height: 24px; }
 .rl-stepper { align-items: center; }
 
@@ -445,17 +461,18 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background:
-        linear-gradient(transparent calc(50% - .5px), rgb(0 0 0 / .7) calc(50% - .5px) calc(50% + .5px), transparent calc(50% + .5px)),
-        linear-gradient(rgb(0 0 0 / .75), transparent 32%, rgb(255 255 255 / .07) 46%, transparent 60%, rgb(0 0 0 / .75));
+    /* 드럼이 둥글게 말려 위아래가 어두워짐 (가운데 이음매 선은 0 을 8 처럼 보이게 해서 뺌) */
+    background: linear-gradient(rgb(0 0 0 / .75), transparent 32%, rgb(255 255 255 / .07) 46%, transparent 60%, rgb(0 0 0 / .75));
 }
 
 .rl-drum__digit {
     display: block;
     height: 100%;
     color: #f2ede2;
-    font-family: var(--font-pixel-mono);
-    font-size: 15px;
+    /* 0 과 8 이 확실히 갈리는 각진 글꼴 (SPIN 키와 같은 Orbitron) */
+    font-family: 'Orbitron', var(--font-pixel-mono);
+    font-weight: 900;
+    font-size: 13px;
     line-height: 24px;
     text-align: center;
 }
@@ -1845,7 +1862,7 @@
 }
 
 /* 도구 줄: 가운데 선 대신 판에 새긴 홈 */
-.rl-ivory .rl-jcard__tools { padding: 24px 0 10px; border-bottom: 0; }
+.rl-ivory .rl-jcard__tools { padding: 24px 0 10px; border-bottom: 0; row-gap: 24px; } /* 줄이 바뀌어도 키 홈 위 표기(QTY)가 윗줄에 겹치지 않게 */
 .rl-ivory .rl-search { padding: 12px 0 10px; border-bottom: 0; }
 
 /* 목록 창: 판에 파인 홈 + 밝은 종이 + 투명 덮개 */
