@@ -4,7 +4,7 @@
  *
  * 이 파일은 키·탭 이벤트 연결과 시작 순서만 담는다. 기능은 ./roulette/ 아래 모듈에:
  *   map(지도·위치) · places(조회·후보) · hours(영업 상태) · wheel(돌림판) · ticket(영수증·기록)
- *   list(SIDE A) · menu-search(SIDE B) · location-search(위치 검색) · readout(계기판) · render
+ *   list(SIDE A) · menu-search(SIDE B) · tabs · location-search(위치 검색) · readout(계기판) · render
  *   logic/ 은 DOM 없는 순수 로직 (tests/js 에서 node --test 로 검사)
  */
 import { hydrateIcons } from './pixel-icons';
@@ -18,6 +18,7 @@ import { autoFill, clearCandidates, exclude, fetchPlaces, initSlots, reshuffle, 
 import { updateReadout } from './roulette/readout.js';
 import { state } from './roulette/state.js';
 import { clearResult, markLastResult, renderLog, setTicketIdle } from './roulette/ticket.js';
+import { initTabs } from './roulette/tabs.js';
 import { spin } from './roulette/wheel.js';
 import { terminalInput } from './terminal-input';
 
@@ -37,29 +38,6 @@ function initCrt() {
     setCrt(saved !== 'off', false);
     $('crt-toggle').addEventListener('click', () => {
         setCrt($('crt-toggle').getAttribute('aria-pressed') !== 'true');
-    });
-}
-
-/* ---------- 카세트 A면 / B면 ---------- */
-
-function selectTab(tab) {
-    el.tabs.forEach((t) => {
-        const on = t === tab;
-        t.setAttribute('aria-selected', String(on));
-        t.tabIndex = on ? 0 : -1;
-        $(t.getAttribute('aria-controls')).hidden = !on;
-    });
-}
-
-function initTabs() {
-    el.tabs.forEach((tab, i) => {
-        tab.addEventListener('click', () => selectTab(tab));
-        tab.addEventListener('keydown', (e) => {
-            if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-            const next = el.tabs[(i + (e.key === 'ArrowRight' ? 1 : el.tabs.length - 1)) % el.tabs.length];
-            selectTab(next);
-            next.focus();
-        });
     });
 }
 
