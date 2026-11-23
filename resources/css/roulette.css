@@ -1860,9 +1860,6 @@
 @media (max-width: 640px) {
     .rl-ivory { padding-inline: 14px; }
     .rl-ivory__stripe { margin-inline: -14px; }
-    .rl-ivory .rl-tabs__tab { flex-direction: column; align-items: flex-start; gap: 3px; padding: 15px 10px 7px; }
-    .rl-ivory .rl-tabs__tab::before { left: 10px; }
-    .rl-tabs__side { font-size: 10px; }
 }
 
 /* 도구 줄: 가운데 선 대신 판에 새긴 홈 */
@@ -2148,3 +2145,8 @@
 .rl-saved__bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
 .rl-saved__note { min-width: 0; font-size: 12px; color: var(--c-panel-2); }
 .rl-saved__bar .rl-bank__key { white-space: nowrap; font-size: 13px; }
+
+/* 탭 3개(A·B·C): 어느 폭에서나 SIDE 각인 위, 이름 아래로 쌓아 한 줄에 들어가게 */
+.rl-ivory .rl-tabs__tab { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; padding: 15px 10px 7px; }
+.rl-ivory .rl-tabs__tab::before { left: 10px; }
+.rl-tabs__side { font-size: 10px; }
