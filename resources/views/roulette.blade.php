@@ -245,6 +245,8 @@
                             <span class="rl-saved__note">이 브라우저에만 저장돼요</span>
                             <div class="rl-bank__slot"><button id="avoid-toggle" type="button" class="rl-bank__key" aria-pressed="true" title="켜면 최근 일주일 안에 먹은 곳은 자동 채움에서 빼고, 최근 먹은 종류는 덜 뽑음">최근 피하기</button><button id="weather-toggle" type="button" class="rl-bank__key" aria-pressed="true" title="켜면 비·눈·폭염·한파 예보 때 가까운 곳 위주로 뽑음 (먼 곳은 최소 0.35배)">날씨 보정</button></div>
                         </div>
+                        <span class="rl-ivory__legend" aria-hidden="true">THIS MONTH</span>
+                        <section id="lunch-stats" class="rl-stats" aria-label="이번 달 점심 통계"></section>
                         <span class="rl-ivory__legend" aria-hidden="true">LIBRARY</span>
                         <div class="rl-ivory__window">
                             <ul id="saved-list" class="rl-search__results rl-scroll m-0 list-none p-0"></ul>

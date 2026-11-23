@@ -6,6 +6,8 @@ import { el } from './dom.js';
 import { daysGapLabel } from './logic/recent.js';
 import { distanceM } from './logic/geo.js';
 import { dateKey } from './logic/schedule.js';
+import { priceShort, typeLabel } from './logic/format.js';
+import { monthStats } from './logic/stats.js';
 import { drawMarkers } from './map.js';
 import { addCandidate } from './places.js';
 import { avoidRecent, favoriteList, historyList, isFavorite, neverList, removeHistory, removeNever, setAvoidRecent, setWeatherOn, toggleFavorite, weatherOn } from './prefs.js';
@@ -127,8 +129,82 @@ export function renderSaved() {
     rows.push(...nevers.map(neverRow));
 
     el.saved.replaceChildren(...rows);
+    renderStats(today);
     el.avoidToggle.setAttribute('aria-pressed', String(avoidRecent()));
     el.weatherToggle.setAttribute('aria-pressed', String(weatherOn()));
+}
+
+/* ---------- 이번 달 통계: 숫자 3칸 + 종류별 막대 + 자주 간 곳 ---------- */
+
+function tile(label, value, sub) {
+    const box = document.createElement('div');
+    box.className = 'rl-stats__tile';
+    const v = document.createElement('p');
+    v.className = 'rl-stats__value';
+    v.textContent = value;
+    const l = document.createElement('p');
+    l.className = 'rl-stats__label';
+    l.textContent = label;
+    box.append(v, l);
+    if (sub) {
+        const s = document.createElement('p');
+        s.className = 'rl-stats__sub';
+        s.textContent = sub;
+        box.append(s);
+    }
+    return box;
+}
+
+function renderStats(today) {
+    const month = today.slice(0, 7);
+    const s = monthStats(historyList(), month);
+    if (!s.count) {
+        const note = document.createElement('p');
+        note.className = 'rl-track__empty';
+        note.textContent = `${Number(month.slice(5))}월 기록 없음 — 당첨되면 쌓임`;
+        el.stats.replaceChildren(note);
+        return;
+    }
+    const unknown = s.count - s.priced;
+    const tiles = document.createElement('div');
+    tiles.className = 'rl-stats__tiles';
+    tiles.append(
+        tile('번 먹음', String(s.count)),
+        tile('추정 지출(원)', s.spend ? priceShort(s.spend) : '—', unknown ? `${unknown}번 가격 모름` : ''),
+        tile('한 끼 보통(원)', s.avg ? priceShort(s.avg) : '—'),
+    );
+
+    // 종류별: 한 가지 색 막대 (값은 글자로도 적음)
+    const bars = document.createElement('ul');
+    bars.className = 'rl-stats__bars';
+    const max = s.types[0]?.n ?? 1;
+    bars.append(...s.types.map(({ type, n }) => {
+        const li = document.createElement('li');
+        li.title = `${typeLabel(type)} ${n}번 (${Math.round((n / s.count) * 100)}%)`;
+        const name = document.createElement('span');
+        name.className = 'rl-stats__name';
+        name.textContent = typeLabel(type);
+        const track = document.createElement('span');
+        track.className = 'rl-stats__track';
+        const bar = document.createElement('span');
+        bar.className = 'rl-stats__bar';
+        bar.style.width = `${(n / max) * 100}%`;
+        track.append(bar);
+        const num = document.createElement('span');
+        num.className = 'rl-stats__num';
+        num.textContent = String(n);
+        li.append(name, track, num);
+        return li;
+    }));
+
+    const parts = [tiles, bars];
+    if (s.top.length) {
+        const top = document.createElement('p');
+        top.className = 'rl-stats__top';
+        top.textContent = `자주 간 곳 · ${s.top.map((t) => `${t.name} ${t.n}번`).join(' · ')}`;
+        parts.push(top);
+    }
+    el.stats.replaceChildren(...parts);
 }
 
 export function initSaved() {

@@ -6,7 +6,7 @@ import { KEYS } from './constants.js';
 import { recentInfo } from './logic/recent.js';
 import { dateKey } from './logic/schedule.js';
 
-const HISTORY_MAX = 60; // 최근 기록 개수 상한 (2주치 넉넉히)
+const HISTORY_MAX = 120; // 기록 개수 상한 (한 달 통계 + 넉넉히)
 
 function read(key, fallback) {
     try {
@@ -65,6 +65,14 @@ export function removeNever(id) {
 export function addHistory(place) {
     history.unshift({ id: place.id, name: place.name, type: place.type, category: place.category, day: dateKey(new Date()) });
     history = history.slice(0, HISTORY_MAX);
+    write(KEYS.history, history);
+}
+
+/** 당첨 기록에 보통 가격을 붙임 (영수증이 가게 정보를 받은 뒤, 이번 달 지출 추정용) */
+export function setHistoryPrice(id, price) {
+    const last = history[0];
+    if (!last || last.id !== id || !price || last.price) return;
+    last.price = price;
     write(KEYS.history, history);
 }
 

@@ -49,6 +49,7 @@ export const el = {
     saved: $('saved-list'),
     avoidToggle: $('avoid-toggle'),
     weatherToggle: $('weather-toggle'),
+    stats: $('lunch-stats'),
     radiusButtons: [...document.querySelectorAll('[data-radius]')],
     typeButtons: [...document.querySelectorAll('[data-type]')],
     searchForm: $('search-form'),
