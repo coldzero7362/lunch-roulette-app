@@ -4,7 +4,7 @@
  */
 import { INK, SHUT_TONE, SLICES } from './constants.js';
 import { el, SPIN_MS } from './dom.js';
-import { blocked, ensureHours } from './hours.js';
+import { blocked, ensureHours, filtersOn } from './hours.js';
 import { renderCandidates } from './list.js';
 import { spinRotation } from './logic/format.js';
 import { autoFill, checking, spare } from './places.js';
@@ -200,16 +200,16 @@ export async function spin() {
     }
     const n = state.candidates.length;
 
-    if (state.openOnly) {
-        setStatus('영업 상태 확인 중');
+    if (filtersOn()) {
+        setStatus(state.openOnly ? '영업 상태 확인 중' : '가격 확인 중');
         await checking(() => ensureHours(state.candidates));
         renderWheel();
         renderCandidates();
     }
-    // 영업중 필터가 켜져 있으면 못 가는 칸은 추첨에서 뺌
+    // 영업중·예산 필터에 걸리는 칸은 추첨에서 뺌
     const eligible = state.candidates.map((p, i) => i).filter((i) => !blocked(state.candidates[i]));
     if (!eligible.length) {
-        setStatus('영업 중 후보 0 — 자동 채움 또는 HOURS 해제');
+        setStatus(state.openOnly ? '영업 중 후보 0 — 자동 채움 또는 HOURS 해제' : '예산 안 후보 0 — 자동 채움 또는 BUDGET 해제');
         return;
     }
 

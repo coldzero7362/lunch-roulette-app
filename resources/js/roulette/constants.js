@@ -11,7 +11,13 @@ export const KEYS = {
     log: 'lunch-roulette:log', // 오늘 결과 기록 (날짜별)
     openOnly: 'lunch-roulette:open-only', // 영업중 토글
     crt: 'lunch-roulette:crt',
-    hours: 'lunch-roulette:hours', // 오늘 받은 가게별 영업 시간표
+    hours: 'lunch-roulette:hours:v2', // 가게별 영업 시간표·메뉴 (v2: 메뉴·가격대 포함)
+    hoursAt: 'lunch-roulette:hours-at', // 영업 확인 기준 시각
+    budget: 'lunch-roulette:budget', // 예산 (메뉴 최저가 상한, 0 = 제한 없음)
+    favorites: 'lunch-roulette:favorites', // 단골 (별)
+    never: 'lunch-roulette:never', // 다시 안 감
+    history: 'lunch-roulette:history', // 최근 먹은 기록 (당첨 후 재실행·제외 안 한 것)
+    avoidRecent: 'lunch-roulette:avoid-recent', // 최근 먹은 것 피하기 켬/끔
 };
 
 export const ACCURACY_WARN_M = 1000; // 기기 위치 오차가 이보다 크면 안내

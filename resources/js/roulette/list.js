@@ -1,9 +1,13 @@
 /** SIDE A 후보 목록 (돌림판 칸과 같은 번호·색) */
 import { SHUT_TONE, SLICES } from './constants.js';
 import { el } from './dom.js';
-import { blocked, hoursTag } from './hours.js';
+import { blocked, hoursOf, hoursTag, typicalPrice } from './hours.js';
+import { priceShort, wonLabel } from './logic/format.js';
+import { daysAgoLabel } from './logic/recent.js';
 import { autoFill, exclude, spare } from './places.js';
 import { detailLink, iconKey, metaLine, well } from './rows.js';
+import { isFavorite, recentNow, toggleFavorite } from './prefs.js';
+import { render } from './render.js';
 import { state } from './state.js';
 import { openMenuSearch } from './tabs.js';
 
@@ -15,6 +19,7 @@ export function renderCandidates() {
         return;
     }
 
+    const recent = recentNow();
     el.candidates.replaceChildren(...state.candidates.map((place, i) => {
         const shut = blocked(place);
         const tone = shut ? SHUT_TONE : SLICES[i % SLICES.length];
@@ -34,14 +39,24 @@ export function renderCandidates() {
         name.className = 'rl-track__name truncate';
         name.textContent = place.name;
         const meta = metaLine(place, state.pinned.has(place.id));
-        meta.prepend(hoursTag(place));
+        const hours = hoursTag(place);
+        meta.prepend(hours);
+        const price = priceTag(place);
+        if (price) hours.after(price);
+        if (recent.ids.has(place.id)) {
+            const ago = document.createElement('span');
+            ago.className = 'rl-tag rl-tag--dim';
+            ago.textContent = daysAgoLabel(recent.ids.get(place.id));
+            ago.title = '최근에 먹은 곳';
+            meta.prepend(ago);
+        }
         info.append(name, meta);
 
         const remove = iconKey('button', 'close', `${place.name} 후보에서 제외`, '제외');
         remove.disabled = state.spinning;
         remove.addEventListener('click', () => exclude(place.id));
 
-        li.append(no, info, well(detailLink(place), remove));
+        li.append(no, info, well(detailLink(place), starKey(place), remove));
         return li;
     }));
 }
@@ -76,5 +91,31 @@ function textKey(label, onClick) {
     key.className = 'rl-key rl-key--beige rl-key--small';
     key.textContent = label;
     key.addEventListener('click', onClick);
+    return key;
+}
+
+/** 가격 배지: 보통 메뉴 가격 ('약 9천'). 메뉴판이 없으면 없음 */
+function priceTag(place) {
+    const h = hoursOf(place);
+    const price = h?.price;
+    if (!price) return null;
+    const typical = typicalPrice(h);
+    const tag = document.createElement('span');
+    tag.className = 'rl-tag rl-tag--price';
+    tag.textContent = `약 ${priceShort(typical)}`;
+    tag.title = `보통 ${wonLabel(typical)} · 메뉴 ${wonLabel(price.min)} ~ ${wonLabel(price.max)}`;
+    return tag;
+}
+
+/** 단골 별 키: 켜면 노란색, 자동 채움에서 3배로 잘 뽑힘 */
+export function starKey(place) {
+    const on = isFavorite(place.id);
+    const key = iconKey('button', 'star', `${place.name} 단골 ${on ? '해제' : '등록'}`, on ? '단골 해제' : '단골 등록 (자동 채움 확률 3배)');
+    key.setAttribute('aria-pressed', String(on));
+    if (on) key.classList.replace('rl-key--beige', 'rl-key--amber');
+    key.addEventListener('click', () => {
+        toggleFavorite(place);
+        render();
+    });
     return key;
 }
