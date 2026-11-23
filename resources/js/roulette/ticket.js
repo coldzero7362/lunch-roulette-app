@@ -12,10 +12,12 @@ import { setStatus, updateSteps } from './readout.js';
 import { addHistory, dropLastHistory } from './prefs.js';
 import { placeUrl } from './rows.js';
 import { renderSaved } from './saved.js';
+import { resetMenuPick, setMenuChoices } from './ticket-extras.js';
 import { state } from './state.js';
 
 export function showResult(place) {
     state.winner = place;
+    resetMenuPick();
     const log = readLog();
     log.unshift({ t: hhmm(new Date()), name: place.name, act: '당첨' });
     writeLog(log);
@@ -76,12 +78,14 @@ function setTicketHours(place) {
         el.resultHours.dataset.status = h.status;
         const menus = h.menus ?? [];
         el.resultMenu.hidden = !menus.length;
-        el.resultMenu.textContent = menus.length ? `대표 메뉴 · ${menus.map((m) => `${m.name} ${wonLabel(m.price)}`).join(' · ')}` : '';
+        el.resultMenu.textContent = menus.length ? `대표 메뉴 · ${menus.slice(0, 3).map((m) => `${m.name} ${wonLabel(m.price)}`).join(' · ')}` : '';
+        setMenuChoices(menus);
         return;
     }
     el.resultHours.textContent = '영업 상태 확인 중';
     el.resultHours.dataset.status = 'wait';
     el.resultMenu.hidden = true;
+    setMenuChoices([]);
     ensureHours([place]).then(() => {
         if (state.winner?.id === place.id) setTicketHours(place);
     });
@@ -96,6 +100,8 @@ function setTicketActions(on) {
     el.resultExclude.disabled = !on;
     el.resultNever.disabled = !on;
     el.resultAgain.disabled = !on;
+    el.shareText.disabled = !on;
+    el.shareImage.disabled = !on;
 }
 
 /** 프린터 칸을 대기 티켓으로 (자리는 그대로 두어 아래가 밀리지 않게) */

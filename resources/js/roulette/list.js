@@ -1,7 +1,7 @@
 /** SIDE A 후보 목록 (돌림판 칸과 같은 번호·색) */
 import { SHUT_TONE, SLICES } from './constants.js';
 import { el } from './dom.js';
-import { blocked, hoursOf, hoursTag } from './hours.js';
+import { blocked, hoursOf, hoursTag, typicalPrice } from './hours.js';
 import { priceShort, wonLabel } from './logic/format.js';
 import { daysAgoLabel } from './logic/recent.js';
 import { autoFill, exclude, spare } from './places.js';
@@ -94,14 +94,16 @@ function textKey(label, onClick) {
     return key;
 }
 
-/** 가격대 배지: 메뉴 최저가부터 ('9천~'). 메뉴판이 없으면 없음 */
+/** 가격 배지: 보통 메뉴 가격 ('약 9천'). 메뉴판이 없으면 없음 */
 function priceTag(place) {
-    const price = hoursOf(place)?.price;
+    const h = hoursOf(place);
+    const price = h?.price;
     if (!price) return null;
+    const typical = typicalPrice(h);
     const tag = document.createElement('span');
     tag.className = 'rl-tag rl-tag--price';
-    tag.textContent = `${priceShort(price.min)}~`;
-    tag.title = `메뉴 ${wonLabel(price.min)} ~ ${wonLabel(price.max)}`;
+    tag.textContent = `약 ${priceShort(typical)}`;
+    tag.title = `보통 ${wonLabel(typical)} · 메뉴 ${wonLabel(price.min)} ~ ${wonLabel(price.max)}`;
     return tag;
 }
 

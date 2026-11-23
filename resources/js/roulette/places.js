@@ -3,7 +3,7 @@
  */
 import { ACCURACY_WARN_M, HOURS_BATCH, KEYS, SLOTS_DEFAULT, SLOTS_MAX, SLOTS_MIN } from './constants.js';
 import { el, root } from './dom.js';
-import { ensureHours, isShut, loadMapHours } from './hours.js';
+import { blocked, ensureHours, filtersOn, loadMapHours } from './hours.js';
 import { shuffle, weightedPick } from './logic/pick.js';
 import { drawMarkers } from './map.js';
 import { setSearchStatus } from './menu-search.js';
@@ -77,8 +77,8 @@ export function spare() {
 }
 
 /**
- * pool 에서 need 곳을 뽑음. 영업중 필터가 켜져 있으면 뽑은 곳의 영업 상태를 확인하고
- * 못 가는 곳은 버린 뒤 모자란 만큼 다시 뽑는다 (가게마다 조회가 필요해 전체를 미리 거를 수 없음).
+ * pool 에서 need 곳을 뽑음. 영업중·예산 필터가 켜져 있으면 뽑은 곳의 영업 상태·가격을 확인하고
+ * 걸리는 곳은 버린 뒤 모자란 만큼 다시 뽑는다 (가게마다 조회가 필요해 전체를 미리 거를 수 없음).
  */
 async function pickFrom(pool, need, chosen) {
     // 최근 일주일 안에 먹은 가게는 빼고 뽑음 (그러면 모자랄 때만 그대로). 단골은 3배, 최근 먹은 종류는 덜
@@ -86,17 +86,17 @@ async function pickFrom(pool, need, chosen) {
     const notRecent = pool.filter((p) => !recent.ids.has(p.id));
     if (notRecent.length >= need) pool = notRecent;
     const ctx = { types: state.types, favorites: favoriteIds(), recent };
-    if (!state.openOnly) return weightedPick(pool, need, chosen, ctx);
+    if (!filtersOn()) return weightedPick(pool, need, chosen, ctx);
 
     const picked = [];
     const tried = new Set();
     for (let round = 0; round < 4 && picked.length < need; round++) {
-        const left = pool.filter((p) => !tried.has(p.id) && !isShut(p));
+        const left = pool.filter((p) => !tried.has(p.id) && !blocked(p));
         const batch = weightedPick(left, Math.min(HOURS_BATCH, need - picked.length), [...chosen, ...picked], ctx);
         if (!batch.length) break;
         batch.forEach((p) => tried.add(p.id));
         await ensureHours(batch);
-        picked.push(...batch.filter((p) => !isShut(p)));
+        picked.push(...batch.filter((p) => !blocked(p)));
     }
     return picked;
 }
@@ -117,13 +117,14 @@ export async function checking(task) {
 export async function autoFill() {
     const need = state.slots - state.candidates.length;
     if (need <= 0 || state.checking) return;
-    if (state.openOnly) setStatus('영업 상태 확인 중');
+    if (filtersOn()) setStatus(state.openOnly ? '영업 상태 확인 중' : '가격 확인 중');
     const picks = await checking(() => pickFrom(spare(), need, state.candidates));
     state.candidates.push(...picks);
     clearResult();
     render();
-    const what = state.openOnly ? '영업 중인 식당' : '식당';
-    if (picks.length < need) setStatus(picks.length ? `잔여 ${picks.length}곳만 추가` : `추가 가능 ${what} 없음 — 반경·종류 변경`);
+    const what = state.openOnly ? '영업 중인 식당' : state.budget ? '예산 안 식당' : '식당';
+    if (picks.length < need && picks.length && filtersOn()) setStatus(`조건 맞는 ${picks.length}곳 추가 — 채우기를 다시 누르면 더 찾음`);
+    else if (picks.length < need) setStatus(picks.length ? `잔여 ${picks.length}곳만 추가` : `추가 가능 ${what} 없음 — 반경·종류 변경`);
     else if (state.openOnly) setStatus(`자동 채움 ${picks.length}곳 · 영업 중`);
 }
 

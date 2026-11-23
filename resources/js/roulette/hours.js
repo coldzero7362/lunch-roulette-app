@@ -57,9 +57,30 @@ export function isShut(place) {
     return isShutStatus(hoursOf(place)?.status);
 }
 
-/** 영업중 토글이 켜졌을 때 추첨에서 빠지는 곳 */
+/**
+ * 보통 가격: 메뉴 가격 중간값. 예전에 받아 둔 정보(중간값 없음)는 남아 있는 메뉴 가격으로 셈 (다시 안 물어봄)
+ * @param {{ price?: { min: number, max: number, mid?: number } | null, menus?: { price: number }[] } | null} h hoursOf 결과
+ */
+export function typicalPrice(h) {
+    if (!h?.price) return null;
+    if (h.price.mid) return h.price.mid;
+    const prices = (h.menus ?? []).map((m) => m.price).filter((p) => p >= 3000).sort((a, b) => a - b);
+    return prices.length ? prices[Math.floor((prices.length - 1) / 2)] : h.price.min;
+}
+
+/** 예산보다 비싼 곳 (보통 가격 기준, 메뉴판을 모르면 통과) */
+export function overBudget(place) {
+    if (!state.budget) return false;
+    const typical = typicalPrice(hoursOf(place));
+    return typical !== null && typical > state.budget;
+}
+
+/** 영업중·예산 필터가 하나라도 켜져 있음 (뽑을 때 가게 정보를 받아 봐야 함) */
+export const filtersOn = () => state.openOnly || state.budget > 0;
+
+/** 영업중·예산 필터에 걸려 추첨에서 빠지는 곳 */
 export function blocked(place) {
-    return state.openOnly && isShut(place);
+    return (state.openOnly && isShut(place)) || overBudget(place);
 }
 
 /**
@@ -207,7 +228,30 @@ function setHoursAt(value, save = true) {
     setStatus(state.hoursAt === 'now' ? '영업 확인 기준: 지금' : `영업 확인 기준: 오늘 ${state.hoursAt}`);
 }
 
+/** 예산 키: 누를 때마다 제한 없음(예산) → 1만 원 → 1.5만 원 */
+const BUDGETS = [0, 10000, 15000];
+const budgetLabel = (b) => (b ? `~${b / 10000}만` : '예산');
+
+function setBudget(value, save = true) {
+    state.budget = BUDGETS.includes(value) ? value : 0;
+    el.budgetKey.textContent = budgetLabel(state.budget);
+    el.budgetKey.setAttribute('aria-pressed', String(state.budget > 0));
+    el.budgetKey.setAttribute('aria-label', `예산 ${state.budget ? `${state.budget.toLocaleString('ko-KR')}원 이하` : '제한 없음'}`);
+    if (!save) return;
+    try { localStorage.setItem(KEYS.budget, String(state.budget)); } catch { /* 저장 못 해도 동작 */ }
+    render();
+    drawMarkers();
+    if (!state.budget) { setStatus('예산 제한 없음'); return; }
+    setStatus(`예산: 보통 메뉴 ${state.budget.toLocaleString('ko-KR')}원 이하 (메뉴판 없는 곳은 포함)`);
+    // 후보 가격을 아직 모르면 받아 와서 다시 그림 (이미 받은 곳은 다시 안 물어봄)
+    ensureHours(state.candidates).then(() => { render(); drawMarkers(); });
+}
+
 export function initOpenOnly() {
+    let budget = 0;
+    try { budget = Number(localStorage.getItem(KEYS.budget) ?? 0); } catch { /* 비공개 모드 등 */ }
+    setBudget(budget, false);
+    el.budgetKey.addEventListener('click', () => setBudget(BUDGETS[(BUDGETS.indexOf(state.budget) + 1) % BUDGETS.length]));
     loadSaved();
     let at = 'now';
     try { at = localStorage.getItem(KEYS.hoursAt) ?? 'now'; } catch { /* 비공개 모드 등 */ }

@@ -13,6 +13,7 @@ export const KEYS = {
     crt: 'lunch-roulette:crt',
     hours: 'lunch-roulette:hours:v2', // 가게별 영업 시간표·메뉴 (v2: 메뉴·가격대 포함)
     hoursAt: 'lunch-roulette:hours-at', // 영업 확인 기준 시각
+    budget: 'lunch-roulette:budget', // 예산 (메뉴 최저가 상한, 0 = 제한 없음)
     favorites: 'lunch-roulette:favorites', // 단골 (별)
     never: 'lunch-roulette:never', // 다시 안 감
     history: 'lunch-roulette:history', // 최근 먹은 기록 (당첨 후 재실행·제외 안 한 것)
