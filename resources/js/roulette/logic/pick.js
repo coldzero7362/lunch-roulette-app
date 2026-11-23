@@ -2,6 +2,7 @@
  * 후보 뽑기 (순수 함수). rand 를 넘기면 테스트에서 결과를 고정할 수 있다.
  */
 import { recentFactor } from './recent.js';
+import { distanceFactor } from './weather.js';
 
 /** 피셔-예이츠 섞기 (원본은 그대로) */
 export function shuffle(list, rand = Math.random) {
@@ -20,10 +21,11 @@ export function shuffle(list, rand = Math.random) {
  * - 주점은 점심 후보로 덜 맞아 낮춤 (종류에서 주점을 직접 고르면 보정 안 함)
  * - 단골(favorites)은 3배
  * - 최근 먹은 것과 같은 종류면 낮춤 (recent: recentInfo 결과)
+ * - 날씨가 나쁘면(near = 반경) 먼 곳일수록 낮춤 (logic/weather.distanceFactor, 최소 0.35)
  *
- * @param {{ types?: Set<string>, favorites?: Set<string>, recent?: object|null }} ctx
+ * @param {{ types?: Set<string>, favorites?: Set<string>, recent?: object|null, near?: number|null }} ctx
  */
-export function weightOf(place, chosen, { types = new Set(), favorites = new Set(), recent = null } = {}) {
+export function weightOf(place, chosen, { types = new Set(), favorites = new Set(), recent = null, near = null } = {}) {
     let w = 1;
     if (place.type === '술집' && !types.has('술집')) w *= 0.15;
     const sameCategory = chosen.filter((p) => p.category === place.category).length;
@@ -34,6 +36,7 @@ export function weightOf(place, chosen, { types = new Set(), favorites = new Set
     }
     if (favorites.has(place.id)) w *= 3;
     w *= recentFactor(place, recent, types.size > 0);
+    if (near) w *= distanceFactor(place.distance ?? 0, near);
     return w;
 }
 

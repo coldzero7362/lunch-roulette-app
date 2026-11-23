@@ -8,7 +8,8 @@ import { distanceM } from './logic/geo.js';
 import { dateKey } from './logic/schedule.js';
 import { drawMarkers } from './map.js';
 import { addCandidate } from './places.js';
-import { avoidRecent, favoriteList, historyList, isFavorite, neverList, removeHistory, removeNever, setAvoidRecent, toggleFavorite } from './prefs.js';
+import { avoidRecent, favoriteList, historyList, isFavorite, neverList, removeHistory, removeNever, setAvoidRecent, setWeatherOn, toggleFavorite, weatherOn } from './prefs.js';
+import { ensureWeather, updateLamp, weatherNote } from './weather.js';
 import { setStatus } from './readout.js';
 import { render } from './render.js';
 import { detailLink, iconKey, metaLine, well } from './rows.js';
@@ -127,9 +128,18 @@ export function renderSaved() {
 
     el.saved.replaceChildren(...rows);
     el.avoidToggle.setAttribute('aria-pressed', String(avoidRecent()));
+    el.weatherToggle.setAttribute('aria-pressed', String(weatherOn()));
 }
 
 export function initSaved() {
+    el.weatherToggle.addEventListener('click', async () => {
+        setWeatherOn(!weatherOn());
+        render();
+        updateLamp();
+        if (!weatherOn()) { setStatus('날씨 보정: 끔'); return; }
+        await ensureWeather();
+        setStatus(`날씨 보정: 켬${weatherNote() ? ` — 지금 ${weatherNote()}` : ' (지금은 보정할 날씨 아님)'}`);
+    });
     el.avoidToggle.addEventListener('click', () => {
         setAvoidRecent(!avoidRecent());
         render();

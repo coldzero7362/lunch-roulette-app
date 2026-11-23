@@ -48,6 +48,7 @@ export const el = {
     tabs: [$('tab-a'), $('tab-b'), $('tab-c')],
     saved: $('saved-list'),
     avoidToggle: $('avoid-toggle'),
+    weatherToggle: $('weather-toggle'),
     radiusButtons: [...document.querySelectorAll('[data-radius]')],
     typeButtons: [...document.querySelectorAll('[data-type]')],
     searchForm: $('search-form'),

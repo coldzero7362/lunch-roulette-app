@@ -28,6 +28,7 @@ let favorites = read(KEYS.favorites, {}); // id → 가게
 let never = read(KEYS.never, {}); // id → { id, name }
 let history = read(KEYS.history, []); // [{ id, name, type, category, day }] 최신이 앞
 let avoid = read(KEYS.avoidRecent, true); // 최근 먹은 것 피하기 (끄면 기록만 남김)
+let weather = read(KEYS.weatherOn, true); // 날씨 보정 (비·폭염·한파면 가까운 곳 위주)
 
 /* ---------- 단골 ---------- */
 
@@ -87,6 +88,13 @@ export const avoidRecent = () => avoid;
 export function setAvoidRecent(on) {
     avoid = on;
     write(KEYS.avoidRecent, on);
+}
+
+export const weatherOn = () => weather;
+
+export function setWeatherOn(on) {
+    weather = on;
+    write(KEYS.weatherOn, on);
 }
 
 const NO_RECENT = { ids: new Map(), categories: new Map(), types: new Map() };
