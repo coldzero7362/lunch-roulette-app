@@ -134,7 +134,9 @@
                     <div class="rl-bank" role="group" aria-labelledby="lbl-hours">
                         <span id="lbl-hours" class="rl-console__label">HOURS</span>
                         <div class="rl-bank__slot">
-                            <button id="open-toggle" type="button" class="rl-bank__key" aria-pressed="false" title="켜면 지금 영업 중인 후보만 돌림판 추첨 대상">영업중</button>
+                            <button id="open-toggle" type="button" class="rl-bank__key" aria-pressed="false" title="켜면 영업 중인 후보만 추첨 (기준 시각은 옆 키)">영업중</button>
+                            <button id="hours-at" type="button" class="rl-bank__key rl-bank__key--at" aria-pressed="false" title="영업 확인 기준 시각: 누를 때마다 지금 → 12:00 → 12:30">지금</button>
+                            <button id="budget-key" type="button" class="rl-bank__key rl-bank__key--at rl-bank__key--gap" aria-pressed="false" title="예산: 누를 때마다 전체 → 1만 원 → 1.5만 원. 보통 메뉴 가격(중간값)이 넘는 곳은 추첨 제외 (메뉴판 없는 곳은 포함)">예산</button>
                         </div>
                     </div>
                     <div class="rl-bank" role="group" aria-labelledby="lbl-fx">
@@ -202,6 +204,7 @@
                     <div class="rl-tabs" role="tablist" aria-label="03 후보">
                         <button id="tab-a" type="button" role="tab" class="rl-tabs__tab" aria-selected="true" aria-controls="panel-a"><span class="rl-tabs__side">SIDE A</span><span class="rl-tabs__name">후보 <span id="candidate-count" class="rl-jcard__count">0/8</span></span></button>
                         <button id="tab-b" type="button" role="tab" class="rl-tabs__tab" aria-selected="false" aria-controls="panel-b" tabindex="-1"><span class="rl-tabs__side">SIDE B</span><span class="rl-tabs__name">메뉴 검색</span></button>
+                        <button id="tab-c" type="button" role="tab" class="rl-tabs__tab" aria-selected="false" aria-controls="panel-c" tabindex="-1"><span class="rl-tabs__side">SIDE C</span><span class="rl-tabs__name">단골·기록</span></button>
                     </div>
 
                     <div id="panel-a" role="tabpanel" aria-labelledby="tab-a">
@@ -235,6 +238,17 @@
                             <ul id="search-results" class="rl-search__results rl-scroll m-0 list-none p-0"></ul>
                         </div>
                     </div>
+
+                    <div id="panel-c" role="tabpanel" aria-labelledby="tab-c" hidden>
+                        <div class="rl-saved__bar">
+                            <span class="rl-saved__note">이 브라우저에만 저장돼요</span>
+                            <div class="rl-bank__slot"><button id="avoid-toggle" type="button" class="rl-bank__key" aria-pressed="true" title="켜면 최근 일주일 안에 먹은 곳은 자동 채움에서 빼고, 최근 먹은 종류는 덜 뽑음">최근 피하기</button></div>
+                        </div>
+                        <span class="rl-ivory__legend" aria-hidden="true">LIBRARY</span>
+                        <div class="rl-ivory__window">
+                            <ul id="saved-list" class="rl-search__results rl-scroll m-0 list-none p-0"></ul>
+                        </div>
+                    </div>
                 </div>
 
             </section>
@@ -250,13 +264,23 @@
                         <p id="result-name" class="rl-ticket__name">—</p>
                         <p id="result-meta" class="rl-ticket__meta">후보 추가 → ▶ SPIN</p>
                         <p id="result-hours" class="rl-ticket__sub">&nbsp;</p>
+                        <p id="result-menu" class="rl-ticket__sub" hidden></p>
+                        <div id="result-pick" class="rl-ticket__pick" hidden>
+                            <span class="rl-well"><button id="menu-pick" type="button" class="rl-key rl-key--beige rl-key--small">뭐 시키지?</button></span>
+                            <span id="menu-picked" class="rl-ticket__picked" aria-live="polite"></span>
+                        </div>
                         <p id="result-address" class="rl-ticket__sub">&nbsp;</p>
                         <div class="rl-ticket__cut" aria-hidden="true"></div>
                         <div class="rl-ticket__actions rl-well">
                             <a id="result-route" target="_blank" rel="noopener" class="rl-key rl-key--amber rl-key--small" aria-disabled="true" tabindex="-1">길찾기</a>
                             <a id="result-link" target="_blank" rel="noopener" class="rl-key rl-key--beige rl-key--small" aria-disabled="true" tabindex="-1">상세</a>
                             <button id="result-exclude" type="button" class="rl-key rl-key--beige rl-key--small" disabled>제외 후 재실행</button>
+                            <button id="result-never" type="button" class="rl-key rl-key--beige rl-key--small" disabled title="앞으로 자동 채움·지도에서 뺌 (SIDE B 에서 해제)">다시 안 감</button>
                             <button id="result-again" type="button" class="rl-key rl-key--beige rl-key--small" disabled>재실행</button>
+                        </div>
+                        <div class="rl-ticket__share rl-well">
+                            <button id="share-text" type="button" class="rl-key rl-key--beige rl-key--small" disabled title="슬랙·카톡에 붙여 넣을 글로 복사 (휴대폰은 공유 창)">공유</button>
+                            <button id="share-image" type="button" class="rl-key rl-key--beige rl-key--small" disabled title="이 영수증을 이미지로 저장">이미지 저장</button>
                         </div>
                         {{-- 천공 카드 느낌의 구멍 두 줄: 당첨 가게 ID·시각·거리로 무늬를 정함 (장식) --}}
                         <div id="result-punch" class="rl-ticket__punch" aria-hidden="true"></div>

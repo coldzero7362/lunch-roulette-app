@@ -80,3 +80,14 @@ describe('matchRange', () => {
         assert.equal(matchRange('판교역', '   '), null);
     });
 });
+
+describe('prices', async () => {
+    const { priceShort, wonLabel } = await import('../../resources/js/roulette/logic/format.js');
+    it('formats won', () => {
+        assert.equal(wonLabel(11000), '11,000원');
+        assert.equal(priceShort(9000), '9천');
+        assert.equal(priceShort(9500), '9.5천');
+        assert.equal(priceShort(11000), '1.1만');
+        assert.equal(priceShort(20000), '2만');
+    });
+});
