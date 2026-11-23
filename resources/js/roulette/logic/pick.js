@@ -21,7 +21,7 @@ export function shuffle(list, rand = Math.random) {
  * - 주점은 점심 후보로 덜 맞아 낮춤 (종류에서 주점을 직접 고르면 보정 안 함)
  * - 단골(favorites)은 3배
  * - 최근 먹은 것과 같은 종류면 낮춤 (recent: recentInfo 결과)
- * - 날씨가 나쁘면(near = 반경) 먼 곳일수록 낮춤 (logic/weather.distanceFactor, 최소 0.35)
+ * - 날씨가 나쁘면(near = 보정 끝 거리, logic/weather.farEdge) 먼 곳일수록 낮춤 (distanceFactor, 최소 0.35)
  *
  * @param {{ types?: Set<string>, favorites?: Set<string>, recent?: object|null, near?: number|null }} ctx
  */

@@ -22,9 +22,20 @@ export function badWeather(hour) {
 }
 
 /**
- * 거리 배수: near 까지 1, 반경 끝까지 직선으로 줄어 FAR_MIN 에서 멈춤.
- *   near = min(200m, 반경 × 0.4)
- *   f(d) = 1 − (1 − 0.35) × (d − near) / (반경 − near)
+ * 보정의 '끝' 거리: 불러온 가게 거리의 90% 지점 (설정 반경보다 크지 않게).
+ * 카카오 검색은 한 번에 45곳까지라 먼 가게가 원래 적게 들어옴 → 설정 반경을 끝으로 잡으면 0.35까지 가는 가게가 거의 없음.
+ * 그 동네에서 '먼 편'인 가게가 0.35배가 되도록 실제 분포에 맞춤
+ */
+export function farEdge(distances, radius) {
+    const sorted = distances.filter((d) => d > 0).sort((a, b) => a - b);
+    if (sorted.length < 5) return radius;
+    return Math.min(radius, sorted[Math.floor(sorted.length * 0.9)]);
+}
+
+/**
+ * 거리 배수: near 까지 1, 끝(edge)까지 직선으로 줄어 FAR_MIN 에서 멈춤.
+ *   near = min(200m, 끝 × 0.4)
+ *   f(d) = 1 − (1 − 0.35) × (d − near) / (끝 − near)
  */
 export function distanceFactor(distance, radius) {
     const near = Math.min(NEAR_MAX, radius * 0.4);

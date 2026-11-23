@@ -9,6 +9,7 @@ import { drawMarkers } from './map.js';
 import { setSearchStatus } from './menu-search.js';
 import { favoriteIds, isNever, recentNow } from './prefs.js';
 import { ensureWeather, weatherNote, weatherNow } from './weather.js';
+import { farEdge } from './logic/weather.js';
 import { api } from './net.js';
 import { setStatus } from './readout.js';
 import { render, setBusy } from './render.js';
@@ -87,7 +88,7 @@ async function pickFrom(pool, need, chosen) {
     const notRecent = pool.filter((p) => !recent.ids.has(p.id));
     if (notRecent.length >= need) pool = notRecent;
     await ensureWeather(); // 처음 뽑을 때만 받음 (이후 1시간은 저장해 둔 것)
-    const ctx = { types: state.types, favorites: favoriteIds(), recent, near: weatherNow() ? state.radius : null };
+    const ctx = { types: state.types, favorites: favoriteIds(), recent, near: weatherNow() ? farEdge(state.pool.map((p) => p.distance), state.radius) : null };
     if (!filtersOn()) return weightedPick(pool, need, chosen, ctx);
 
     const picked = [];

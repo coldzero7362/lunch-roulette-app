@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { weightOf } from '../../resources/js/roulette/logic/pick.js';
-import { badWeather, distanceFactor } from '../../resources/js/roulette/logic/weather.js';
+import { badWeather, distanceFactor, farEdge } from '../../resources/js/roulette/logic/weather.js';
 
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} != ${b}`);
 
@@ -38,5 +38,17 @@ describe('distanceFactor', () => {
         const far = { id: 'a', type: '한식', category: '국밥', distance: 500 };
         assert.equal(weightOf(far, []), 1);
         assert.equal(weightOf(far, [], { near: 500 }), 0.35);
+    });
+});
+
+describe('farEdge', () => {
+    it('uses the 90th percentile of loaded distances, capped at the radius', () => {
+        const ds = Array.from({ length: 100 }, (_, i) => i * 5); // 0..495
+        assert.equal(farEdge(ds, 500), 450); // 0m 은 빼고 99곳 중 90% 지점
+        assert.equal(farEdge(ds, 300), 300);
+    });
+
+    it('falls back to the radius with too few places', () => {
+        assert.equal(farEdge([100, 200], 500), 500);
     });
 });
