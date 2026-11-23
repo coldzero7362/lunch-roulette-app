@@ -18,6 +18,8 @@ export const KEYS = {
     never: 'lunch-roulette:never', // 다시 안 감
     history: 'lunch-roulette:history', // 최근 먹은 기록 (당첨 후 재실행·제외 안 한 것)
     avoidRecent: 'lunch-roulette:avoid-recent', // 최근 먹은 것 피하기 켬/끔
+    weather: 'lunch-roulette:weather', // 오늘 날씨 (0.1° 칸, 1시간 보관)
+    weatherOn: 'lunch-roulette:weather-on', // 날씨 보정 켬/끔
 };
 
 export const ACCURACY_WARN_M = 1000; // 기기 위치 오차가 이보다 크면 안내

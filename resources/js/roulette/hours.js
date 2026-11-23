@@ -15,6 +15,7 @@ import { api } from './net.js';
 import { setStatus } from './readout.js';
 import { render } from './render.js';
 import { state } from './state.js';
+import { updateLamp } from './weather.js';
 
 const STORE_MAX = 1500; // 브라우저에 저장해 둘 가게 수 상한
 const inFlight = new Set();
@@ -24,8 +25,8 @@ let saveTimer;
 /** 영업 확인 기준 시각 고르기: 지금 → 12:00 → 12:30 */
 const HOURS_AT = ['now', '12:00', '12:30'];
 
-/** 기준 시각의 Date (오늘 그 시각) */
-function refDate() {
+/** 기준 시각의 Date (오늘 그 시각). 날씨 보정도 이 시각 예보를 씀 */
+export function referenceTime() {
     if (state.hoursAt === 'now') return new Date();
     const [h, m] = state.hoursAt.split(':').map(Number);
     const d = new Date();
@@ -41,7 +42,7 @@ function refDate() {
 export function hoursOf(place, at = null) {
     const h = state.hours.get(place.id);
     if (!h) return null;
-    const when = at ?? refDate();
+    const when = at ?? referenceTime();
     if (h.week?.length) {
         const s = statusAt(h.week, when);
         if (s) return { ...h, ...s };
@@ -221,6 +222,7 @@ function setHoursAt(value, save = true) {
     el.hoursAt.textContent = label;
     el.hoursAt.setAttribute('aria-pressed', String(state.hoursAt !== 'now')); // 시각을 고정하면 LED 켜짐
     el.hoursAt.setAttribute('aria-label', `영업 확인 기준 ${label}`);
+    updateLamp(); // 날씨도 기준 시각 예보로
     if (!save) return;
     try { localStorage.setItem(KEYS.hoursAt, state.hoursAt); } catch { /* 저장 못 해도 동작 */ }
     render();
