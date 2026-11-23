@@ -229,6 +229,10 @@
                                 <button id="shuffle" type="button" class="rl-key rl-key--beige rl-key--sq rl-key--cap" data-icon="shuffle" aria-label="섞기" title="자동으로 넣은 후보를 다시 뽑고 순서를 섞음" disabled><span class="rl-key__cap" aria-hidden="true">섞기</span></button>
                                 <button id="clear" type="button" class="rl-key rl-key--beige rl-key--sq rl-key--cap" data-icon="trash" aria-label="비움" title="후보를 모두 비움" disabled><span class="rl-key__cap" aria-hidden="true">비우기</span></button>
                             </div>
+                            <div class="rl-well rl-legend rl-assist" data-legend="ASSIST" role="group" aria-label="자동 채움 보정">
+                                <button id="avoid-toggle" type="button" class="rl-bank__key" aria-pressed="true" title="켜면 최근 일주일 안에 먹은 곳은 자동 채움에서 빼고, 최근 먹은 종류는 덜 뽑음">최근 피하기</button>
+                                <button id="weather-toggle" type="button" class="rl-bank__key" aria-pressed="true" title="켜면 비·눈·폭염·한파 예보 때 가까운 곳 위주로 뽑음 (먼 곳은 최소 0.35배)">날씨 보정</button>
+                            </div>
                             <div class="rl-well rl-stepper rl-legend" data-legend="QTY" role="group" aria-label="후보 수">
                                 <button id="slots-down" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="minus" aria-label="후보 수 감소" title="후보 수 −"></button>
                                 <output id="slots" class="rl-counter" aria-live="polite" aria-label="후보 수 08"><span class="rl-drum"><span class="rl-drum__digit">0</span></span><span class="rl-drum"><span class="rl-drum__digit">8</span></span></output>
@@ -257,7 +261,6 @@
                     <div id="panel-c" role="tabpanel" aria-labelledby="tab-c" hidden>
                         <div class="rl-saved__bar">
                             <span class="rl-saved__note">이 브라우저에만 저장돼요</span>
-                            <div class="rl-bank__slot"><button id="avoid-toggle" type="button" class="rl-bank__key" aria-pressed="true" title="켜면 최근 일주일 안에 먹은 곳은 자동 채움에서 빼고, 최근 먹은 종류는 덜 뽑음">최근 피하기</button><button id="weather-toggle" type="button" class="rl-bank__key" aria-pressed="true" title="켜면 비·눈·폭염·한파 예보 때 가까운 곳 위주로 뽑음 (먼 곳은 최소 0.35배)">날씨 보정</button></div>
                         </div>
                         <span class="rl-ivory__legend" aria-hidden="true">THIS MONTH</span>
                         <section id="lunch-stats" class="rl-stats" aria-label="이번 달 점심 통계"></section>

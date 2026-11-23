@@ -2260,3 +2260,7 @@
 /* 눈금 위 짧은 선 */
 .rl-fader__ticks span::before { content: ''; position: absolute; top: -5px; left: 50%; width: 1px; height: 3px; background: #6e6656; }
 .rl-fader__ticks span.is-on { color: var(--c-stripe-2); text-shadow: 0 0 6px rgb(255 140 60 / .45); }
+
+/* SIDE A: 채우기 옆 ASSIST 묶음 (최근 피하기 · 날씨 보정) — 자동 채움·섞기에만 쓰는 보정이라 채우기 키 곁에 둠 */
+.rl-assist { align-self: stretch; align-items: stretch; }
+.rl-assist .rl-bank__key { font-size: 13px; white-space: nowrap; }
