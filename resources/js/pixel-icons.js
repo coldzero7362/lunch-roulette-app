@@ -29,6 +29,10 @@ const PATHS = {
     trash: ['M18 22H6V20H18V22ZM9 6H15V4H17V6H22V8H20V20H18V8H6V20H4V8H2V6H7V4H9V6ZM15 4H9V2H15V4Z'],
     // 검색
     search: ['M22 22h-2v-2h2v2Zm-2-2h-2v-2h2v2Zm-6-2H6v-2h8v2Zm4 0h-2v-2h2v2ZM6 16H4v-2h2v2Zm10 0h-2v-2h2v2ZM4 14H2V6h2v8Zm14 0h-2V6h2v8ZM6 6H4V4h2v2Zm10 0h-2V4h2v2Zm-2-2H6V2h8v2Z'],
+    // 최근 피하기 (시계) — 직접 그림
+    clock: ['M8 2h8v2H8zM6 4h2v2H6zm10 0h2v2h-2zM4 6h2v2H4zm14 0h2v2h-2zM2 8h2v8H2zm18 0h2v8h-2zM4 16h2v2H4zm14 0h2v2h-2zM6 18h2v2H6zm10 0h2v2h-2zM8 20h8v2H8zM11 6h2v7h-2zm2 5h4v2h-4z'],
+    // 날씨 보정 (비구름) — 직접 그림
+    rain: ['M7 4h6v2H7zM5 6h2v2H5zm8 0h6v2h-6zM3 8h2v4H3zm16 0h2v4h-2zM3 12h18v2H3zM6 16h2v2H6zm-1 2h2v2H5zm6-2h2v2h-2zm-1 2h2v2h-2zm6-2h2v2h-2zm-1 2h2v2h-2z'],
     // 단골 (별)
     star: ['M11 2h2v4h-2zM9 6h6v2H9zM2 8h20v2H2zm2 2h16v2H4zm2 2h12v2H6zm1 2h10v2H7zm-1 2h4v2H6zm8 0h4v2h-4zm-9 2h3v2H5zm11 0h3v2h-3zM4 20h2v2H4zm14 0h2v2h-2z'],
     // 현재 위치

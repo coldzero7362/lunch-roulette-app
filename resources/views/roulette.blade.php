@@ -230,8 +230,8 @@
                                 <button id="clear" type="button" class="rl-key rl-key--beige rl-key--sq rl-key--cap" data-icon="trash" aria-label="비움" title="후보를 모두 비움" disabled><span class="rl-key__cap" aria-hidden="true">비우기</span></button>
                             </div>
                             <div class="rl-well rl-legend rl-assist" data-legend="ASSIST" role="group" aria-label="자동 채움 보정">
-                                <button id="avoid-toggle" type="button" class="rl-bank__key" aria-pressed="true" title="켜면 최근 일주일 안에 먹은 곳은 자동 채움에서 빼고, 최근 먹은 종류는 덜 뽑음">최근 피하기</button>
-                                <button id="weather-toggle" type="button" class="rl-bank__key" aria-pressed="true" title="켜면 비·눈·폭염·한파 예보 때 가까운 곳 위주로 뽑음 (먼 곳은 최소 0.35배)">날씨 보정</button>
+                                <button id="avoid-toggle" type="button" class="rl-key rl-key--beige rl-key--sq rl-key--cap" data-icon="clock" aria-pressed="true" aria-label="최근 먹은 곳 피하기" title="켜면 최근 일주일 안에 먹은 곳은 자동 채움에서 빼고, 최근 먹은 종류는 덜 뽑음"><span class="rl-key__cap" aria-hidden="true">최근</span></button>
+                                <button id="weather-toggle" type="button" class="rl-key rl-key--beige rl-key--sq rl-key--cap" data-icon="rain" aria-pressed="true" aria-label="날씨 보정" title="켜면 비·눈·폭염·한파 예보 때 가까운 곳 위주로 뽑음 (먼 곳은 최소 0.35배)"><span class="rl-key__cap" aria-hidden="true">날씨</span></button>
                             </div>
                             <div class="rl-well rl-stepper rl-legend" data-legend="QTY" role="group" aria-label="후보 수">
                                 <button id="slots-down" type="button" class="rl-key rl-key--beige rl-key--sq" data-icon="minus" aria-label="후보 수 감소" title="후보 수 −"></button>

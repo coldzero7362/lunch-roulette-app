@@ -322,7 +322,7 @@
 .rl-key--sq-lg svg { width: 24px; height: 24px; }
 
 /* 도구 줄: 마법봉·섞기처럼 선이 복잡한 아이콘은 줄이면 뭉개지므로 원래 크기(24px), 키 34px */
-.rl-jcard__tools { align-items: center; }
+.rl-jcard__tools { align-items: flex-start; } /* 묶음 위 표기(LOAD·ASSIST·QTY)가 한 줄에 맞게 */
 .rl-jcard__tools .rl-key--sq { width: 34px; height: 34px; }
 
 /* 이름이 새겨진 아이콘 키: 아이콘 위, 이름 아래 (도구 줄) */
@@ -2261,6 +2261,5 @@
 .rl-fader__ticks span::before { content: ''; position: absolute; top: -5px; left: 50%; width: 1px; height: 3px; background: #6e6656; }
 .rl-fader__ticks span.is-on { color: var(--c-stripe-2); text-shadow: 0 0 6px rgb(255 140 60 / .45); }
 
-/* SIDE A: 채우기 옆 ASSIST 묶음 (최근 피하기 · 날씨 보정) — 자동 채움·섞기에만 쓰는 보정이라 채우기 키 곁에 둠 */
-.rl-assist { align-self: stretch; align-items: stretch; }
-.rl-assist .rl-bank__key { font-size: 13px; white-space: nowrap; }
+/* SIDE A: 채우기 옆 ASSIST 묶음 (최근 피하기 · 날씨 보정) — LOAD 키와 같은 아이콘 키, 켜져 있으면 노란 키 */
+.rl-assist .rl-key[aria-pressed='true'] { --key: #e2a83a; }
