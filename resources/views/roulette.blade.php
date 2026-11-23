@@ -160,16 +160,16 @@
                             <button id="crt-toggle" type="button" class="rl-bank__key" aria-pressed="true">CRT</button>
                         </div>
                     </div>
+                    {{-- 장식: 타공 스피커 그릴 (넓은 화면: 컨트롤 오른쪽, 높이는 TYPE 줄까지) --}}
+                    <div class="rl-speaker" aria-hidden="true">
+                        <div class="rl-speaker__grille">
+                            <span class="rl-screw tl"></span>
+                            <span class="rl-screw tr"></span>
+                            <span class="rl-screw bl"></span>
+                            <span class="rl-screw br"></span>
+                        </div>
                 </div>
 
-                {{-- 장식: 타공 스피커 그릴 (넓은 화면에서 컨트롤 오른쪽 빈자리) --}}
-                <div class="rl-speaker" aria-hidden="true">
-                    <div class="rl-speaker__grille">
-                        <span class="rl-screw tl"></span>
-                        <span class="rl-screw tr"></span>
-                        <span class="rl-screw bl"></span>
-                        <span class="rl-screw br"></span>
-                    </div>
                 </div>
                 </div>
             </section>
