@@ -210,8 +210,9 @@ class OpenHoursTest extends TestCase
                 ['name' => '제육볶음', 'price' => 11000],
                 ['name' => '공기밥', 'price' => 1000],
                 ['name' => '김치찌개', 'price' => 9000],
+                ['name' => '모듬전', 'price' => 22000],
             ])
-            ->assertJsonPath('hours.601.price', ['min' => 9000, 'max' => 22000]);
+            ->assertJsonPath('hours.601.price', ['min' => 9000, 'max' => 22000, 'mid' => 11000]);
     }
 
     public function test_many_places_are_fetched_in_small_concurrent_chunks(): void

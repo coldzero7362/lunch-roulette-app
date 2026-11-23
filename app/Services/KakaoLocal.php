@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\RateLimiter;
  * @phpstan-type Location array{name: string, address: string, kind: string, lat: float, lng: float}
  * @phpstan-type Day array{date: string, off: bool, open: string|null, close: string|null, breaks: list<array{0: string, 1: string}>}
  * @phpstan-type Menu array{name: string, price: int}
- * @phpstan-type Hours array{status: 'open'|'break'|'closed'|'unknown', label: string, info: string, today: string, week: list<Day>, menus: list<Menu>, price: array{min: int, max: int}|null}
+ * @phpstan-type Hours array{status: 'open'|'break'|'closed'|'unknown', label: string, info: string, today: string, week: list<Day>, menus: list<Menu>, price: array{min: int, max: int, mid: int}|null}
  */
 class KakaoLocal
 {
@@ -48,6 +48,9 @@ class KakaoLocal
 
     /** 가격대 계산에서 빼는 값 (반찬·음료·추가 메뉴) */
     private const PRICE_FLOOR = 3000;
+
+    /** 남기는 메뉴 수 (영수증엔 앞 3개, 메뉴 뽑기엔 전부) */
+    private const MENU_KEEP = 10;
 
     /** 장소 상세를 한 번에 동시에 부르는 수 */
     private const DETAIL_CONCURRENCY = 10;
@@ -340,9 +343,9 @@ class KakaoLocal
     }
 
     /**
-     * 메뉴판 → 대표 메뉴 3개(가게 추천 먼저, 없으면 메뉴판 순서) + 가격대(3천원 미만 반찬·음료는 빼고).
+     * 메뉴판 → 메뉴 최대 10개(가게 추천 먼저, 없으면 메뉴판 순서) + 가격대·보통 가격(3천원 미만 반찬·음료는 빼고).
      *
-     * @return array{menus: list<Menu>, price: array{min: int, max: int}|null}
+     * @return array{menus: list<Menu>, price: array{min: int, max: int, mid: int}|null}
      */
     private function toMenu(mixed $items): array
     {
@@ -360,12 +363,24 @@ class KakaoLocal
 
         // 추천 먼저, 그다음 메뉴판 순서 (usort 는 같은 값끼리 순서를 지킴)
         usort($menus, fn (array $a, array $b) => $b['pick'] <=> $a['pick']);
-        $top = array_map(fn (array $m) => ['name' => $m['name'], 'price' => $m['price']], array_slice($menus, 0, 3));
+        $top = array_map(fn (array $m) => ['name' => $m['name'], 'price' => $m['price']], array_slice($menus, 0, self::MENU_KEEP));
 
         return [
             'menus' => $top,
-            'price' => $prices === [] ? null : ['min' => min($prices), 'max' => max($prices)],
+            'price' => $prices === [] ? null : ['min' => min($prices), 'max' => max($prices), 'mid' => $this->median($prices)],
         ];
+    }
+
+    /**
+     * 보통 가격: 메뉴 가격의 중간값 (음료 하나·코스 하나에 휘둘리지 않게). 짝수 개면 가운데 둘 중 싼 쪽
+     *
+     * @param  list<int>  $prices
+     */
+    private function median(array $prices): int
+    {
+        sort($prices);
+
+        return $prices[intdiv(count($prices) - 1, 2)];
     }
 
     /**
