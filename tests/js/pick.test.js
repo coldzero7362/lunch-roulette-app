@@ -18,7 +18,7 @@ describe('weightOf', () => {
     it('cuts pubs to 15% unless 주점 was chosen as a type', () => {
         const pub = place('p', '술집', '호프');
         assert.equal(weightOf(pub, []), 0.15);
-        assert.equal(weightOf(pub, [], new Set(['술집'])), 1);
+        assert.equal(weightOf(pub, [], { types: new Set(['술집']) }), 1);
     });
 
     it('strongly avoids a category already on the wheel', () => {
@@ -29,7 +29,22 @@ describe('weightOf', () => {
 
     it('ignores the big-type balance once a type filter is on', () => {
         const chosen = [place('x', '한식', '국밥')];
-        assert.equal(weightOf(place('a', '한식', '냉면'), chosen, new Set(['한식'])), 1);
+        assert.equal(weightOf(place('a', '한식', '냉면'), chosen, { types: new Set(['한식']) }), 1);
+    });
+});
+
+describe('weightOf: favorites and recent meals', () => {
+    it('triples favorites', () => {
+        assert.equal(weightOf(place('f', '일식', '초밥'), [], { favorites: new Set(['f']) }), 3);
+    });
+
+    it('lowers what was eaten lately', () => {
+        const recent = { ids: new Map(), categories: new Map([['국밥', 1]]), types: new Map([['한식', 1]]) };
+        // 어제 국밥: 세부 분류 0.4 × 큰 분류 0.7
+        assert.equal(weightOf(place('a', '한식', '국밥'), [], { recent }), 0.4 * 0.7);
+        // 종류를 직접 골랐으면 큰 분류 보정은 없음
+        assert.equal(weightOf(place('a', '한식', '국밥'), [], { recent, types: new Set(['한식']) }), 0.4);
+        assert.equal(weightOf(place('b', '중식', '짬뽕'), [], { recent }), 1);
     });
 });
 
@@ -48,7 +63,7 @@ describe('weightedPick', () => {
 
     it('follows the weights for a given random draw', () => {
         // 처음엔 세 곳 모두 무게 1 (합 3): 0.5×3 = 1.5 → 두 번째 칸(b)
-        const [first] = weightedPick(pool, 1, [], new Set(), sequence(0.5));
+        const [first] = weightedPick(pool, 1, [], {}, sequence(0.5));
         assert.equal(first.id, 'b');
     });
 

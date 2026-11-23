@@ -21,16 +21,35 @@ const inFlight = new Set();
 let queueTimer;
 let saveTimer;
 
-/** 가게의 지금 상태 { status, label, info, today } (모르면 null → 다시 물어봄) */
-export function hoursOf(place) {
+/** 영업 확인 기준 시각 고르기: 지금 → 12:00 → 12:30 */
+const HOURS_AT = ['now', '12:00', '12:30'];
+
+/** 기준 시각의 Date (오늘 그 시각) */
+function refDate() {
+    if (state.hoursAt === 'now') return new Date();
+    const [h, m] = state.hoursAt.split(':').map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d;
+}
+
+/**
+ * 가게의 상태 { status, label, info, today, menus, price } (모르면 null → 다시 물어봄).
+ * at 을 안 주면 기준 시각(지금 / 12:00 / 12:30), 주면 그 시각 (영수증은 늘 '지금').
+ * 시간표가 없는 가게는 서버가 준 '지금' 상태뿐이라, 다른 기준 시각에선 정보 없음으로 봄
+ */
+export function hoursOf(place, at = null) {
     const h = state.hours.get(place.id);
     if (!h) return null;
-    // 오늘이 들어 있는 시간표가 있으면 지금 시각으로 계산
+    const when = at ?? refDate();
     if (h.week?.length) {
-        const now = statusAt(h.week);
-        if (now) return { ...h, ...now };
+        const s = statusAt(h.week, when);
+        if (s) return { ...h, ...s };
     }
-    return freshHours(h);
+    const fresh = freshHours(h);
+    if (!fresh) return null;
+    const asNow = at !== null || state.hoursAt === 'now';
+    return asNow ? fresh : { ...fresh, status: 'unknown', label: '', info: '' };
 }
 
 /** 지금 못 가는 곳 (영업 전·마감·휴무·브레이크) */
@@ -38,9 +57,30 @@ export function isShut(place) {
     return isShutStatus(hoursOf(place)?.status);
 }
 
-/** 영업중 토글이 켜졌을 때 추첨에서 빠지는 곳 */
+/**
+ * 보통 가격: 메뉴 가격 중간값. 예전에 받아 둔 정보(중간값 없음)는 남아 있는 메뉴 가격으로 셈 (다시 안 물어봄)
+ * @param {{ price?: { min: number, max: number, mid?: number } | null, menus?: { price: number }[] } | null} h hoursOf 결과
+ */
+export function typicalPrice(h) {
+    if (!h?.price) return null;
+    if (h.price.mid) return h.price.mid;
+    const prices = (h.menus ?? []).map((m) => m.price).filter((p) => p >= 3000).sort((a, b) => a - b);
+    return prices.length ? prices[Math.floor((prices.length - 1) / 2)] : h.price.min;
+}
+
+/** 예산보다 비싼 곳 (보통 가격 기준, 메뉴판을 모르면 통과) */
+export function overBudget(place) {
+    if (!state.budget) return false;
+    const typical = typicalPrice(hoursOf(place));
+    return typical !== null && typical > state.budget;
+}
+
+/** 영업중·예산 필터가 하나라도 켜져 있음 (뽑을 때 가게 정보를 받아 봐야 함) */
+export const filtersOn = () => state.openOnly || state.budget > 0;
+
+/** 영업중·예산 필터에 걸려 추첨에서 빠지는 곳 */
 export function blocked(place) {
-    return state.openOnly && isShut(place);
+    return (state.openOnly && isShut(place)) || overBudget(place);
 }
 
 /**
@@ -175,8 +215,48 @@ function setOpenOnly(on, save = true) {
     }
 }
 
+function setHoursAt(value, save = true) {
+    state.hoursAt = HOURS_AT.includes(value) ? value : 'now';
+    const label = state.hoursAt === 'now' ? '지금' : state.hoursAt;
+    el.hoursAt.textContent = label;
+    el.hoursAt.setAttribute('aria-pressed', String(state.hoursAt !== 'now')); // 시각을 고정하면 LED 켜짐
+    el.hoursAt.setAttribute('aria-label', `영업 확인 기준 ${label}`);
+    if (!save) return;
+    try { localStorage.setItem(KEYS.hoursAt, state.hoursAt); } catch { /* 저장 못 해도 동작 */ }
+    render();
+    drawMarkers();
+    setStatus(state.hoursAt === 'now' ? '영업 확인 기준: 지금' : `영업 확인 기준: 오늘 ${state.hoursAt}`);
+}
+
+/** 예산 키: 누를 때마다 제한 없음(예산) → 1만 원 → 1.5만 원 */
+const BUDGETS = [0, 10000, 15000];
+const budgetLabel = (b) => (b ? `~${b / 10000}만` : '예산');
+
+function setBudget(value, save = true) {
+    state.budget = BUDGETS.includes(value) ? value : 0;
+    el.budgetKey.textContent = budgetLabel(state.budget);
+    el.budgetKey.setAttribute('aria-pressed', String(state.budget > 0));
+    el.budgetKey.setAttribute('aria-label', `예산 ${state.budget ? `${state.budget.toLocaleString('ko-KR')}원 이하` : '제한 없음'}`);
+    if (!save) return;
+    try { localStorage.setItem(KEYS.budget, String(state.budget)); } catch { /* 저장 못 해도 동작 */ }
+    render();
+    drawMarkers();
+    if (!state.budget) { setStatus('예산 제한 없음'); return; }
+    setStatus(`예산: 보통 메뉴 ${state.budget.toLocaleString('ko-KR')}원 이하 (메뉴판 없는 곳은 포함)`);
+    // 후보 가격을 아직 모르면 받아 와서 다시 그림 (이미 받은 곳은 다시 안 물어봄)
+    ensureHours(state.candidates).then(() => { render(); drawMarkers(); });
+}
+
 export function initOpenOnly() {
+    let budget = 0;
+    try { budget = Number(localStorage.getItem(KEYS.budget) ?? 0); } catch { /* 비공개 모드 등 */ }
+    setBudget(budget, false);
+    el.budgetKey.addEventListener('click', () => setBudget(BUDGETS[(BUDGETS.indexOf(state.budget) + 1) % BUDGETS.length]));
     loadSaved();
+    let at = 'now';
+    try { at = localStorage.getItem(KEYS.hoursAt) ?? 'now'; } catch { /* 비공개 모드 등 */ }
+    setHoursAt(at, false);
+    el.hoursAt.addEventListener('click', () => setHoursAt(HOURS_AT[(HOURS_AT.indexOf(state.hoursAt) + 1) % HOURS_AT.length]));
     startClock();
     let saved = null;
     try { saved = localStorage.getItem(KEYS.openOnly); } catch { /* 비공개 모드 등 */ }

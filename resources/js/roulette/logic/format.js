@@ -82,3 +82,14 @@ export function matchRange(text, query) {
     if (at === -1) return null;
     return [positions[at], positions[at + q.length - 1] + 1];
 }
+
+/** 11000 → '11,000원' */
+export function wonLabel(won) {
+    return `${won.toLocaleString('ko-KR')}원`;
+}
+
+/** 짧은 가격: 9000 → '9천', 9500 → '9.5천', 11000 → '1.1만', 20000 → '2만' */
+export function priceShort(won) {
+    const trim = (n) => String(Number(n.toFixed(1)));
+    return won >= 10000 ? `${trim(won / 10000)}만` : `${trim(won / 1000)}천`;
+}
