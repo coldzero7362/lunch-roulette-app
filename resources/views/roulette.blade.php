@@ -203,6 +203,7 @@
                     <div class="rl-tabs" role="tablist" aria-label="03 후보">
                         <button id="tab-a" type="button" role="tab" class="rl-tabs__tab" aria-selected="true" aria-controls="panel-a"><span class="rl-tabs__side">SIDE A</span><span class="rl-tabs__name">후보 <span id="candidate-count" class="rl-jcard__count">0/8</span></span></button>
                         <button id="tab-b" type="button" role="tab" class="rl-tabs__tab" aria-selected="false" aria-controls="panel-b" tabindex="-1"><span class="rl-tabs__side">SIDE B</span><span class="rl-tabs__name">메뉴 검색</span></button>
+                        <button id="tab-c" type="button" role="tab" class="rl-tabs__tab" aria-selected="false" aria-controls="panel-c" tabindex="-1"><span class="rl-tabs__side">SIDE C</span><span class="rl-tabs__name">단골·기록</span></button>
                     </div>
 
                     <div id="panel-a" role="tabpanel" aria-labelledby="tab-a">
@@ -234,6 +235,17 @@
                         <div class="rl-ivory__window">
                             <p id="search-status" class="rl-track__empty" aria-live="polite">반경 내 메뉴 검색 → [+]로 후보 추가</p>
                             <ul id="search-results" class="rl-search__results rl-scroll m-0 list-none p-0"></ul>
+                        </div>
+                    </div>
+
+                    <div id="panel-c" role="tabpanel" aria-labelledby="tab-c" hidden>
+                        <div class="rl-saved__bar">
+                            <span class="rl-saved__note">이 브라우저에만 저장돼요</span>
+                            <div class="rl-bank__slot"><button id="avoid-toggle" type="button" class="rl-bank__key" aria-pressed="true" title="켜면 최근 일주일 안에 먹은 곳은 자동 채움에서 빼고, 최근 먹은 종류는 덜 뽑음">최근 피하기</button></div>
+                        </div>
+                        <span class="rl-ivory__legend" aria-hidden="true">LIBRARY</span>
+                        <div class="rl-ivory__window">
+                            <ul id="saved-list" class="rl-search__results rl-scroll m-0 list-none p-0"></ul>
                         </div>
                     </div>
                 </div>

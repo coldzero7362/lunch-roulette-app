@@ -11,6 +11,7 @@ import { clearWinnerMarker, highlightWinner, restoreView } from './map.js';
 import { setStatus, updateSteps } from './readout.js';
 import { addHistory, dropLastHistory } from './prefs.js';
 import { placeUrl } from './rows.js';
+import { renderSaved } from './saved.js';
 import { state } from './state.js';
 
 export function showResult(place) {
@@ -19,6 +20,7 @@ export function showResult(place) {
     log.unshift({ t: hhmm(new Date()), name: place.name, act: '당첨' });
     writeLog(log);
     addHistory(place); // 최근 먹은 곳 (재실행·제외하면 지움)
+    renderSaved();
 
     el.resultTime.textContent = `LR-01 · ${hhmm(new Date())}`;
     el.resultNo.textContent = `NO.${String(log.filter((e) => e.act !== '-').length).padStart(2, '0')}`;
@@ -140,6 +142,7 @@ export function markLastResult(act) {
         log[0].act = act;
         writeLog(log);
         dropLastHistory(); // 실제로 안 간 것이니 최근 기록에서 뺌
+        renderSaved();
     }
 }
 

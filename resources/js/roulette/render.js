@@ -1,4 +1,5 @@
 /** 상태가 바뀌면 화면 전체를 다시 맞춤 + 키 잠금 */
+import { renderSaved } from './saved.js';
 import { SLOTS_MAX, SLOTS_MIN } from './constants.js';
 import { el } from './dom.js';
 import { queueHours } from './hours.js';
@@ -14,7 +15,8 @@ export function render() {
     queueHours();
     renderWheel();
     renderCandidates();
-    renderSearchResults(); // 검색 결과, 없으면 단골·다시 안 감 목록
+    if (state.searchResults.length) renderSearchResults();
+    renderSaved();
     setBusy(state.spinning);
     updateReadout();
     if (!state.winner) setTicketIdle(); // 대기 문구를 후보 상태에 맞춤

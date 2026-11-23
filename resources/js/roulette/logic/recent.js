@@ -5,6 +5,14 @@
 /** 이 날수 안에 먹은 가게는 자동 채움에서 빼고, 목록에 'n일 전' 표시 */
 export const RECENT_DAYS = 7;
 
+/** 기록 날짜 → '오늘' / '어제' / 'n일 전' (일주일 넘으면 'M/D') */
+export function daysGapLabel(day, today) {
+    const n = daysBetween(day, today);
+    if (n < RECENT_DAYS) return daysAgoLabel(n);
+    const [, m, d] = day.split('-').map(Number);
+    return `${m}/${d}`;
+}
+
 /** 'YYYY-MM-DD' 두 날짜 사이 날수 (to - from) */
 export function daysBetween(from, to) {
     const [a, b] = [from, to].map((k) => {

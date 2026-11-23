@@ -16,6 +16,7 @@ import { applyCenter, drawRadius, forgetPlace, initMap, locate, savedPlace } fro
 import { initMenuSearch } from './roulette/menu-search.js';
 import { autoFill, clearCandidates, exclude, fetchPlaces, initSlots, reshuffle, setSlots } from './roulette/places.js';
 import { addNever } from './roulette/prefs.js';
+import { initSaved } from './roulette/saved.js';
 import { updateReadout } from './roulette/readout.js';
 import { state } from './roulette/state.js';
 import { clearResult, markLastResult, renderLog, setTicketIdle } from './roulette/ticket.js';
@@ -120,6 +121,7 @@ initTabs();
 initKeys();
 initLocationSearch();
 initMenuSearch();
+initSaved();
 initSlots();
 initCrt();
 initOpenOnly();

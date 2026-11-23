@@ -41,3 +41,12 @@ describe('daysAgoLabel', () => {
         assert.equal(daysAgoLabel(3), '3일 전');
     });
 });
+
+describe('daysGapLabel', async () => {
+    const { daysGapLabel } = await import('../../resources/js/roulette/logic/recent.js');
+    it('says how long ago, then the date once past a week', () => {
+        assert.equal(daysGapLabel('2026-11-23', '2026-11-23'), '오늘');
+        assert.equal(daysGapLabel('2026-11-22', '2026-11-23'), '1일 전');
+        assert.equal(daysGapLabel('2026-11-10', '2026-11-23'), '11/10');
+    });
+});

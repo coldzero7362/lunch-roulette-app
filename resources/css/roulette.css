@@ -2143,3 +2143,8 @@
     #candidates .rl-key--detail { display: none; }
     .rl-track .rl-tag--type { display: none; }
 }
+
+/* SIDE C (단골·기록): 위에 설명 + 최근 피하기 스위치 */
+.rl-saved__bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.rl-saved__note { min-width: 0; font-size: 12px; color: var(--c-panel-2); }
+.rl-saved__bar .rl-bank__key { white-space: nowrap; font-size: 13px; }

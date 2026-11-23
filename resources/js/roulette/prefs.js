@@ -27,6 +27,7 @@ const snapshot = (p) => ({ id: p.id, name: p.name, type: p.type, category: p.cat
 let favorites = read(KEYS.favorites, {}); // id → 가게
 let never = read(KEYS.never, {}); // id → { id, name }
 let history = read(KEYS.history, []); // [{ id, name, type, category, day }] 최신이 앞
+let avoid = read(KEYS.avoidRecent, true); // 최근 먹은 것 피하기 (끄면 기록만 남김)
 
 /* ---------- 단골 ---------- */
 
@@ -72,7 +73,25 @@ export function dropLastHistory() {
     write(KEYS.history, history);
 }
 
-/** 오늘 기준 최근 기록 요약 (logic/recent.recentInfo) */
+/** 기록 한 줄 지우기 (history 배열 위치) */
+export function removeHistory(index) {
+    history.splice(index, 1);
+    write(KEYS.history, history);
+}
+
+/** 기록 목록 (최신이 앞) */
+export const historyList = () => history;
+
+export const avoidRecent = () => avoid;
+
+export function setAvoidRecent(on) {
+    avoid = on;
+    write(KEYS.avoidRecent, on);
+}
+
+const NO_RECENT = { ids: new Map(), categories: new Map(), types: new Map() };
+
+/** 오늘 기준 최근 기록 요약 (logic/recent.recentInfo). 피하기를 끄면 빈 요약 */
 export function recentNow() {
-    return recentInfo(history, dateKey(new Date()));
+    return avoid ? recentInfo(history, dateKey(new Date())) : NO_RECENT;
 }
