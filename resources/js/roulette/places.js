@@ -7,6 +7,7 @@ import { ensureHours, isShut, loadMapHours } from './hours.js';
 import { shuffle, weightedPick } from './logic/pick.js';
 import { drawMarkers } from './map.js';
 import { setSearchStatus } from './menu-search.js';
+import { favoriteIds, isNever, recentNow } from './prefs.js';
 import { api } from './net.js';
 import { setStatus } from './readout.js';
 import { render, setBusy } from './render.js';
@@ -66,7 +67,7 @@ export function areaParams() {
 
 /** 반경 안 식당 중 뺀 곳·직접 넣은 곳 제외 */
 function available() {
-    return state.pool.filter((p) => !state.excluded.has(p.id) && !state.pinned.has(p.id));
+    return state.pool.filter((p) => !state.excluded.has(p.id) && !state.pinned.has(p.id) && !isNever(p.id));
 }
 
 /** 반경 안 식당 중 아직 안 올라간 곳 (뺀 곳 제외) */
@@ -80,13 +81,18 @@ export function spare() {
  * 못 가는 곳은 버린 뒤 모자란 만큼 다시 뽑는다 (가게마다 조회가 필요해 전체를 미리 거를 수 없음).
  */
 async function pickFrom(pool, need, chosen) {
-    if (!state.openOnly) return weightedPick(pool, need, chosen, state.types);
+    // 최근 일주일 안에 먹은 가게는 빼고 뽑음 (그러면 모자랄 때만 그대로). 단골은 3배, 최근 먹은 종류는 덜
+    const recent = recentNow();
+    const notRecent = pool.filter((p) => !recent.ids.has(p.id));
+    if (notRecent.length >= need) pool = notRecent;
+    const ctx = { types: state.types, favorites: favoriteIds(), recent };
+    if (!state.openOnly) return weightedPick(pool, need, chosen, ctx);
 
     const picked = [];
     const tried = new Set();
     for (let round = 0; round < 4 && picked.length < need; round++) {
         const left = pool.filter((p) => !tried.has(p.id) && !isShut(p));
-        const batch = weightedPick(left, Math.min(HOURS_BATCH, need - picked.length), [...chosen, ...picked], state.types);
+        const batch = weightedPick(left, Math.min(HOURS_BATCH, need - picked.length), [...chosen, ...picked], ctx);
         if (!batch.length) break;
         batch.forEach((p) => tried.add(p.id));
         await ensureHours(batch);

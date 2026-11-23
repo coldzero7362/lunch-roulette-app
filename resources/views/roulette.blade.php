@@ -134,7 +134,8 @@
                     <div class="rl-bank" role="group" aria-labelledby="lbl-hours">
                         <span id="lbl-hours" class="rl-console__label">HOURS</span>
                         <div class="rl-bank__slot">
-                            <button id="open-toggle" type="button" class="rl-bank__key" aria-pressed="false" title="켜면 지금 영업 중인 후보만 돌림판 추첨 대상">영업중</button>
+                            <button id="open-toggle" type="button" class="rl-bank__key" aria-pressed="false" title="켜면 영업 중인 후보만 추첨 (기준 시각은 옆 키)">영업중</button>
+                            <button id="hours-at" type="button" class="rl-bank__key rl-bank__key--at" aria-pressed="false" title="영업 확인 기준 시각: 누를 때마다 지금 → 12:00 → 12:30">지금</button>
                         </div>
                     </div>
                     <div class="rl-bank" role="group" aria-labelledby="lbl-fx">
@@ -250,12 +251,14 @@
                         <p id="result-name" class="rl-ticket__name">—</p>
                         <p id="result-meta" class="rl-ticket__meta">후보 추가 → ▶ SPIN</p>
                         <p id="result-hours" class="rl-ticket__sub">&nbsp;</p>
+                        <p id="result-menu" class="rl-ticket__sub" hidden></p>
                         <p id="result-address" class="rl-ticket__sub">&nbsp;</p>
                         <div class="rl-ticket__cut" aria-hidden="true"></div>
                         <div class="rl-ticket__actions rl-well">
                             <a id="result-route" target="_blank" rel="noopener" class="rl-key rl-key--amber rl-key--small" aria-disabled="true" tabindex="-1">길찾기</a>
                             <a id="result-link" target="_blank" rel="noopener" class="rl-key rl-key--beige rl-key--small" aria-disabled="true" tabindex="-1">상세</a>
                             <button id="result-exclude" type="button" class="rl-key rl-key--beige rl-key--small" disabled>제외 후 재실행</button>
+                            <button id="result-never" type="button" class="rl-key rl-key--beige rl-key--small" disabled title="앞으로 자동 채움·지도에서 뺌 (SIDE B 에서 해제)">다시 안 감</button>
                             <button id="result-again" type="button" class="rl-key rl-key--beige rl-key--small" disabled>재실행</button>
                         </div>
                         {{-- 천공 카드 느낌의 구멍 두 줄: 당첨 가게 ID·시각·거리로 무늬를 정함 (장식) --}}

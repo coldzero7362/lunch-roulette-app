@@ -4,11 +4,12 @@
 import { LOG_ROWS } from './constants.js';
 import { el, REDUCED_MOTION } from './dom.js';
 import { ensureHours, hoursOf } from './hours.js';
-import { hhmm, logKey, typeLabel, walkMinutes } from './logic/format.js';
+import { hhmm, logKey, typeLabel, walkMinutes, wonLabel } from './logic/format.js';
 import { hoursText } from './logic/hours.js';
 import { punchColumns, punchDigits } from './logic/punch.js';
 import { clearWinnerMarker, highlightWinner, restoreView } from './map.js';
 import { setStatus, updateSteps } from './readout.js';
+import { addHistory, dropLastHistory } from './prefs.js';
 import { placeUrl } from './rows.js';
 import { state } from './state.js';
 
@@ -17,6 +18,7 @@ export function showResult(place) {
     const log = readLog();
     log.unshift({ t: hhmm(new Date()), name: place.name, act: '당첨' });
     writeLog(log);
+    addHistory(place); // 최근 먹은 곳 (재실행·제외하면 지움)
 
     el.resultTime.textContent = `LR-01 · ${hhmm(new Date())}`;
     el.resultNo.textContent = `NO.${String(log.filter((e) => e.act !== '-').length).padStart(2, '0')}`;
@@ -64,16 +66,20 @@ function renderPunch(place) {
     el.resultPunch.replaceChildren(row((d) => d >= 5), row((d) => d % 2 === 1));
 }
 
-/** 영수증의 영업 줄. 아직 모르면 받아 와서 채움 */
+/** 영수증의 영업 줄(늘 '지금' 기준)과 대표 메뉴 줄. 아직 모르면 받아 와서 채움 */
 function setTicketHours(place) {
-    const h = hoursOf(place);
+    const h = hoursOf(place, new Date());
     if (h) {
         el.resultHours.textContent = h.status === 'unknown' ? '영업시간 정보 없음' : hoursText(h);
         el.resultHours.dataset.status = h.status;
+        const menus = h.menus ?? [];
+        el.resultMenu.hidden = !menus.length;
+        el.resultMenu.textContent = menus.length ? `대표 메뉴 · ${menus.map((m) => `${m.name} ${wonLabel(m.price)}`).join(' · ')}` : '';
         return;
     }
     el.resultHours.textContent = '영업 상태 확인 중';
     el.resultHours.dataset.status = 'wait';
+    el.resultMenu.hidden = true;
     ensureHours([place]).then(() => {
         if (state.winner?.id === place.id) setTicketHours(place);
     });
@@ -86,6 +92,7 @@ function setTicketActions(on) {
         else { a.setAttribute('aria-disabled', 'true'); a.setAttribute('tabindex', '-1'); a.removeAttribute('href'); }
     });
     el.resultExclude.disabled = !on;
+    el.resultNever.disabled = !on;
     el.resultAgain.disabled = !on;
 }
 
@@ -132,6 +139,7 @@ export function markLastResult(act) {
     if (log[0]?.act === '당첨') {
         log[0].act = act;
         writeLog(log);
+        dropLastHistory(); // 실제로 안 간 것이니 최근 기록에서 뺌
     }
 }
 

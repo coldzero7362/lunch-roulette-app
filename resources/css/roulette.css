@@ -786,6 +786,10 @@
 
 .rl-tag--pin { border-color: var(--c-signal); background: var(--c-signal); color: var(--c-paper); }
 .rl-tag--dim { border-style: dashed; color: var(--c-panel-2); }
+/* 가격대 배지: 영수증 잉크색 테두리 */
+.rl-tag--price { border-color: #8a6a3a; color: #6b4a1e; }
+/* 영업 확인 기준 시각 키: 글자 폭 고정 (지금/12:00/12:30 이 바뀌어도 키 크기 그대로) */
+.rl-bank__key--at { min-width: 64px; }
 
 /* 영업 상태 배지: 작은 표시창 (검은 바탕 + 형광 글자) */
 .rl-tag--hours { border-color: var(--c-carbon); background: var(--c-screen); color: var(--c-phosphor); }
@@ -2132,4 +2136,10 @@
     .rl-drum__digit,
     .rl-term__cursor { animation: none !important; }
     .rl-wheel__no { transition: none; }
+}
+
+/* 좁은 화면: 키 3개 옆이라 칸이 좁음 → 후보 줄의 [상세] 키(영수증·지도 핀에도 있음)와 큰 분류 배지는 숨겨 영업·가격 배지가 보이게 */
+@media (max-width: 480px) {
+    #candidates .rl-key--detail { display: none; }
+    .rl-track .rl-tag--type { display: none; }
 }

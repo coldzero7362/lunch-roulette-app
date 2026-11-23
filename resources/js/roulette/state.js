@@ -21,4 +21,5 @@ export const state = {
     openOnly: false, // 켜면 영업 중(또는 정보 없음)인 후보만 추첨
     checking: false, // 자동 채움·돌리기 전에 영업 상태 확인 중
     locating: false, // 기기 위치를 묻는 중 (GPS 표시등)
+    hoursAt: 'now', // 영업 확인 기준 시각: 'now' | 'HH:MM'
 };

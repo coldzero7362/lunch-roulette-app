@@ -14,7 +14,7 @@ export function render() {
     queueHours();
     renderWheel();
     renderCandidates();
-    if (state.searchResults.length) renderSearchResults();
+    renderSearchResults(); // 검색 결과, 없으면 단골·다시 안 감 목록
     setBusy(state.spinning);
     updateReadout();
     if (!state.winner) setTicketIdle(); // 대기 문구를 후보 상태에 맞춤

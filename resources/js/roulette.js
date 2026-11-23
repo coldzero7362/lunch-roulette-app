@@ -15,6 +15,7 @@ import { initLocationSearch } from './roulette/location-search.js';
 import { applyCenter, drawRadius, forgetPlace, initMap, locate, savedPlace } from './roulette/map.js';
 import { initMenuSearch } from './roulette/menu-search.js';
 import { autoFill, clearCandidates, exclude, fetchPlaces, initSlots, reshuffle, setSlots } from './roulette/places.js';
+import { addNever } from './roulette/prefs.js';
 import { updateReadout } from './roulette/readout.js';
 import { state } from './roulette/state.js';
 import { clearResult, markLastResult, renderLog, setTicketIdle } from './roulette/ticket.js';
@@ -61,6 +62,17 @@ function initKeys() {
         markLastResult('제외');
         clearResult();
         exclude(id);
+        renderLog();
+        spin();
+    });
+    // 다시 안 감: 앞으로 자동 채움·지도에서 빼고 바로 다시 돌림 (SIDE B 에서 해제)
+    el.resultNever.addEventListener('click', () => {
+        if (!state.winner) return;
+        const place = state.winner;
+        addNever(place);
+        markLastResult('안 감');
+        clearResult();
+        exclude(place.id);
         renderLog();
         spin();
     });

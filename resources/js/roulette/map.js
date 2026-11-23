@@ -6,6 +6,7 @@ import { $, el, REDUCED_MOTION } from './dom.js';
 import { worthMoving } from './logic/geo.js';
 import { blocked } from './hours.js';
 import { fetchPlaces } from './places.js';
+import { isNever } from './prefs.js';
 import { setStatus, updateReadout } from './readout.js';
 import { state } from './state.js';
 
@@ -233,7 +234,7 @@ export function drawMarkers() {
     const markers = [...shown.values()]
         // 뺀 곳, 그리고 영업중 필터가 켜졌을 때 지금 못 가는 곳(마감·영업 전·휴무·브레이크)은 핀을 숨김.
         // 정보 없음·아직 모르는 곳은 보여 줌
-        .filter((p) => !state.excluded.has(p.id) && !blocked(p))
+        .filter((p) => !state.excluded.has(p.id) && !isNever(p.id) && !blocked(p))
         .map((p) => new kakao.maps.Marker({
             position: new kakao.maps.LatLng(p.lat, p.lng),
             title: p.name,

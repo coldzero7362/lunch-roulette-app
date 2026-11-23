@@ -29,6 +29,7 @@ export function well(...keys) {
 /** [상세]: 카카오맵 가게 페이지를 새 탭으로 */
 export function detailLink(place) {
     const a = iconKey('a', 'external-link', `${place.name} 카카오맵에서 보기 (새 탭)`, '상세 · 카카오맵');
+    a.classList.add('rl-key--detail');
     a.href = placeUrl(place);
     a.target = '_blank';
     a.rel = 'noopener';
@@ -47,7 +48,7 @@ export function metaLine(place, pinned) {
     }
     if (place.type) {
         const tag = document.createElement('span');
-        tag.className = 'rl-tag';
+        tag.className = 'rl-tag rl-tag--type';
         tag.textContent = typeLabel(place.type);
         meta.append(tag);
     }

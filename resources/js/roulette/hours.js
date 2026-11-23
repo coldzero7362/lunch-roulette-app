@@ -21,16 +21,35 @@ const inFlight = new Set();
 let queueTimer;
 let saveTimer;
 
-/** 가게의 지금 상태 { status, label, info, today } (모르면 null → 다시 물어봄) */
-export function hoursOf(place) {
+/** 영업 확인 기준 시각 고르기: 지금 → 12:00 → 12:30 */
+const HOURS_AT = ['now', '12:00', '12:30'];
+
+/** 기준 시각의 Date (오늘 그 시각) */
+function refDate() {
+    if (state.hoursAt === 'now') return new Date();
+    const [h, m] = state.hoursAt.split(':').map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d;
+}
+
+/**
+ * 가게의 상태 { status, label, info, today, menus, price } (모르면 null → 다시 물어봄).
+ * at 을 안 주면 기준 시각(지금 / 12:00 / 12:30), 주면 그 시각 (영수증은 늘 '지금').
+ * 시간표가 없는 가게는 서버가 준 '지금' 상태뿐이라, 다른 기준 시각에선 정보 없음으로 봄
+ */
+export function hoursOf(place, at = null) {
     const h = state.hours.get(place.id);
     if (!h) return null;
-    // 오늘이 들어 있는 시간표가 있으면 지금 시각으로 계산
+    const when = at ?? refDate();
     if (h.week?.length) {
-        const now = statusAt(h.week);
-        if (now) return { ...h, ...now };
+        const s = statusAt(h.week, when);
+        if (s) return { ...h, ...s };
     }
-    return freshHours(h);
+    const fresh = freshHours(h);
+    if (!fresh) return null;
+    const asNow = at !== null || state.hoursAt === 'now';
+    return asNow ? fresh : { ...fresh, status: 'unknown', label: '', info: '' };
 }
 
 /** 지금 못 가는 곳 (영업 전·마감·휴무·브레이크) */
@@ -175,8 +194,25 @@ function setOpenOnly(on, save = true) {
     }
 }
 
+function setHoursAt(value, save = true) {
+    state.hoursAt = HOURS_AT.includes(value) ? value : 'now';
+    const label = state.hoursAt === 'now' ? '지금' : state.hoursAt;
+    el.hoursAt.textContent = label;
+    el.hoursAt.setAttribute('aria-pressed', String(state.hoursAt !== 'now')); // 시각을 고정하면 LED 켜짐
+    el.hoursAt.setAttribute('aria-label', `영업 확인 기준 ${label}`);
+    if (!save) return;
+    try { localStorage.setItem(KEYS.hoursAt, state.hoursAt); } catch { /* 저장 못 해도 동작 */ }
+    render();
+    drawMarkers();
+    setStatus(state.hoursAt === 'now' ? '영업 확인 기준: 지금' : `영업 확인 기준: 오늘 ${state.hoursAt}`);
+}
+
 export function initOpenOnly() {
     loadSaved();
+    let at = 'now';
+    try { at = localStorage.getItem(KEYS.hoursAt) ?? 'now'; } catch { /* 비공개 모드 등 */ }
+    setHoursAt(at, false);
+    el.hoursAt.addEventListener('click', () => setHoursAt(HOURS_AT[(HOURS_AT.indexOf(state.hoursAt) + 1) % HOURS_AT.length]));
     startClock();
     let saved = null;
     try { saved = localStorage.getItem(KEYS.openOnly); } catch { /* 비공개 모드 등 */ }
