@@ -26,11 +26,11 @@ export function setBusy(busy) {
     const empty = state.candidates.length === 0;
     const autoOnWheel = state.candidates.some((p) => !state.pinned.has(p.id));
     const hasSpare = spare().length > 0;
-    el.spin.disabled = busy || empty;
+    el.spin.disabled = busy || (empty && !hasSpare); // 비어 있으면 SPIN 이 자동으로 채움
     el.auto.disabled = busy || state.candidates.length >= state.slots || !hasSpare;
     el.shuffle.disabled = busy || state.candidates.length < 2 && !(autoOnWheel && hasSpare);
     el.clear.disabled = busy || empty;
     el.slotsDown.disabled = busy || state.slots <= SLOTS_MIN;
     el.slotsUp.disabled = busy || state.slots >= SLOTS_MAX;
-    el.candidates.querySelectorAll('button').forEach((b) => { b.disabled = busy; });
+    el.candidates.querySelectorAll('button').forEach((b) => { b.disabled = busy || (b.dataset.needSpare === '1' && !hasSpare); });
 }
