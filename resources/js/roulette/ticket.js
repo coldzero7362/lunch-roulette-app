@@ -3,13 +3,13 @@
  */
 import { LOG_ROWS } from './constants.js';
 import { el, REDUCED_MOTION } from './dom.js';
-import { ensureHours, hoursOf } from './hours.js';
+import { ensureHours, hoursOf, typicalPrice } from './hours.js';
 import { hhmm, logKey, typeLabel, walkMinutes, wonLabel } from './logic/format.js';
 import { hoursText } from './logic/hours.js';
 import { punchColumns, punchDigits } from './logic/punch.js';
 import { clearWinnerMarker, highlightWinner, restoreView } from './map.js';
 import { setStatus, updateSteps } from './readout.js';
-import { addHistory, dropLastHistory } from './prefs.js';
+import { addHistory, dropLastHistory, setHistoryPrice } from './prefs.js';
 import { placeUrl } from './rows.js';
 import { renderSaved } from './saved.js';
 import { resetMenuPick, setMenuChoices } from './ticket-extras.js';
@@ -80,6 +80,7 @@ function setTicketHours(place) {
         el.resultMenu.hidden = !menus.length;
         el.resultMenu.textContent = menus.length ? `대표 메뉴 · ${menus.slice(0, 3).map((m) => `${m.name} ${wonLabel(m.price)}`).join(' · ')}` : '';
         setMenuChoices(menus);
+        setHistoryPrice(place.id, typicalPrice(h)); // 이번 달 지출 추정용
         return;
     }
     el.resultHours.textContent = '영업 상태 확인 중';

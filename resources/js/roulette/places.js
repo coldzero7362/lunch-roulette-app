@@ -8,6 +8,8 @@ import { shuffle, weightedPick } from './logic/pick.js';
 import { drawMarkers } from './map.js';
 import { setSearchStatus } from './menu-search.js';
 import { favoriteIds, isNever, recentNow } from './prefs.js';
+import { ensureWeather, weatherNote, weatherNow } from './weather.js';
+import { farEdge } from './logic/weather.js';
 import { api } from './net.js';
 import { setStatus } from './readout.js';
 import { render, setBusy } from './render.js';
@@ -85,7 +87,8 @@ async function pickFrom(pool, need, chosen) {
     const recent = recentNow();
     const notRecent = pool.filter((p) => !recent.ids.has(p.id));
     if (notRecent.length >= need) pool = notRecent;
-    const ctx = { types: state.types, favorites: favoriteIds(), recent };
+    await ensureWeather(); // 처음 뽑을 때만 받음 (이후 1시간은 저장해 둔 것)
+    const ctx = { types: state.types, favorites: favoriteIds(), recent, near: weatherNow() ? farEdge(state.pool.map((p) => p.distance), state.radius) : null };
     if (!filtersOn()) return weightedPick(pool, need, chosen, ctx);
 
     const picked = [];
@@ -125,7 +128,8 @@ export async function autoFill() {
     const what = state.openOnly ? '영업 중인 식당' : state.budget ? '예산 안 식당' : '식당';
     if (picks.length < need && picks.length && filtersOn()) setStatus(`조건 맞는 ${picks.length}곳 추가 — 채우기를 다시 누르면 더 찾음`);
     else if (picks.length < need) setStatus(picks.length ? `잔여 ${picks.length}곳만 추가` : `추가 가능 ${what} 없음 — 반경·종류 변경`);
-    else if (state.openOnly) setStatus(`자동 채움 ${picks.length}곳 · 영업 중`);
+    else if (state.openOnly) setStatus(`자동 채움 ${picks.length}곳 · 영업 중${weatherNote() ? ` · ${weatherNote()}` : ''}`);
+    else if (weatherNote()) setStatus(`자동 채움 ${picks.length}곳 · ${weatherNote()}`);
 }
 
 /** 섞기: 직접 넣은 곳은 두고, 자동으로 들어간 곳만 새로 뽑아 순서도 섞음 */

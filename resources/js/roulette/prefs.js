@@ -6,7 +6,7 @@ import { KEYS } from './constants.js';
 import { recentInfo } from './logic/recent.js';
 import { dateKey } from './logic/schedule.js';
 
-const HISTORY_MAX = 60; // 최근 기록 개수 상한 (2주치 넉넉히)
+const HISTORY_MAX = 120; // 기록 개수 상한 (한 달 통계 + 넉넉히)
 
 function read(key, fallback) {
     try {
@@ -28,6 +28,7 @@ let favorites = read(KEYS.favorites, {}); // id → 가게
 let never = read(KEYS.never, {}); // id → { id, name }
 let history = read(KEYS.history, []); // [{ id, name, type, category, day }] 최신이 앞
 let avoid = read(KEYS.avoidRecent, true); // 최근 먹은 것 피하기 (끄면 기록만 남김)
+let weather = read(KEYS.weatherOn, true); // 날씨 보정 (비·폭염·한파면 가까운 곳 위주)
 
 /* ---------- 단골 ---------- */
 
@@ -67,6 +68,14 @@ export function addHistory(place) {
     write(KEYS.history, history);
 }
 
+/** 당첨 기록에 보통 가격을 붙임 (영수증이 가게 정보를 받은 뒤, 이번 달 지출 추정용) */
+export function setHistoryPrice(id, price) {
+    const last = history[0];
+    if (!last || last.id !== id || !price || last.price) return;
+    last.price = price;
+    write(KEYS.history, history);
+}
+
 /** 방금 당첨 기록을 지움 (재실행·제외: 실제로 안 간 것) */
 export function dropLastHistory() {
     history.shift();
@@ -87,6 +96,13 @@ export const avoidRecent = () => avoid;
 export function setAvoidRecent(on) {
     avoid = on;
     write(KEYS.avoidRecent, on);
+}
+
+export const weatherOn = () => weather;
+
+export function setWeatherOn(on) {
+    weather = on;
+    write(KEYS.weatherOn, on);
 }
 
 const NO_RECENT = { ids: new Map(), categories: new Map(), types: new Map() };
